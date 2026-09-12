@@ -1,0 +1,122 @@
+.page {
+  min-height: 100vh;
+  padding-bottom: 100px;
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: #fff;
+  border-bottom: 1px solid #e5e5e5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  z-index: 100;
+}
+
+.backBtn {
+  padding: 4px;
+  color: #000;
+  flex-shrink: 0;
+}
+
+.headerTitle {
+  font-size: 17px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.objectTitle {
+  font-size: 13px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.form {
+  padding: 76px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.input, .textarea {
+  padding: 12px 14px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 15px;
+  width: 100%;
+}
+
+.input::placeholder, .textarea::placeholder {
+  color: #bbb;
+}
+
+.textarea {
+  resize: vertical;
+}
+
+.checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+}
+
+.checkbox input {
+  margin-top: 2px;
+  width: 16px;
+  height: 16px;
+  accent-color: #000;
+}
+
+.error {
+  padding: 12px;
+  background: #fff0f0;
+  color: #c00;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 14px;
+  background: #000;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+}
+
+.cancelBtn {
+  width: 100%;
+  padding: 14px;
+  text-align: center;
+  font-size: 14px;
+  color: #999;
+  text-decoration: underline;
+  background: none;
+  border: none;
+}

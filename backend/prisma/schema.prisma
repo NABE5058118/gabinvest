@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Object {
+  id              String    @id @default(cuid())
+  title           String
+  type            String
+  price           Int
+  yieldPercent    Float
+  location        String
+  city            String?
+  area            Int
+  roi             Float?
+  image           String?
+  description     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  commercialOffer CommercialOffer?
+  leads           Lead[]
+  favorites       Favorite[]
+}
+
+model CommercialOffer {
+  id        String   @id @default(cuid())
+  objectId  String   @unique
+  content   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  object    Object   @relation(fields: [objectId], references: [id], onDelete: Cascade)
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  objectId  String
+  name      String
+  phone     String
+  comment   String?
+  status    String   @default("new")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  object    Object   @relation(fields: [objectId], references: [id], onDelete: Cascade)
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  objectId  String
+  createdAt DateTime @default(now())
+  object    Object   @relation(fields: [objectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, objectId])
+}
