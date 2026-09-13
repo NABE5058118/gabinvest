@@ -41,7 +41,7 @@ router.get('/', getUserId, async (req: Request, res: Response) => {
       include: { object: true },
     });
 
-    res.json(favorites.map((f) => f.object));
+    res.json(favorites.map((f: { object: any }) => f.object));
   } catch (error) {
     console.error('Error fetching favorites:', error);
     res.status(500).json({ error: 'Failed to fetch favorites' });
