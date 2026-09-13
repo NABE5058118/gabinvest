@@ -11,7 +11,7 @@ type ObjectItem = {
   offerFileName?: string;
 };
 
-const ADMIN_TOKEN = 'change-me-in-production';
+const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN || '';
 
 export default function AdminOfferUpload() {
   const { id } = useParams();

@@ -28,29 +28,23 @@ services:
       TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
       MANAGER_CHAT_ID: "${MANAGER_CHAT_ID}"
       PORT: 3001
-      ADMIN_TOKEN: "${ADMIN_TOKEN:-change-me-in-production}"
+      ADMIN_TOKEN: "${ADMIN_TOKEN}"
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
-      - ./backend:/app
-      - /app/node_modules
       - backend-uploads:/app/uploads
-    command: sh -c "npm run prisma:generate && npx prisma migrate deploy && npm run prisma:seed && npm run dev"
+    command: ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
 
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     ports:
-      - "5173:5173"
+      - "80:80"
     environment:
-      VITE_API_URL: "http://localhost:3001"
-      VITE_ADMIN_TOKEN: "${ADMIN_TOKEN:-change-me-in-production}"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    command: npm run dev -- --host
+      VITE_API_URL: "${VITE_API_URL}"
+      VITE_ADMIN_TOKEN: "${VITE_ADMIN_TOKEN}"
     depends_on:
       - backend
 
@@ -60,10 +54,9 @@ services:
       dockerfile: Dockerfile
     environment:
       BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
-      WEB_APP_URL: "${WEB_APP_URL:-http://localhost:5173}"
-    volumes:
-      - ./bot:/app
-    command: python bot.py
+      WEB_APP_URL: "${WEB_APP_URL}"
+    depends_on:
+      - backend
 
 volumes:
   postgres-data:

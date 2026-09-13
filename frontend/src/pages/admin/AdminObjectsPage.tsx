@@ -24,7 +24,7 @@ export default function AdminObjectsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const ADMIN_TOKEN = 'change-me-in-production';
+  const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN || '';
 
   useEffect(() => {
     fetchItems();
