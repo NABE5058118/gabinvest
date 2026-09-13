@@ -12,6 +12,8 @@ FROM node:20-slim
 
 WORKDIR /app
 
+RUN mkdir -p /app/uploads
+
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma

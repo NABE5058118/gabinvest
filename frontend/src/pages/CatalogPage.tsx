@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockObjects } from '../utils/mockData';
 import { Filter, X, Heart, MapPin, LayoutGrid } from 'lucide-react';
+import { useFavorites } from '../context/FavoritesContext';
+import { useObjects } from '../utils/useObjects';
 import styles from './CatalogPage.module.css';
 
 export default function CatalogPage() {
   const navigate = useNavigate();
+  const { favoriteIds, toggleFavorite } = useFavorites();
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     type: 'all',
@@ -15,8 +17,25 @@ export default function CatalogPage() {
     maxArea: '',
     city: '',
   });
+  const { objects, loading, error } = useObjects();
 
-  const filteredObjects = mockObjects.filter((obj) => {
+  if (loading) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.error}>Загрузка...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.error}>{error}</div>
+      </div>
+    );
+  }
+
+  const filteredObjects = objects.filter((obj) => {
     if (filters.type !== 'all' && obj.type !== filters.type) return false;
     if (filters.city && obj.city !== filters.city) return false;
     if (filters.minPrice && obj.price < Number(filters.minPrice)) return false;
@@ -41,7 +60,7 @@ export default function CatalogPage() {
     setShowFilters(false);
   };
 
-  const cities = [...new Set(mockObjects.map((obj) => obj.city).filter(Boolean))];
+  const cities = [...new Set(objects.map((obj) => obj.city).filter(Boolean))];
 
   const typeLabels: Record<string, string> = {
     'Офис': 'Офис',
@@ -118,8 +137,18 @@ export default function CatalogPage() {
                   <LayoutGrid size={48} strokeWidth={1} color="#ccc" />
                 </div>
                 <span className={styles.typeBadge}>{typeLabels[obj.type] || obj.type}</span>
-                <button className={styles.favoriteBtn} onClick={(e) => { e.stopPropagation(); }}>
-                  <Heart size={20} strokeWidth={2} />
+                <button
+                  className={styles.favoriteBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite(obj.id);
+                  }}
+                >
+                  <Heart
+                    size={20}
+                    strokeWidth={2}
+                    fill={favoriteIds.has(obj.id) ? '#000' : 'none'}
+                  />
                 </button>
               </div>
               <div className={styles.cardBody}>

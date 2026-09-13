@@ -1,4 +1,6 @@
-export const mockObjects = [
+import { ObjectType } from './types';
+
+export const mockObjects: ObjectType[] = [
   {
     id: '1',
     title: 'Бизнес-центр «Азинский»',
@@ -11,6 +13,11 @@ export const mockObjects = [
     roi: 9.5,
     image: '',
     description: 'Современный бизнес-центр класса А в центре Москвы. Развитая инфраструктура, удобная транспортная доступность, высокий спрос на аренду.',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+    offerFileUrl: '',
+    offerFileName: 'КП_Азинский.pdf',
+    offerFileType: 'application/pdf',
     commercialOffer: {
       id: '1',
       objectId: '1',
@@ -65,6 +72,8 @@ export const mockObjects = [
     area: 5000,
     roi: 12,
     description: 'Торговый центр высокого класса в центре города.',
+    createdAt: '2024-01-02T00:00:00.000Z',
+    updatedAt: '2024-01-02T00:00:00.000Z',
   },
   {
     id: '3',
@@ -77,6 +86,8 @@ export const mockObjects = [
     area: 8000,
     roi: 10,
     description: 'Современный складской комплекс с рампой.',
+    createdAt: '2024-01-03T00:00:00.000Z',
+    updatedAt: '2024-01-03T00:00:00.000Z',
   },
   {
     id: '4',
@@ -89,5 +100,7 @@ export const mockObjects = [
     area: 4200,
     roi: 8.5,
     description: 'Офисный центр премиум-класса.',
+    createdAt: '2024-01-04T00:00:00.000Z',
+    updatedAt: '2024-01-04T00:00:00.000Z',
   },
-];
+] as const;

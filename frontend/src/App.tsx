@@ -5,21 +5,40 @@ import OfferPage from './pages/OfferPage';
 import LeadFormPage from './pages/LeadFormPage';
 import LeadSuccessPage from './pages/LeadSuccessPage';
 import FavoritesPage from './pages/FavoritesPage';
+import ProfilePage from './pages/ProfilePage';
+import ProfileEditPage from './pages/ProfileEditPage';
+import AdminObjectsPage from './pages/admin/AdminObjectsPage';
+import AdminObjectForm from './pages/admin/AdminObjectForm';
+import AdminOfferUpload from './pages/admin/AdminOfferUpload';
 import Layout from './components/Layout';
+import { FavoritesProvider } from './context/FavoritesContext';
+import { AuthProvider } from './context/AuthContext';
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<CatalogPage />} />
-          <Route path="objects/:id" element={<ObjectPage />} />
-          <Route path="objects/:id/offer" element={<OfferPage />} />
-          <Route path="objects/:id/lead" element={<LeadFormPage />} />
-          <Route path="lead-success" element={<LeadSuccessPage />} />
-          <Route path="favorites" element={<FavoritesPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <FavoritesProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<CatalogPage />} />
+              <Route path="objects/:id" element={<ObjectPage />} />
+              <Route path="objects/:id/offer" element={<OfferPage />} />
+              <Route path="objects/:id/lead" element={<LeadFormPage />} />
+              <Route path="lead-success" element={<LeadSuccessPage />} />
+              <Route path="favorites" element={<FavoritesPage />} />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="profile/edit" element={<ProfileEditPage />} />
+            </Route>
+            <Route path="/admin" element={<Layout />}>
+              <Route index element={<AdminObjectsPage />} />
+              <Route path="objects/new" element={<AdminObjectForm />} />
+              <Route path="objects/:id" element={<AdminObjectForm />} />
+              <Route path="objects/:id/offer" element={<AdminOfferUpload />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </FavoritesProvider>
+    </AuthProvider>
   );
 }

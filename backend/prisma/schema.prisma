@@ -19,6 +19,9 @@ model Object {
   roi             Float?
   image           String?
   description     String?
+  offerFileUrl    String?
+  offerFileName   String?
+  offerFileType   String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   commercialOffer CommercialOffer?
@@ -47,12 +50,24 @@ model Lead {
   object    Object   @relation(fields: [objectId], references: [id], onDelete: Cascade)
 }
 
+model User {
+  id           String   @id @default(cuid())
+  telegramId   String   @unique
+  firstName    String?
+  lastName     String?
+  username     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  favorites    Favorite[]
+}
+
 model Favorite {
   id        String   @id @default(cuid())
   userId    String
   objectId  String
   createdAt DateTime @default(now())
   object    Object   @relation(fields: [objectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, objectId])
 }

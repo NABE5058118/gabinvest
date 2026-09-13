@@ -1,20 +1,45 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { mockObjects } from '../utils/mockData';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Heart, MapPin, LayoutGrid } from 'lucide-react';
+import { useFavorites } from '../context/FavoritesContext';
+import { ObjectType } from '../utils/types';
+import { api } from '../utils/api';
 import styles from './ObjectPage.module.css';
 
 export default function ObjectPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const object = mockObjects.find((o) => o.id === id);
+  const [object, setObject] = useState<ObjectType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { favoriteIds, toggleFavorite } = useFavorites();
 
-  if (!object) {
+  useEffect(() => {
+    if (!id) return;
+    api
+      .get<ObjectType>(`/api/objects/${id}`)
+      .then((res) => setObject(res.data))
+      .catch(() => setError('Объект не найден'))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
     return (
       <div className={styles.page}>
-        <div className={styles.error}>Объект не найден</div>
+        <div className={styles.error}>Загрузка...</div>
       </div>
     );
   }
+
+  if (error || !object) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.error}>{error || 'Объект не найден'}</div>
+      </div>
+    );
+  }
+
+  const isFav = favoriteIds.has(object.id);
 
   return (
     <div className={styles.page}>
@@ -22,8 +47,11 @@ export default function ObjectPage() {
         <button className={styles.backBtn} onClick={() => navigate(-1)}>
           <ArrowLeft size={24} strokeWidth={2} />
         </button>
-        <button className={styles.favoriteBtn}>
-          <Heart size={24} strokeWidth={2} />
+        <button
+          className={styles.favoriteBtn}
+          onClick={() => toggleFavorite(object.id)}
+        >
+          <Heart size={24} strokeWidth={2} fill={isFav ? '#000' : 'none'} />
         </button>
       </header>
 

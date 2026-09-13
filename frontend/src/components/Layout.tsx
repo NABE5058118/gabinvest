@@ -21,7 +21,7 @@ export default function Layout() {
           <FileText size={24} strokeWidth={2} />
           <span>Заявки</span>
         </NavLink>
-        <NavLink to="/" className={styles.navItem}>
+        <NavLink to="/profile" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
           <User size={24} strokeWidth={2} />
           <span>Профиль</span>
         </NavLink>

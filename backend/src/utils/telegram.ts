@@ -1,6 +1,13 @@
 import axios from 'axios';
 import crypto from 'crypto';
 
+export interface TelegramUser {
+  id: number;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+}
+
 export function validateTelegramInitData(initData: string, botToken: string): boolean {
   try {
     const url = new URL('http://localhost' + '/');
@@ -44,5 +51,16 @@ export async function sendTelegramMessage(
     });
   } catch (error) {
     console.error('Failed to send Telegram message:', error);
+  }
+}
+
+export function parseInitData(initData: string): TelegramUser | null {
+  try {
+    const params = new URLSearchParams(initData);
+    const userStr = params.get('user');
+    if (!userStr) return null;
+    return JSON.parse(userStr);
+  } catch {
+    return null;
   }
 }

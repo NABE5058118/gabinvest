@@ -1,26 +1,45 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 import objectsRouter from './routes/objects';
 import leadsRouter from './routes/leads';
 import favoritesRouter from './routes/favorites';
+import adminRouter from './routes/admin';
+import authRouter from './routes/auth';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+app.use(cors({ origin: '*' }));
 app.use(express.json());
+app.use('/uploads', express.static(uploadsDir));
 
 app.use('/api/objects', objectsRouter);
 app.use('/api/leads', leadsRouter);
 app.use('/api/favorites', favoritesRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/auth', authRouter);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend running on port ${PORT}`);
-});
+export { app };
+
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Backend running on port ${PORT}`);
+  });
+}

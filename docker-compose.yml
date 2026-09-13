@@ -28,12 +28,14 @@ services:
       TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
       MANAGER_CHAT_ID: "${MANAGER_CHAT_ID}"
       PORT: 3001
+      ADMIN_TOKEN: "${ADMIN_TOKEN:-change-me-in-production}"
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
       - ./backend:/app
       - /app/node_modules
+      - backend-uploads:/app/uploads
     command: sh -c "npm run prisma:generate && npx prisma db push && npm run prisma:seed && npm run dev"
 
   frontend:
@@ -64,3 +66,4 @@ services:
 
 volumes:
   postgres-data:
+  backend-uploads:

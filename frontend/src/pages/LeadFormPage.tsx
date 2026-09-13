@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { mockObjects } from '../utils/mockData';
 import { ArrowLeft } from 'lucide-react';
+import { ObjectType } from '../utils/types';
+import { api } from '../utils/api';
 import styles from './LeadFormPage.module.css';
 
 export default function LeadFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const object = mockObjects.find((o) => o.id === id);
+  const [object, setObject] = useState<ObjectType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: '',
     phone: '',
@@ -15,10 +18,52 @@ export default function LeadFormPage() {
   });
   const [agreed, setAgreed] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!id) return;
+    api
+      .get<ObjectType>(`/api/objects/${id}`)
+      .then((res) => setObject(res.data))
+      .catch(() => setError('Объект не найден'))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.error}>Загрузка...</div>
+      </div>
+    );
+  }
+
+  if (error || !object) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.error}>{error || 'Объект не найден'}</div>
+      </div>
+    );
+  }
+
+  const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!agreed) return;
-    navigate('/lead-success');
+    if (!agreed || !id) return;
+
+    setSubmitError(null);
+
+    try {
+      await api.post('/api/leads', {
+        objectId: id,
+        name: form.name,
+        phone: form.phone,
+        comment: form.comment,
+      });
+      setSubmitted(true);
+      setTimeout(() => navigate('/lead-success'), 800);
+    } catch {
+      setSubmitError('Не удалось отправить заявку. Попробуйте ещё раз.');
+    }
   };
 
   return (
@@ -79,12 +124,15 @@ export default function LeadFormPage() {
           <span>Согласен на обработку персональных данных</span>
         </label>
 
+        {submitError && <div className={styles.error}>{submitError}</div>}
+        {submitted && <div className={styles.success}>Заявка отправлена!</div>}
+
         <button
           type="submit"
           className={styles.submitBtn}
-          disabled={!agreed}
+          disabled={!agreed || submitted}
         >
-          Отправить заявку
+          {submitted ? 'Отправлено' : 'Отправить заявку'}
         </button>
 
         <button
