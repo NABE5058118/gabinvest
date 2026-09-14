@@ -46,12 +46,16 @@ services:
       dockerfile: Dockerfile
     ports:
       - "80:80"
+      - "443:443"
     environment:
       VITE_API_URL: "${VITE_API_URL}"
       VITE_ADMIN_TOKEN: "${VITE_ADMIN_TOKEN}"
     depends_on:
       backend:
         condition: service_healthy
+    volumes:
+      - frontend-certbot:/var/www/certbot
+      - frontend-ssl:/etc/letsencrypt
 
   bot:
     build:
@@ -64,6 +68,15 @@ services:
       backend:
         condition: service_healthy
 
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - frontend-certbot:/var/www/certbot
+      - frontend-ssl:/etc/letsencrypt
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h; done'"
+
 volumes:
   postgres-data:
   backend-uploads:
+  frontend-certbot:
+  frontend-ssl:
