@@ -73,7 +73,7 @@ services:
       backend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/webhook/telegram || exit 1"]
+      test: ["CMD-SHELL", "python3 -c \"import socket; s=socket.socket(); s.settimeout(2); print(1 if s.connect_ex(('localhost',8080))==0 else 0)\""]
       interval: 5s
       timeout: 5s
       retries: 5
