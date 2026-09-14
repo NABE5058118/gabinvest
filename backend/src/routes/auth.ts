@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../lib/prisma';
-import { parseInitData } from '../utils/telegram';
+import { prisma } from '../lib/prisma.js';
+import { parseInitData } from '../utils/telegram.js';
 
 const router = Router();
 

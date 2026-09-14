@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../lib/prisma';
-import { sendTelegramMessage } from '../utils/telegram';
+import { prisma } from '../lib/prisma.js';
+import { sendTelegramMessage } from '../utils/telegram.js';
 import { z } from 'zod';
 
 const router = Router();

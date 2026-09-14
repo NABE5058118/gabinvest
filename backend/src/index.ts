@@ -4,11 +4,11 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import objectsRouter from './routes/objects';
-import leadsRouter from './routes/leads';
-import favoritesRouter from './routes/favorites';
-import adminRouter from './routes/admin';
-import authRouter from './routes/auth';
+import objectsRouter from './routes/objects.js';
+import leadsRouter from './routes/leads.js';
+import favoritesRouter from './routes/favorites.js';
+import adminRouter from './routes/admin.js';
+import authRouter from './routes/auth.js';
 
 dotenv.config();
 

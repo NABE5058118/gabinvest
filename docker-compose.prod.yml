@@ -32,6 +32,12 @@ services:
         condition: service_healthy
     volumes:
       - backend-uploads:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3001/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     command: ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
 
   frontend:
@@ -44,7 +50,8 @@ services:
       VITE_API_URL: "${VITE_API_URL}"
       VITE_ADMIN_TOKEN: "${VITE_ADMIN_TOKEN}"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
   bot:
     build:
@@ -54,7 +61,8 @@ services:
       BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
       WEB_APP_URL: "${WEB_APP_URL}"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   postgres-data:
