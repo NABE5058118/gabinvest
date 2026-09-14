@@ -2,11 +2,13 @@ FROM node:22-slim AS builder
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
+
 COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npx prisma generate
+RUN npx prisma generate --binary-targets=debian-openssl-3.0.x
 RUN npm run build
 
 FROM node:22-slim
