@@ -8,7 +8,7 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npx prisma generate --binary-targets=debian-openssl-3.0.x
+RUN npx prisma generate
 RUN npm run build
 
 FROM node:22-slim
