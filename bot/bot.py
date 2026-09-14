@@ -37,10 +37,6 @@ async def start(message: types.Message):
 
 
 async def main():
-    webhook_url = f"{BASE_URL}{WEBHOOK_PATH}"
-    await bot.set_webhook(webhook_url)
-    print(f"Webhook set to {webhook_url}")
-
     app = web.Application()
     handler = SimpleRequestHandler(dispatcher=dp, bot=bot)
     handler.register(app, path=WEBHOOK_PATH)
