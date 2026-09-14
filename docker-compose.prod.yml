@@ -62,18 +62,18 @@ services:
       context: ./bot
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "8081:8081"
     environment:
       BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
       WEB_APP_URL: "${WEB_APP_URL}"
       WEBHOOK_PATH: "/webhook/telegram"
       WEBHOOK_HOST: "gabinvest.cloud-ip.cc"
-      WEBHOOK_PORT: "8080"
+      WEBHOOK_PORT: "8081"
     depends_on:
       backend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import socket; s=socket.socket(); s.settimeout(2); print(1 if s.connect_ex(('localhost',8080))==0 else 0)\""]
+      test: ["CMD-SHELL", "python3 -c \"import socket; s=socket.socket(); s.settimeout(2); print(1 if s.connect_ex(('localhost',8081))==0 else 0)\""]
       interval: 5s
       timeout: 5s
       retries: 5
