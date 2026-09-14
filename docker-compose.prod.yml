@@ -69,6 +69,7 @@ services:
       WEBHOOK_PATH: "/webhook/telegram"
       WEBHOOK_HOST: "gabinvest.cloud-ip.cc"
       WEBHOOK_PORT: "8081"
+      PROXY_URL: "${PROXY_URL:-}"
     depends_on:
       backend:
         condition: service_healthy

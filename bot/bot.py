@@ -3,6 +3,7 @@ import asyncio
 from aiogram import Bot, Dispatcher, types, Router
 from aiogram.types import WebAppInfo
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiohttp import web
 import aiohttp
 
@@ -11,9 +12,11 @@ WEB_APP_URL = os.getenv('WEB_APP_URL', 'https://gab-invest.ru')
 WEBHOOK_PATH = os.getenv('WEBHOOK_PATH', '/webhook/telegram')
 WEBHOOK_HOST = os.getenv('WEBHOOK_HOST', 'gabinvest.cloud-ip.cc')
 WEBHOOK_PORT = int(os.getenv('WEBHOOK_PORT', '8080'))
+PROXY_URL = os.getenv('PROXY_URL')
 BASE_URL = f"https://{WEBHOOK_HOST}"
 
-bot = Bot(token=BOT_TOKEN)
+session = AiohttpSession(proxy=PROXY_URL) if PROXY_URL else None
+bot = Bot(token=BOT_TOKEN, session=session)
 dp = Dispatcher()
 router = Router()
 dp.include_router(router)
