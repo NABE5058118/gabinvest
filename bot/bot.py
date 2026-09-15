@@ -50,7 +50,10 @@ async def start(message: types.Message):
 
 
 async def main():
-    await bot.delete_webhook(drop_pending_updates=True)
+    try:
+        await bot.delete_webhook(drop_pending_updates=True, request_timeout=30)
+    except Exception as e:
+        logging.warning(f"delete_webhook failed (non-fatal): {e}")
     logging.info("Webhook deleted, starting polling")
     await dp.start_polling(bot)
 
