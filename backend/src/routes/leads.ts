@@ -10,6 +10,9 @@ const leadSchema = z.object({
   name: z.string().min(2, 'Имя слишком короткое'),
   phone: z.string().min(10, 'Некорректный номер телефона'),
   comment: z.string().optional(),
+  consent: z.boolean().refine((v) => v === true, {
+    message: 'Необходимо согласие на обработку персональных данных',
+  }),
 });
 
 const MANAGER_CHAT_ID = process.env.MANAGER_CHAT_ID || '';
@@ -22,7 +25,7 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: parsed.error.errors[0].message });
     }
 
-    const { objectId, name, phone, comment } = parsed.data;
+    const { objectId, name, phone, comment, consent } = parsed.data;
 
     const obj = await prisma.object.findUnique({
       where: { id: objectId },
@@ -39,6 +42,14 @@ router.post('/', async (req: Request, res: Response) => {
         name,
         phone,
         comment,
+        consents: {
+          create: {
+            consentType: 'pd_processing',
+            version: '1.0',
+            ipAddress: req.ip || req.socket.remoteAddress || undefined,
+            userAgent: req.get('User-Agent') || undefined,
+          },
+        },
       },
     });
 

@@ -58,6 +58,7 @@ export default function LeadFormPage() {
         name: form.name,
         phone: form.phone,
         comment: form.comment,
+        consent: agreed,
       });
       setSubmitted(true);
       setTimeout(() => navigate('/lead-success'), 800);

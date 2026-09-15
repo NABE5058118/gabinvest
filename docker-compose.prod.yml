@@ -61,24 +61,22 @@ services:
     build:
       context: ./bot
       dockerfile: Dockerfile
-    ports:
-      - "8081:8081"
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
       WEB_APP_URL: "${WEB_APP_URL}"
-      WEBHOOK_PATH: "/webhook/telegram"
-      WEBHOOK_HOST: "gabinvest.cloud-ip.cc"
-      WEBHOOK_PORT: "8081"
-      PROXY_URL: "${PROXY_URL:-}"
+      PROXY_URL: "socks5://host.docker.internal:10808"
+      PYTHONUNBUFFERED: "1"
     depends_on:
       backend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import socket; s=socket.socket(); s.settimeout(2); print(1 if s.connect_ex(('localhost',8081))==0 else 0)\""]
-      interval: 5s
+      test: ["CMD-SHELL", "python3 -c \"import os; os.path.exists('/proc/1')\""]
+      interval: 30s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 3
 
   certbot:
     image: certbot/certbot

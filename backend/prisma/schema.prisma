@@ -49,17 +49,19 @@ model Lead {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   object    Object   @relation(fields: [objectId], references: [id], onDelete: Cascade)
+  consents  Consent[]
 }
 
 model User {
-  id           String   @id @default(cuid())
-  telegramId   String   @unique
+  id           String     @id @default(cuid())
+  telegramId   String     @unique
   firstName    String?
   lastName     String?
   username     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
   favorites    Favorite[]
+  consents     Consent[]
 }
 
 model Favorite {
@@ -71,4 +73,21 @@ model Favorite {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, objectId])
+}
+
+model Consent {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  leadId      String?
+  lead        Lead?    @relation(fields: [leadId], references: [id])
+  consentType String   // "pd_processing" | "cross_border" | "marketing"
+  version     String   // версия текста, например "1.0"
+  ipAddress   String?
+  userAgent   String?
+  telegramId  String?
+  acceptedAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([leadId])
 }

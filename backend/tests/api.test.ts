@@ -99,6 +99,7 @@ describe('API Integration Tests', () => {
           name: 'Test User',
           phone: '+79999999999',
           comment: 'Test comment',
+          consent: true,
         });
 
       expect(res.status).toBe(201);
@@ -119,6 +120,7 @@ describe('API Integration Tests', () => {
           objectId: objects[0].id,
           name: 'Test',
           phone: '123',
+          consent: true,
         });
 
       expect(res.status).toBe(400);
