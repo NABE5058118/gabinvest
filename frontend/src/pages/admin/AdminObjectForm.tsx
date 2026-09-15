@@ -15,6 +15,7 @@ type ObjectItem = {
   area: number;
   roi?: number;
   description?: string;
+  image?: string;
 };
 
 const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN || '';
@@ -35,6 +36,9 @@ export default function AdminObjectForm() {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [existingImage, setExistingImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (id && id !== 'new') {
@@ -54,10 +58,38 @@ export default function AdminObjectForm() {
             roi: data.roi ? String(data.roi) : '',
             description: data.description || '',
           });
+          setExistingImage(data.image || null);
         })
         .catch(() => setError('Ошибка загрузки'));
     }
   }, [id]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const uploadImage = async (objectId: string): Promise<void> => {
+    if (!imageFile) return;
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    const res = await fetch(`${API_URL}/api/admin/objects/${objectId}/image`, {
+      method: 'POST',
+      headers: { 'x-admin-token': ADMIN_TOKEN },
+      body: formData,
+    });
+    if (!res.ok) throw new Error('Failed to upload image');
+  };
+
+  const deleteImage = async (objectId: string): Promise<void> => {
+    const res = await fetch(`${API_URL}/api/admin/objects/${objectId}/image`, {
+      method: 'DELETE',
+      headers: { 'x-admin-token': ADMIN_TOKEN },
+    });
+    if (!res.ok) throw new Error('Failed to delete image');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,6 +106,7 @@ export default function AdminObjectForm() {
       area: Number(form.area),
       roi: form.roi ? Number(form.roi) : null,
       description: form.description || null,
+      image: existingImage || imagePreview || null,
     };
 
     try {
@@ -95,6 +128,9 @@ export default function AdminObjectForm() {
       if (!res.ok) throw new Error('Failed');
 
       const obj = await res.json();
+      if (imageFile) {
+        await uploadImage(obj.id);
+      }
       navigate(`/admin/objects/${obj.id}`);
     } catch (err) {
       setError('Ошибка сохранения');
@@ -212,6 +248,39 @@ export default function AdminObjectForm() {
         </div>
 
         {error && <div className={styles.error}>{error}</div>}
+
+        <div className={styles.field}>
+          <label className={styles.label}>Фото объекта</label>
+          <input
+            className={styles.input}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/jpg"
+            onChange={handleImageChange}
+          />
+          {(imagePreview || existingImage) && (
+            <div className={styles.imagePreview}>
+              <img
+                src={imagePreview || existingImage || ''}
+                alt="Preview"
+                className={styles.previewImg}
+              />
+              <button
+                type="button"
+                className={styles.removeImageBtn}
+                onClick={async () => {
+                  if (existingImage && id && id !== 'new') {
+                    await deleteImage(id);
+                  }
+                  setImageFile(null);
+                  setImagePreview(null);
+                  setExistingImage(null);
+                }}
+              >
+                Удалить фото
+              </button>
+            </div>
+          )}
+        </div>
 
         <button type="submit" className={styles.submitBtn} disabled={loading}>
           {loading ? 'Сохранение...' : 'Сохранить'}

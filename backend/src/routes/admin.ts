@@ -45,6 +45,29 @@ const upload = multer({
   },
 });
 
+const imageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, unique + path.extname(file.originalname));
+  },
+});
+
+const imageUpload = multer({
+  storage: imageStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type'));
+    }
+  },
+});
+
 router.get('/objects', requireAdmin, async (req: Request, res: Response) => {
   try {
     const objects = await prisma.object.findMany({
@@ -199,6 +222,43 @@ router.get('/objects/:id/offer/download', async (req: Request, res: Response) =>
   } catch (error) {
     console.error('Error downloading offer:', error);
     res.status(500).json({ error: 'Failed to download offer' });
+  }
+});
+
+router.post('/objects/:id/image', requireAdmin, imageUpload.single('image'), async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ error: 'File is required' });
+    }
+
+    const imageUrl = `/uploads/${file.filename}`;
+
+    const obj = await prisma.object.update({
+      where: { id },
+      data: { image: imageUrl },
+    });
+
+    res.json(obj);
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    res.status(500).json({ error: 'Failed to upload image' });
+  }
+});
+
+router.delete('/objects/:id/image', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const obj = await prisma.object.update({
+      where: { id },
+      data: { image: null },
+    });
+    res.json(obj);
+  } catch (error) {
+    console.error('Error removing image:', error);
+    res.status(500).json({ error: 'Failed to remove image' });
   }
 });
 

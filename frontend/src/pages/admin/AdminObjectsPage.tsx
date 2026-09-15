@@ -17,6 +17,7 @@ type ObjectItem = {
   description?: string;
   offerFileUrl?: string;
   offerFileName?: string;
+  image?: string;
 };
 
 export default function AdminObjectsPage() {
@@ -87,9 +88,14 @@ export default function AdminObjectsPage() {
             <div className={styles.itemMeta}>
               Площадь: {item.area} м² • Доходность: {item.yieldPercent}%
             </div>
-            {item.offerFileName && (
-              <div className={styles.itemMeta}>КП: {item.offerFileName}</div>
-            )}
+        {item.offerFileName && (
+          <div className={styles.itemMeta}>КП: {item.offerFileName}</div>
+        )}
+        {item.image && (
+          <div className={styles.itemMeta}>
+            <img src={item.image} alt={item.title} className={styles.thumb} />
+          </div>
+        )}
             <div className={styles.itemActions}>
               <button
                 className={styles.actionBtn}
