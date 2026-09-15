@@ -1,7 +1,4 @@
-import os
-import asyncio
-import logging
-import sys
+import os, asyncio, logging, sys
 from aiogram import Bot, Dispatcher, types, Router
 from aiogram.types import WebAppInfo
 from aiogram.client.session.aiohttp import AiohttpSession
@@ -17,15 +14,12 @@ WEB_APP_URL = os.getenv('WEB_APP_URL', 'https://gabinvest.cloud-ip.cc')
 PROXY_URL = os.getenv('PROXY_URL')
 
 if not BOT_TOKEN:
-    raise RuntimeError(
-        "BOT_TOKEN is not set. Add it to .env file: "
-        "TELEGRAM_BOT_TOKEN=..."
-    )
+    raise RuntimeError("BOT_TOKEN is not set. Add TELEGRAM_BOT_TOKEN to .env")
 
-session = AiohttpSession(proxy=PROXY_URL) if PROXY_URL else None
 if PROXY_URL:
     logging.info(f"Using proxy: {PROXY_URL}")
 
+session = AiohttpSession(proxy=PROXY_URL) if PROXY_URL else None
 bot = Bot(token=BOT_TOKEN, session=session)
 dp = Dispatcher()
 router = Router()
@@ -37,23 +31,18 @@ async def start(message: types.Message):
     await message.answer(
         'Добро пожаловать в GAB Invest — маркетплейс коммерческой недвижимости.',
         reply_markup=types.InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    types.InlineKeyboardButton(
-                        text='Открыть каталог',
-                        web_app=WebAppInfo(url=WEB_APP_URL)
-                    )
-                ]
-            ]
+            inline_keyboard=[[
+                types.InlineKeyboardButton(
+                    text='Открыть каталог',
+                    web_app=WebAppInfo(url=WEB_APP_URL)
+                )
+            ]]
         )
     )
 
 
 async def main():
-    try:
-        await bot.delete_webhook(drop_pending_updates=True, request_timeout=30)
-    except Exception as e:
-        logging.warning(f"delete_webhook failed (non-fatal): {e}")
+    await bot.delete_webhook(drop_pending_updates=True)
     logging.info("Webhook deleted, starting polling")
     await dp.start_polling(bot)
 
