@@ -133,9 +133,13 @@ export default function CatalogPage() {
           filteredObjects.map((obj) => (
             <div key={obj.id} className={styles.card} onClick={() => navigate(`/objects/${obj.id}`)}>
               <div className={styles.cardImage}>
-                <div className={styles.placeholder}>
-                  <LayoutGrid size={48} strokeWidth={1} color="#ccc" />
-                </div>
+                {obj.image ? (
+                  <img src={obj.image} alt={obj.title} className={styles.cardImg} />
+                ) : (
+                  <div className={styles.placeholder}>
+                    <LayoutGrid size={48} strokeWidth={1} color="#ccc" />
+                  </div>
+                )}
                 <span className={styles.typeBadge}>{typeLabels[obj.type] || obj.type}</span>
                 <button
                   className={styles.favoriteBtn}

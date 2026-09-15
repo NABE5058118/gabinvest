@@ -56,9 +56,13 @@ export default function ObjectPage() {
       </header>
 
       <div className={styles.image}>
-        <div className={styles.placeholder}>
-          <LayoutGrid size={64} strokeWidth={1} color="#ccc" />
-        </div>
+        {object.image ? (
+          <img src={object.image} alt={object.title} className={styles.objectImg} />
+        ) : (
+          <div className={styles.placeholder}>
+            <LayoutGrid size={64} strokeWidth={1} color="#ccc" />
+          </div>
+        )}
       </div>
 
       <div className={styles.content}>

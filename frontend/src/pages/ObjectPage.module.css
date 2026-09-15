@@ -43,6 +43,13 @@
   justify-content: center;
 }
 
+.objectImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .content {
   padding: 20px 12px;
 }
