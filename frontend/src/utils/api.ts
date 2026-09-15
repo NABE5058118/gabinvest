@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getInitData } from '../utils/telegram';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 export { API_URL };
 
