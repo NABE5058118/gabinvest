@@ -1,4 +1,4 @@
-# AGENTS
+index-VEppiFoK.js:193  GET https://gabinvest.cloud-ip.cc/api/objects 500 (Internal Server Error)# AGENTS
 
 ## Commands
 

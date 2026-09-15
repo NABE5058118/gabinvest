@@ -5,6 +5,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
+ARG VITE_ADMIN_TOKEN
+ENV VITE_ADMIN_TOKEN=$VITE_ADMIN_TOKEN
+
 COPY . .
 RUN npm run build
 
