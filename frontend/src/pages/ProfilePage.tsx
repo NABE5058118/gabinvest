@@ -1,14 +1,19 @@
-import { User, ChevronRight, Settings, Mail, Phone } from 'lucide-react';
+import { User, ChevronRight, Settings, Mail, Phone, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import styles from './ProfilePage.module.css';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Пользователь';
   const displayUsername = user?.username ? `@${user.username}` : '';
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <div className={styles.page}>
@@ -53,6 +58,13 @@ export default function ProfilePage() {
               {user?.phone || 'Не подключено'}
             </span>
           </div>
+          <button className={styles.menuItem} onClick={handleLogout}>
+            <div className={styles.menuItemLeft}>
+              <LogOut size={20} strokeWidth={2} />
+              <span>Выход</span>
+            </div>
+            <ChevronRight size={20} strokeWidth={2} className={styles.menuItemRight} />
+          </button>
         </div>
       </div>
     </div>

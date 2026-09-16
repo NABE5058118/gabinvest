@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import { LayoutGrid, Heart, FileText, Shield } from 'lucide-react';
+import { LayoutGrid, Heart, FileText, Shield, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import styles from './Layout.module.css';
 
