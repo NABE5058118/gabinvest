@@ -5,6 +5,7 @@ import styles from './Layout.module.css';
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const isAdmin = typeof window !== 'undefined' && !!localStorage.getItem('adminToken');
 
   return (
     <div className={styles.layout}>
@@ -25,19 +26,28 @@ export default function Layout() {
           <span>Заявки</span>
         </NavLink>
         {user ? (
-          <div className={styles.navItem} onClick={logout}>
-            <LogOut size={24} strokeWidth={2} />
-            <span>Выход</span>
-          </div>
+          <NavLink to="/profile" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
+            <User size={24} strokeWidth={2} />
+            <span>Профиль</span>
+          </NavLink>
         ) : (
           <NavLink to="/login" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
             <User size={24} strokeWidth={2} />
             <span>Вход</span>
           </NavLink>
         )}
-        <NavLink to="/admin-login" className={styles.adminLink}>
-          <Shield size={24} strokeWidth={2} />
-        </NavLink>
+        {isAdmin && (
+          <NavLink to="/admin" className={styles.adminLink}>
+            <Shield size={24} strokeWidth={2} />
+            <span>Админ</span>
+          </NavLink>
+        )}
+        {user && (
+          <div className={styles.navItem} onClick={logout}>
+            <LogOut size={24} strokeWidth={2} />
+            <span>Выход</span>
+          </div>
+        )}
       </nav>
     </div>
   );
