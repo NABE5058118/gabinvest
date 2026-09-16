@@ -145,6 +145,38 @@ router.post('/telegram', async (req: Request, res: Response) => {
   }
 });
 
+router.get('/me', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        phone: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        username: true,
+        telegramId: true,
+        createdAt: true,
+      },
+    });
+
+    if (!dbUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(dbUser);
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
 router.put('/profile', authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.userId;

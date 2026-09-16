@@ -58,6 +58,8 @@ describe('AuthContext', () => {
     localStorage.setItem('token', 'fake-token');
     localStorage.setItem('user', JSON.stringify(mockUser));
 
+    (api.get as any).mockResolvedValue({ data: mockUser });
+
     await act(async () => {
       render(
         <AuthProvider>
@@ -66,7 +68,9 @@ describe('AuthContext', () => {
       );
     });
 
-    expect(screen.getByTestId('user').textContent).toBe('Anna');
+    await waitFor(() => {
+      expect(screen.getByTestId('user').textContent).toBe('Anna');
+    });
   });
 });
 

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { api } from '../utils/api';
 
 type User = {
   id: string;
@@ -45,7 +46,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem('user');
     if (token && stored) {
       try {
-        setUser(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        setUser(parsed);
+        api
+          .get<User>('/api/auth/me')
+          .then((res) => {
+            setUser(res.data);
+            localStorage.setItem('user', JSON.stringify(res.data));
+          })
+          .catch(() => {
+            logout();
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+        return;
       } catch {
         logout();
       }

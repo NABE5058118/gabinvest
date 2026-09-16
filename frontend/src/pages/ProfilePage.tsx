@@ -40,14 +40,18 @@ export default function ProfilePage() {
               <Mail size={20} strokeWidth={2} />
               <span>Почта</span>
             </div>
-            <span className={styles.disabled}>Не подключено</span>
+            <span className={user?.email ? styles.value : styles.disabled}>
+              {user?.email || 'Не подключено'}
+            </span>
           </div>
           <div className={styles.menuItem}>
             <div className={styles.menuItemLeft}>
               <Phone size={20} strokeWidth={2} />
               <span>Телефон</span>
             </div>
-            <span className={styles.disabled}>Не подключено</span>
+            <span className={user?.phone ? styles.value : styles.disabled}>
+              {user?.phone || 'Не подключено'}
+            </span>
           </div>
         </div>
       </div>
