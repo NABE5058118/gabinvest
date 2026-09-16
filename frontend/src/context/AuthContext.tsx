@@ -1,9 +1,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { api } from '../utils/api';
 
 type User = {
   id: string;
-  telegramId: string;
+  phone?: string;
+  email?: string;
   firstName?: string;
   lastName?: string;
   username?: string;
@@ -12,7 +12,8 @@ type User = {
 type AuthContextValue = {
   user: User | null;
   loading: boolean;
-  error: string | null;
+  login: (user: User, token: string) => void;
+  logout: () => void;
   updateUser: (user: User) => void;
 };
 
@@ -21,7 +22,18 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  const login = (userData: User, token: string) => {
+    setUser(userData);
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  };
 
   const updateUser = (updated: User) => {
     setUser(updated);
@@ -29,32 +41,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const initData = window.Telegram?.WebApp?.initData;
-    if (!initData) {
-      const stored = localStorage.getItem('user');
-      if (stored) {
-        try {
-          setUser(JSON.parse(stored));
-        } catch {
-          // ignore
-        }
+    const token = localStorage.getItem('token');
+    const stored = localStorage.getItem('user');
+    if (token && stored) {
+      try {
+        setUser(JSON.parse(stored));
+      } catch {
+        logout();
       }
-      setLoading(false);
-      return;
     }
-
-    api
-      .post<User>('/api/auth/telegram', { initData })
-      .then((res) => {
-        setUser(res.data);
-        localStorage.setItem('user', JSON.stringify(res.data));
-      })
-      .catch(() => setError('Ошибка авторизации'))
-      .finally(() => setLoading(false));
+    setLoading(false);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

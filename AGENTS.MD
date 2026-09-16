@@ -10,6 +10,7 @@ index-VEppiFoK.js:193  GET https://gabinvest.cloud-ip.cc/api/objects 500 (Intern
 - `cd frontend && npm test` — frontend тесты
 - `cd backend && npx prisma migrate deploy` — применить миграции
 - `cd backend && npx tsx prisma/seed.ts` — сидирование БД
+- `cd backend && npx tsx prisma/seed-admin.ts` — создать админа
 
 ## Workflows
 

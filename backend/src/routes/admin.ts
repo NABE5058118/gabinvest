@@ -3,14 +3,31 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { prisma } from '../lib/prisma.js';
+import jwt from 'jsonwebtoken';
 
 const router = Router();
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'change-me-admin-in-production';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
 
 function requireAdmin(req: Request, res: Response, next: Function) {
+  const header = req.headers.authorization;
+  if (header?.startsWith('Bearer ')) {
+    const token = header.slice(7);
+    try {
+      const payload = jwt.verify(token, ADMIN_JWT_SECRET) as { role?: string };
+      if (payload.role !== 'admin') {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      next();
+      return;
+    } catch {
+      // fall through to token check
+    }
+  }
+
   const token = req.headers['x-admin-token'];
   if (!ADMIN_TOKEN || token !== ADMIN_TOKEN) {
     return res.status(401).json({ error: 'Unauthorized' });

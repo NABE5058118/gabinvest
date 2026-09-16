@@ -7,6 +7,9 @@ import LeadSuccessPage from './pages/LeadSuccessPage';
 import FavoritesPage from './pages/FavoritesPage';
 import ProfilePage from './pages/ProfilePage';
 import ProfileEditPage from './pages/ProfileEditPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import AdminLoginPage from './pages/AdminLoginPage';
 import AdminObjectsPage from './pages/admin/AdminObjectsPage';
 import AdminObjectForm from './pages/admin/AdminObjectForm';
 import AdminOfferUpload from './pages/admin/AdminOfferUpload';
@@ -30,6 +33,9 @@ export default function App() {
               <Route path="profile" element={<ProfilePage />} />
               <Route path="profile/edit" element={<ProfileEditPage />} />
             </Route>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/admin-login" element={<AdminLoginPage />} />
             <Route path="/admin" element={<Layout />}>
               <Route index element={<AdminObjectsPage />} />
               <Route path="objects/new" element={<AdminObjectForm />} />

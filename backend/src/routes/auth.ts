@@ -1,8 +1,113 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { parseInitData } from '../utils/telegram.js';
+import bcrypt from 'bcrypt';
+import { signToken, authMiddleware } from '../middleware/jwt.js';
+import { z } from 'zod';
 
 const router = Router();
+
+const registerSchema = z.object({
+  phone: z.string().min(10, 'Некорректный номер телефона'),
+  email: z.string().email('Некорректный email'),
+  password: z.string().min(6, 'Пароль должен быть не менее 6 символов'),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+});
+
+const loginSchema = z.object({
+  login: z.string().min(1, 'Введите номер телефона или email'),
+  password: z.string().min(1, 'Введите пароль'),
+});
+
+router.post('/register', async (req: Request, res: Response) => {
+  try {
+    const parsed = registerSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.errors[0].message });
+    }
+
+    const { phone, email, password, firstName, lastName } = parsed.data;
+
+    const existing = await prisma.user.findFirst({
+      where: {
+        OR: [{ phone }, { email }],
+      },
+    });
+
+    if (existing) {
+      return res.status(400).json({ error: 'Пользователь уже существует' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        phone,
+        email,
+        passwordHash,
+        firstName: firstName || null,
+        lastName: lastName || null,
+      },
+    });
+
+    const token = signToken(user.id);
+    res.status(201).json({
+      user: {
+        id: user.id,
+        phone: user.phone,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+      token,
+    });
+  } catch (error) {
+    console.error('Error registering user:', error);
+    res.status(500).json({ error: 'Failed to register' });
+  }
+});
+
+router.post('/login', async (req: Request, res: Response) => {
+  try {
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.errors[0].message });
+    }
+
+    const { login, password } = parsed.data;
+
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [{ phone: login }, { email: login }],
+      },
+    });
+
+    if (!user || !user.passwordHash) {
+      return res.status(401).json({ error: 'Неверный логин или пароль' });
+    }
+
+    const isValid = await bcrypt.compare(password, user.passwordHash);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Неверный логин или пароль' });
+    }
+
+    const token = signToken(user.id);
+    res.json({
+      user: {
+        id: user.id,
+        phone: user.phone,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+      token,
+    });
+  } catch (error) {
+    console.error('Error logging in:', error);
+    res.status(500).json({ error: 'Failed to login' });
+  }
+});
 
 router.post('/telegram', async (req: Request, res: Response) => {
   try {
@@ -40,23 +145,17 @@ router.post('/telegram', async (req: Request, res: Response) => {
   }
 });
 
-router.put('/profile', async (req: Request, res: Response) => {
+router.put('/profile', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const initData = req.headers['x-telegram-init-data'] as string | undefined;
-    if (!initData) {
+    const userId = req.userId;
+    if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const user = parseInitData(initData);
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid initData' });
-    }
-
-    const telegramId = String(user.id);
     const { firstName, lastName, username } = req.body;
 
     const dbUser = await prisma.user.update({
-      where: { telegramId },
+      where: { id: userId },
       data: {
         firstName: firstName || undefined,
         lastName: lastName || undefined,
@@ -64,7 +163,14 @@ router.put('/profile', async (req: Request, res: Response) => {
       },
     });
 
-    res.json(dbUser);
+    res.json({
+      id: dbUser.id,
+      phone: dbUser.phone,
+      email: dbUser.email,
+      firstName: dbUser.firstName,
+      lastName: dbUser.lastName,
+      username: dbUser.username,
+    });
   } catch (error) {
     console.error('Error updating profile:', error);
     res.status(500).json({ error: 'Failed to update profile' });

@@ -40,3 +40,12 @@
 .navItem.active {
   color: #000;
 }
+
+.adminLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  color: #999;
+  text-decoration: none;
+}

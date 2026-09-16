@@ -14,12 +14,11 @@ vi.mock('../utils/api', () => ({
 }));
 
 function TestComponent() {
-  const { user, loading, error } = useAuth();
+  const { user, loading } = useAuth();
   return (
     <div>
       <div data-testid="loading">{loading ? 'loading' : 'ready'}</div>
-      <div data-testid="error">{error || 'no-error'}</div>
-      <div data-testid="user">{user ? user.firstName : 'no-user'}</div>
+      <div data-testid="user">{user ? user.firstName || user.email || 'user' : 'no-user'}</div>
     </div>
   );
 }
@@ -39,11 +38,10 @@ function FavoritesTestComponent() {
 describe('AuthContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    delete window.Telegram;
     localStorage.clear();
   });
 
-  it('should show loading then no user when no Telegram initData', async () => {
+  it('should show no user when no token', async () => {
     await act(async () => {
       render(
         <AuthProvider>
@@ -53,18 +51,12 @@ describe('AuthContext', () => {
     });
 
     expect(screen.getByTestId('user').textContent).toBe('no-user');
-    expect(screen.getByTestId('error').textContent).toBe('no-error');
   });
 
-  it('should authenticate with Telegram initData', async () => {
-    window.Telegram = {
-      WebApp: {
-        initData: 'query_id=test&user={"id":123,"first_name":"Anna","username":"anna"}',
-      },
-    };
-
-    const mockUser = { id: 'user-1', telegramId: '123', firstName: 'Anna', username: 'anna' };
-    (api.post as any).mockResolvedValue({ data: mockUser });
+  it('should show user from localStorage when token exists', async () => {
+    const mockUser = { id: 'user-1', email: 'anna@test.com', firstName: 'Anna' };
+    localStorage.setItem('token', 'fake-token');
+    localStorage.setItem('user', JSON.stringify(mockUser));
 
     await act(async () => {
       render(
@@ -74,13 +66,7 @@ describe('AuthContext', () => {
       );
     });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('user').textContent).toBe('Anna');
-    });
-
-    expect(api.post).toHaveBeenCalledWith('/api/auth/telegram', {
-      initData: 'query_id=test&user={"id":123,"first_name":"Anna","username":"anna"}',
-    });
+    expect(screen.getByTestId('user').textContent).toBe('Anna');
   });
 });
 
@@ -88,7 +74,6 @@ describe('FavoritesContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    window.Telegram = undefined;
   });
 
   it('should start with empty favorites when no user', async () => {
@@ -127,18 +112,12 @@ describe('FavoritesContext', () => {
   });
 
   it('should use API when user is present', async () => {
-    const mockUser = { id: 'user-1', telegramId: '123', firstName: 'Anna', username: 'anna' };
+    const mockUser = { id: 'user-1', email: 'anna@test.com', firstName: 'Anna' };
+    localStorage.setItem('token', 'fake-token');
+    localStorage.setItem('user', JSON.stringify(mockUser));
 
     (api.get as any).mockResolvedValue({ data: [] });
     (api.post as any).mockResolvedValue({ data: {} });
-
-    window.Telegram = {
-      WebApp: {
-        initData: 'query_id=test&user={"id":123,"first_name":"Anna","username":"anna"}',
-      },
-    };
-
-    (api.post as any).mockResolvedValue({ data: mockUser });
 
     await act(async () => {
       render(

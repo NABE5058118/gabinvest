@@ -1,8 +1,11 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import { LayoutGrid, Heart, FileText, User } from 'lucide-react';
+import { LayoutGrid, Heart, FileText, User, LogOut, Shield } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import styles from './Layout.module.css';
 
 export default function Layout() {
+  const { user, logout } = useAuth();
+
   return (
     <div className={styles.layout}>
       <div className={styles.content}>
@@ -21,9 +24,19 @@ export default function Layout() {
           <FileText size={24} strokeWidth={2} />
           <span>Заявки</span>
         </NavLink>
-        <NavLink to="/profile" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
-          <User size={24} strokeWidth={2} />
-          <span>Профиль</span>
+        {user ? (
+          <div className={styles.navItem} onClick={logout}>
+            <LogOut size={24} strokeWidth={2} />
+            <span>Выход</span>
+          </div>
+        ) : (
+          <NavLink to="/login" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
+            <User size={24} strokeWidth={2} />
+            <span>Вход</span>
+          </NavLink>
+        )}
+        <NavLink to="/admin-login" className={styles.adminLink}>
+          <Shield size={24} strokeWidth={2} />
         </NavLink>
       </nav>
     </div>

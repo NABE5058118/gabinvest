@@ -8,6 +8,7 @@ import objectsRouter from './routes/objects.js';
 import leadsRouter from './routes/leads.js';
 import favoritesRouter from './routes/favorites.js';
 import adminRouter from './routes/admin.js';
+import adminAuthRouter from './routes/admin-auth.js';
 import authRouter from './routes/auth.js';
 
 dotenv.config();
@@ -37,6 +38,7 @@ app.use('/api/objects', objectsRouter);
 app.use('/api/leads', leadsRouter);
 app.use('/api/favorites', favoritesRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/admin/auth', adminAuthRouter);
 app.use('/api/auth', authRouter);
 
 app.get('/health', (req, res) => {
