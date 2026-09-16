@@ -1,10 +1,10 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import { LayoutGrid, Heart, FileText, User, LogOut, Shield } from 'lucide-react';
+import { LayoutGrid, Heart, FileText, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import styles from './Layout.module.css';
 
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const isAdmin = typeof window !== 'undefined' && !!localStorage.getItem('adminToken');
 
   return (
@@ -41,12 +41,6 @@ export default function Layout() {
             <Shield size={24} strokeWidth={2} />
             <span>Админ</span>
           </NavLink>
-        )}
-        {user && (
-          <div className={styles.navItem} onClick={logout}>
-            <LogOut size={24} strokeWidth={2} />
-            <span>Выход</span>
-          </div>
         )}
       </nav>
     </div>
