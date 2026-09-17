@@ -27,7 +27,12 @@ export default function LoginPage() {
         navigate('/');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Ошибка входа');
+      const status = err.response?.status;
+      if (status === 429) {
+        setError('Слишком много попыток. Подождите 15 минут.');
+      } else {
+        setError(err.response?.data?.error || 'Ошибка входа');
+      }
     } finally {
       setLoading(false);
     }

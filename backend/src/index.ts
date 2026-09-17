@@ -94,10 +94,10 @@ app.use(cors({ origin: (origin, callback) => {
 }}));
 app.use(express.json({ limit: '100kb' }));
 
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many requests' });
-const registerLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 5, message: 'Too many requests' });
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: 'Too many requests' });
+const registerLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 10, message: 'Too many requests' });
 const telegramLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: 'Too many requests' });
-const leadsLimiter = rateLimit({ windowMs: 60 * 1000, max: 5, message: 'Too many requests' });
+const leadsLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, message: 'Too many requests' });
 
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', registerLimiter);
