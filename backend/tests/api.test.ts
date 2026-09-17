@@ -1,7 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import request from 'supertest';
-import { app } from '../src/index';
-import { prisma } from '../src/lib/prisma';
 
 vi.mock('../src/utils/telegram', async () => {
   const actual = await vi.importActual<typeof import('../src/utils/telegram')>('../src/utils/telegram');
@@ -10,6 +8,13 @@ vi.mock('../src/utils/telegram', async () => {
     validateTelegramInitData: () => true,
   };
 });
+
+vi.stubEnv('JWT_SECRET', 'test-jwt-secret');
+vi.stubEnv('ADMIN_JWT_SECRET', 'test-admin-jwt-secret');
+
+const { app } = await import('../src/index');
+const { prisma } = await import('../src/lib/prisma');
+import bcrypt from 'bcrypt';
 
 describe('API Integration Tests', () => {
   let server: import('http').Server;
@@ -137,6 +142,53 @@ describe('API Integration Tests', () => {
 
   describe('Admin API', () => {
     const ADMIN_TOKEN = 'change-me-in-production';
+
+    it('POST /api/admin/auth/login should return JWT for admin', async () => {
+      const email = `admin-test-${Date.now()}@gab-invest.ru`;
+      const phone = `+790000000${Date.now() % 10000}`;
+      const admin = await prisma.user.create({
+        data: {
+          email,
+          phone,
+          passwordHash: await bcrypt.hash('admin123', 10),
+          role: 'admin',
+        },
+      });
+
+      const res = await request(app)
+        .post('/api/admin/auth/login')
+        .send({ login: admin.email, password: 'admin123' });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('token');
+      expect(res.body.user.role).toBe('admin');
+    });
+
+    it('GET /api/admin/objects should return objects with admin JWT', async () => {
+      const email = `admin-test2-${Date.now()}@gab-invest.ru`;
+      const phone = `+790000000${Date.now() % 10000}`;
+      const admin = await prisma.user.create({
+        data: {
+          email,
+          phone,
+          passwordHash: await bcrypt.hash('admin123', 10),
+          role: 'admin',
+        },
+      });
+
+      const loginRes = await request(app)
+        .post('/api/admin/auth/login')
+        .send({ login: admin.email, password: 'admin123' });
+
+      const token = loginRes.body.token;
+
+      const res = await request(app)
+        .get('/api/admin/objects')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+    });
 
     it('GET /api/admin/objects should return objects with admin token', async () => {
       const res = await request(app)

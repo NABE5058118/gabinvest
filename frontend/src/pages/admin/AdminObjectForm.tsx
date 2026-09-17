@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { API_URL } from '../../utils/api';
+import { adminApi } from '../../utils/adminApi';
 import styles from './AdminObjectForm.module.css';
 
 type ObjectItem = {
@@ -17,8 +17,6 @@ type ObjectItem = {
   description?: string;
   image?: string;
 };
-
-const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN || '';
 
 const RUSSIAN_CITIES = [
   'Москва',
@@ -60,10 +58,8 @@ export default function AdminObjectForm() {
 
   useEffect(() => {
     if (id && id !== 'new') {
-      fetch(`${API_URL}/api/admin/objects/${id}`, {
-        headers: { 'x-admin-token': ADMIN_TOKEN },
-      })
-        .then((r) => r.json())
+      adminApi.get(`/api/admin/objects/${id}`)
+        .then((r) => r.data)
         .then((data: ObjectItem) => {
           setForm({
             title: data.title,
@@ -93,20 +89,13 @@ export default function AdminObjectForm() {
     if (!imageFile) return;
     const formData = new FormData();
     formData.append('image', imageFile);
-    const res = await fetch(`${API_URL}/api/admin/objects/${objectId}/image`, {
-      method: 'POST',
-      headers: { 'x-admin-token': ADMIN_TOKEN },
-      body: formData,
+    await adminApi.post(`/api/admin/objects/${objectId}/image`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
-    if (!res.ok) throw new Error('Failed to upload image');
   };
 
   const deleteImage = async (objectId: string): Promise<void> => {
-    const res = await fetch(`${API_URL}/api/admin/objects/${objectId}/image`, {
-      method: 'DELETE',
-      headers: { 'x-admin-token': ADMIN_TOKEN },
-    });
-    if (!res.ok) throw new Error('Failed to delete image');
+    await adminApi.delete(`/api/admin/objects/${objectId}/image`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -128,28 +117,19 @@ export default function AdminObjectForm() {
     };
 
     try {
-      const url =
-        id && id !== 'new'
-          ? `${API_URL}/api/admin/objects/${id}`
-          : `${API_URL}/api/admin/objects`;
-      const method = id && id !== 'new' ? 'PUT' : 'POST';
-
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-token': ADMIN_TOKEN,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error('Failed');
-
-      const obj = await res.json();
-      if (imageFile) {
-        await uploadImage(obj.id);
+      if (id && id !== 'new') {
+        const { data } = await adminApi.put(`/api/admin/objects/${id}`, payload);
+        if (imageFile) {
+          await uploadImage(data.id);
+        }
+        navigate(`/admin/objects/${data.id}`);
+      } else {
+        const { data } = await adminApi.post('/api/admin/objects', payload);
+        if (imageFile) {
+          await uploadImage(data.id);
+        }
+        navigate(`/admin/objects/${data.id}`);
       }
-      navigate(`/admin/objects/${obj.id}`);
     } catch (err) {
       setError('Ошибка сохранения');
     } finally {

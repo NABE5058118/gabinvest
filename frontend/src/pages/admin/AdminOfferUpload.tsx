@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Upload } from 'lucide-react';
-import { API_URL } from '../../utils/api';
+import { adminApi } from '../../utils/adminApi';
 import styles from './AdminOfferUpload.module.css';
 
 type ObjectItem = {
@@ -10,8 +10,6 @@ type ObjectItem = {
   offerFileUrl?: string;
   offerFileName?: string;
 };
-
-const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN || '';
 
 export default function AdminOfferUpload() {
   const { id } = useParams();
@@ -23,10 +21,8 @@ export default function AdminOfferUpload() {
 
   useEffect(() => {
     if (!id) return;
-    fetch(`${API_URL}/api/admin/objects/${id}`, {
-      headers: { 'x-admin-token': ADMIN_TOKEN },
-    })
-      .then((r) => r.json())
+    adminApi.get(`/api/admin/objects/${id}`)
+      .then((r) => r.data)
       .then(setObject)
       .catch(() => setError('Ошибка загрузки'));
   }, [id]);
@@ -42,17 +38,9 @@ export default function AdminOfferUpload() {
     formData.append('offer', file);
 
     try {
-      const res = await fetch(`${API_URL}/api/admin/objects/${id}/offer`, {
-        method: 'POST',
-        headers: {
-          'x-admin-token': ADMIN_TOKEN,
-        },
-        body: formData,
+      const { data } = await adminApi.post(`/api/admin/objects/${id}/offer`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-
-      if (!res.ok) throw new Error('Upload failed');
-
-      const data = await res.json();
       navigate(`/admin/objects/${data.id}`);
     } catch (err) {
       setError('Ошибка загрузки файла');

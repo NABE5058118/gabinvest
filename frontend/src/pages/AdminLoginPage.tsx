@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { api } from '../utils/api';
+import { adminApi } from '../utils/adminApi';
 import styles from './Auth.module.css';
 
 export default function AdminLoginPage() {
@@ -17,9 +17,9 @@ export default function AdminLoginPage() {
     setError(null);
 
     try {
-      const res = await api.post('/api/admin/auth/login', { login, password });
-      localStorage.setItem('adminToken', res.data.token);
-      localStorage.setItem('adminUser', JSON.stringify(res.data.user));
+      const { data } = await adminApi.post('/api/admin/auth/login', { login, password });
+      localStorage.setItem('adminToken', data.token);
+      localStorage.setItem('adminUser', JSON.stringify(data.user));
       navigate('/admin');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Ошибка входа');

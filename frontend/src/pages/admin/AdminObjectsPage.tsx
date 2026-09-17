@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Upload } from 'lucide-react';
-import { API_URL } from '../../utils/api';
+import { adminApi } from '../../utils/adminApi';
 import styles from './AdminObjects.module.css';
 
 type ObjectItem = {
@@ -25,7 +25,6 @@ export default function AdminObjectsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN || '';
 
   useEffect(() => {
     fetchItems();
@@ -34,13 +33,7 @@ export default function AdminObjectsPage() {
   const fetchItems = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/api/admin/objects`, {
-        headers: {
-          'x-admin-token': ADMIN_TOKEN,
-        },
-      });
-      if (!response.ok) throw new Error('Failed to fetch');
-      const data = await response.json();
+      const { data } = await adminApi.get('/api/admin/objects');
       setItems(data);
     } catch (err) {
       setError('Ошибка загрузки');
@@ -51,12 +44,7 @@ export default function AdminObjectsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Удалить объект?')) return;
-    await fetch(`${API_URL}/api/admin/objects/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'x-admin-token': ADMIN_TOKEN,
-      },
-    });
+    await adminApi.delete(`/api/admin/objects/${id}`);
     setItems(items.filter((i) => i.id !== id));
   };
 
