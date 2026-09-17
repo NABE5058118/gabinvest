@@ -17,11 +17,11 @@ type ObjectType = typeof objectTypeEnum[number];
 const createObjectSchema = z.object({
   title: z.string().min(1).max(200),
   type: z.enum(objectTypeEnum),
-  price: z.coerce.number().int().positive(),
+  price: z.coerce.number().int().positive().max(2_147_483_647, 'Цена слишком большая'),
   yieldPercent: z.coerce.number().min(0).max(100),
   location: z.string().min(1).max(300),
   city: z.string().max(100).nullable().optional(),
-  area: z.coerce.number().int().positive(),
+  area: z.coerce.number().int().positive().max(1_000_000, 'Площадь слишком большая'),
   roi: z.coerce.number().min(0).nullable().optional(),
   description: z.string().max(5000).nullable().optional(),
   image: z.string().url().nullable().optional(),
@@ -150,15 +150,18 @@ router.post('/objects', requireAdmin, async (req: Request, res: Response) => {
     }
 
     const data = parsed.data;
+    const price = Math.min(Number(data.price), 2_147_483_647);
+    const area = Math.min(Number(data.area), 1_000_000);
+
     const obj = await prisma.object.create({
       data: {
         title: data.title,
         type: data.type,
-        price: data.price,
+        price,
         yieldPercent: data.yieldPercent,
         location: data.location,
         city: data.city || null,
-        area: data.area,
+        area,
         roi: data.roi || null,
         description: data.description || null,
         image: data.image || null,

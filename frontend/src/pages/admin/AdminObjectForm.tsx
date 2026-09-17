@@ -179,6 +179,7 @@ export default function AdminObjectForm() {
           <input
             className={styles.input}
             type="number"
+            max={2147483647}
             value={form.price}
             onChange={(e) => setForm({ ...form, price: e.target.value })}
             required
