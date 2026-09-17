@@ -1,19 +1,10 @@
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { LayoutGrid, Heart, FileText, Shield, User, LogOut } from 'lucide-react';
+import { Outlet, NavLink } from 'react-router-dom';
+import { LayoutGrid, Heart, FileText, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import styles from './Layout.module.css';
 
 export default function Layout() {
   const { user } = useAuth();
-  const location = useLocation();
-  const isAdmin = typeof window !== 'undefined' && !!localStorage.getItem('adminToken');
-  const isAdminPage = location.pathname.startsWith('/admin');
-
-  const handleAdminLogout = () => {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminUser');
-    window.location.href = '/';
-  };
 
   return (
     <div className={styles.layout}>
@@ -43,20 +34,6 @@ export default function Layout() {
             <User size={24} strokeWidth={2} />
             <span>Вход</span>
           </NavLink>
-        )}
-        {isAdmin && (
-          <>
-            <NavLink to="/admin" className={styles.adminLink}>
-              <Shield size={24} strokeWidth={2} />
-              <span>Админ</span>
-            </NavLink>
-            {isAdminPage && (
-              <button className={styles.adminLink} onClick={handleAdminLogout}>
-                <LogOut size={24} strokeWidth={2} />
-                <span>Выход</span>
-              </button>
-            )}
-          </>
         )}
       </nav>
     </div>

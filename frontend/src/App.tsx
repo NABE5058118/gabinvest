@@ -15,6 +15,7 @@ import AdminObjectsPage from './pages/admin/AdminObjectsPage';
 import AdminObjectForm from './pages/admin/AdminObjectForm';
 import AdminOfferUpload from './pages/admin/AdminOfferUpload';
 import Layout from './components/Layout';
+import AdminLayout from './components/AdminLayout';
 import AdminRoute from './components/AdminRoute';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { AuthProvider } from './context/AuthContext';
@@ -39,7 +40,7 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/admin-login" element={<AdminLoginPage />} />
-            <Route path="/admin" element={<AdminRoute><Layout /></AdminRoute>}>
+            <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
               <Route index element={<AdminObjectsPage />} />
               <Route path="objects/new" element={<AdminObjectForm />} />
               <Route path="objects/:id" element={<AdminObjectForm />} />
