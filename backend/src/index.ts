@@ -13,6 +13,7 @@ import favoritesRouter from './routes/favorites.js';
 import adminRouter from './routes/admin.js';
 import adminAuthRouter from './routes/admin-auth.js';
 import authRouter from './routes/auth.js';
+import citiesRouter from './routes/cities.js';
 
 dotenv.config();
 
@@ -104,6 +105,7 @@ app.use('/api/auth/telegram', telegramLimiter);
 app.use('/api/admin/auth/login', authLimiter);
 app.use('/api/leads', leadsLimiter);
 
+app.use('/api/cities', citiesRouter);
 app.use('/api/objects', objectsRouter);
 app.use('/api/leads', leadsRouter);
 app.use('/api/favorites', favoritesRouter);

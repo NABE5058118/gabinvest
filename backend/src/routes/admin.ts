@@ -372,4 +372,5 @@ router.delete('/objects/:id/image', requireAdmin, async (req: Request, res: Resp
   }
 });
 
+export { requireAdmin };
 export default router;

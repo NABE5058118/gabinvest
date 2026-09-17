@@ -4,6 +4,7 @@ import ObjectPage from './pages/ObjectPage';
 import OfferPage from './pages/OfferPage';
 import LeadFormPage from './pages/LeadFormPage';
 import LeadSuccessPage from './pages/LeadSuccessPage';
+import LeadsPage from './pages/LeadsPage';
 import FavoritesPage from './pages/FavoritesPage';
 import ProfilePage from './pages/ProfilePage';
 import ProfileEditPage from './pages/ProfileEditPage';
@@ -30,6 +31,7 @@ export default function App() {
               <Route path="objects/:id/lead" element={<LeadFormPage />} />
               <Route path="lead-success" element={<LeadSuccessPage />} />
               <Route path="favorites" element={<FavoritesPage />} />
+              <Route path="leads" element={<LeadsPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="profile/edit" element={<ProfileEditPage />} />
             </Route>

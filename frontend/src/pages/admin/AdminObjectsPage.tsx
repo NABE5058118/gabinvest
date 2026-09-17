@@ -85,6 +85,7 @@ export default function AdminObjectsPage() {
             <div className={styles.itemMeta}>
               {item.type} • {item.location} • {item.price.toLocaleString('ru-RU')} ₽
             </div>
+            {item.city && <div className={styles.itemMeta}>{item.city}</div>}
             <div className={styles.itemMeta}>
               Площадь: {item.area} м² • Доходность: {item.yieldPercent}%
             </div>

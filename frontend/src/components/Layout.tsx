@@ -21,7 +21,7 @@ export default function Layout() {
           <Heart size={24} strokeWidth={2} />
           <span>Избранное</span>
         </NavLink>
-        <NavLink to="/" className={styles.navItem}>
+        <NavLink to="/leads" className={styles.navItem}>
           <FileText size={24} strokeWidth={2} />
           <span>Заявки</span>
         </NavLink>

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { sendTelegramMessage } from '../utils/telegram.js';
 import { z } from 'zod';
+import { requireAdmin } from '../routes/admin.js';
 
 const router = Router();
 
@@ -20,6 +21,19 @@ const leadSchema = z.object({
 
 const MANAGER_CHAT_ID = process.env.MANAGER_CHAT_ID || '';
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+
+router.get('/', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const leads = await prisma.lead.findMany({
+      include: { object: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(leads);
+  } catch (error) {
+    console.error('Error fetching leads:', error);
+    res.status(500).json({ error: 'Failed to fetch leads' });
+  }
+});
 
 router.post('/', async (req: Request, res: Response) => {
   try {

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Filter, X, Heart, MapPin, LayoutGrid } from 'lucide-react';
 import { useFavorites } from '../context/FavoritesContext';
 import { useObjects } from '../utils/useObjects';
+import { API_URL } from '../utils/api';
 import styles from './CatalogPage.module.css';
 
 export default function CatalogPage() {
@@ -18,6 +19,16 @@ export default function CatalogPage() {
     city: '',
   });
   const { objects, loading, error } = useObjects();
+  const [cities, setCities] = useState<string[]>([]);
+  const [citiesLoading, setCitiesLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/cities`)
+      .then((res) => res.json())
+      .then((data: string[]) => setCities(data))
+      .catch(() => setCities([]))
+      .finally(() => setCitiesLoading(false));
+  }, []);
 
   if (loading) {
     return (
@@ -60,7 +71,7 @@ export default function CatalogPage() {
     setShowFilters(false);
   };
 
-  const cities = [...new Set(objects.map((obj) => obj.city).filter(Boolean))];
+  const citiesList = citiesLoading ? [] : cities;
 
   const typeLabels: Record<string, string> = {
     'Офис': 'Офис',
@@ -266,7 +277,7 @@ export default function CatalogPage() {
                   onChange={(e) => setFilters({ ...filters, city: e.target.value })}
                 >
                   <option value="">Выберите город</option>
-                  {cities.map((city) => (
+                  {citiesList.map((city) => (
                     <option key={city} value={city}>{city}</option>
                   ))}
                 </select>
