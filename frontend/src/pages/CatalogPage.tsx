@@ -156,7 +156,14 @@ export default function CatalogPage() {
             <div key={obj.id} className={styles.card} onClick={() => navigate(`/objects/${obj.id}`)}>
               <div className={styles.cardImage}>
                 {obj.image ? (
-                  <img src={obj.image} alt={obj.title} className={styles.cardImg} />
+                  <img
+                    src={obj.image}
+                    alt={obj.title}
+                    className={styles.cardImg}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
                 ) : (
                   <div className={styles.placeholder}>
                     <LayoutGrid size={48} strokeWidth={1} color="#ccc" />

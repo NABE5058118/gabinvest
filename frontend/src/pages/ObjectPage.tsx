@@ -57,7 +57,14 @@ export default function ObjectPage() {
 
       <div className={styles.image}>
         {object.image ? (
-          <img src={object.image} alt={object.title} className={styles.objectImg} />
+          <img
+            src={object.image}
+            alt={object.title}
+            className={styles.objectImg}
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+          />
         ) : (
           <div className={styles.placeholder}>
             <LayoutGrid size={64} strokeWidth={1} color="#ccc" />

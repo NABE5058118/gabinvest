@@ -82,7 +82,14 @@ export default function AdminObjectsPage() {
         )}
         {item.image && (
           <div className={styles.itemMeta}>
-            <img src={item.image} alt={item.title} className={styles.thumb} />
+            <img
+              src={item.image}
+              alt={item.title}
+              className={styles.thumb}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
           </div>
         )}
             <div className={styles.itemActions}>
