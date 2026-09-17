@@ -1,6 +1,8 @@
 import os, asyncio, logging, sys
 from aiogram import Bot, Dispatcher, types, Router
 from aiogram.types import WebAppInfo
+from aiogram.client.session.aiohttp import AiohttpSession
+from aiohttp_socks import ProxyConnector
 
 logging.basicConfig(
     level=logging.INFO,
@@ -10,9 +12,13 @@ logging.basicConfig(
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 WEB_APP_URL = os.getenv('WEB_APP_URL', 'https://gabinvest.cloud-ip.cc')
+PROXY_URL = os.getenv('PROXY_URL')
 
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN is not set. Add TELEGRAM_BOT_TOKEN to .env")
+
+if PROXY_URL:
+    logging.info(f"Using proxy: {PROXY_URL}")
 
 dp = Dispatcher()
 router = Router()
@@ -40,7 +46,9 @@ async def run_bot():
 
     while True:
         try:
-            bot = Bot(token=BOT_TOKEN)
+            connector = ProxyConnector.from_url(PROXY_URL) if PROXY_URL else None
+            session = AiohttpSession(connector=connector) if connector else None
+            bot = Bot(token=BOT_TOKEN, session=session)
             await bot.delete_webhook(drop_pending_updates=True)
             logging.info("Webhook deleted, starting polling")
             await dp.start_polling(bot)
