@@ -39,6 +39,18 @@ async def start(message: types.Message):
     )
 
 
+async def proxy_keepalive(bot: Bot, interval_seconds: int = 300):
+    while True:
+        try:
+            await asyncio.sleep(interval_seconds)
+            await bot.get_me()
+            logging.debug("Proxy keepalive sent")
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logging.exception("Proxy keepalive failed")
+
+
 async def run_bot():
     retry_delay = 5
     max_retry_delay = 60
@@ -47,6 +59,7 @@ async def run_bot():
         try:
             session = AiohttpSession(proxy=PROXY_URL) if PROXY_URL else None
             bot = Bot(token=BOT_TOKEN, session=session)
+            keepalive_task = asyncio.create_task(proxy_keepalive(bot))
             await bot.delete_webhook(drop_pending_updates=True)
             logging.info("Webhook deleted, starting polling")
             await dp.start_polling(bot)
@@ -57,6 +70,15 @@ async def run_bot():
             logging.info(f"Retrying in {retry_delay}s...")
             await asyncio.sleep(retry_delay)
             retry_delay = min(retry_delay * 2, max_retry_delay)
+        finally:
+            if 'keepalive_task' in locals():
+                keepalive_task.cancel()
+                try:
+                    await keepalive_task
+                except asyncio.CancelledError:
+                    pass
+            if 'session' in locals() and session is not None:
+                await session.close()
 
 
 if __name__ == '__main__':
