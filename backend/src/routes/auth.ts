@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { parseInitData } from '../utils/telegram.js';
+import { validateTelegramInitData, parseInitData } from '../utils/telegram.js';
 import bcrypt from 'bcrypt';
 import { signToken, authMiddleware } from '../middleware/jwt.js';
 import { z } from 'zod';
@@ -10,7 +10,7 @@ const router = Router();
 const registerSchema = z.object({
   phone: z.string().min(10, 'Некорректный номер телефона'),
   email: z.string().email('Некорректный email'),
-  password: z.string().min(6, 'Пароль должен быть не менее 6 символов'),
+  password: z.string().min(8, 'Пароль должен быть не менее 8 символов'),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
 });
@@ -39,7 +39,7 @@ router.post('/register', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Пользователь уже существует' });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 12);
 
     const user = await prisma.user.create({
       data: {
@@ -112,8 +112,22 @@ router.post('/login', async (req: Request, res: Response) => {
 router.post('/telegram', async (req: Request, res: Response) => {
   try {
     const { initData } = req.body;
-    if (!initData) {
+    if (!initData || typeof initData !== 'string') {
       return res.status(400).json({ error: 'initData is required' });
+    }
+
+    if (initData.length > 4096) {
+      return res.status(400).json({ error: 'initData is too long' });
+    }
+
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    if (!botToken) {
+      return res.status(500).json({ error: 'Server misconfigured' });
+    }
+
+    const isValid = validateTelegramInitData(initData, botToken);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid Telegram init data' });
     }
 
     const user = parseInitData(initData);
@@ -138,7 +152,15 @@ router.post('/telegram', async (req: Request, res: Response) => {
       },
     });
 
-    res.json(dbUser);
+    res.json({
+      id: dbUser.id,
+      phone: dbUser.phone,
+      email: dbUser.email,
+      firstName: dbUser.firstName,
+      lastName: dbUser.lastName,
+      username: dbUser.username,
+      telegramId: dbUser.telegramId,
+    });
   } catch (error) {
     console.error('Error in telegram auth:', error);
     res.status(500).json({ error: 'Failed to authenticate' });

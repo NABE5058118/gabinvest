@@ -1,10 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production';
+const JWT_SECRET = process.env.JWT_SECRET as string;
+
+if (process.env.NODE_ENV !== 'test' && !JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET is not set');
+  process.exit(1);
+}
 
 export function signToken(userId: string): string {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '30d' });
+  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '1h', algorithm: 'HS256' });
 }
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction) {

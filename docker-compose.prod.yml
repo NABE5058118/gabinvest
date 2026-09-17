@@ -2,18 +2,18 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
       POSTGRES_DB: gab_invest
     volumes:
       - postgres-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - backend-net
 
   backend:
     build:
@@ -22,10 +22,12 @@ services:
     ports:
       - "3001:3001"
     environment:
-      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/gab_invest?schema=public"
+      DATABASE_URL: "${DATABASE_URL}"
       TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
       MANAGER_CHAT_ID: "${MANAGER_CHAT_ID}"
       PORT: 3001
+      JWT_SECRET: "${JWT_SECRET}"
+      ADMIN_JWT_SECRET: "${ADMIN_JWT_SECRET}"
       ADMIN_TOKEN: "${ADMIN_TOKEN}"
     depends_on:
       postgres:
@@ -39,25 +41,29 @@ services:
       retries: 5
       start_period: 10s
     command: ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+    networks:
+      - backend-net
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_ADMIN_TOKEN: "${VITE_ADMIN_TOKEN}"
+        VITE_API_URL: "${VITE_API_URL}"
     ports:
       - "80:80"
       - "443:443"
     environment:
       VITE_API_URL: "${VITE_API_URL}"
-      VITE_ADMIN_TOKEN: "${VITE_ADMIN_TOKEN}"
     depends_on:
       backend:
         condition: service_healthy
     volumes:
       - ./data/certbot/www:/var/www/certbot
       - /etc/letsencrypt:/etc/letsencrypt
+    networks:
+      - frontend-net
+      - backend-net
 
   bot:
     build:
@@ -69,7 +75,7 @@ services:
     environment:
       BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
       WEB_APP_URL: "${WEB_APP_URL}"
-      PROXY_URL: "socks5://host.docker.internal:10808"
+      PROXY_URL: "${PROXY_URL}"
       PYTHONUNBUFFERED: "1"
     depends_on:
       backend:
@@ -79,6 +85,8 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    networks:
+      - backend-net
 
   certbot:
     image: certbot/certbot
@@ -86,7 +94,11 @@ services:
       - ./data/certbot/www:/var/www/certbot
       - /etc/letsencrypt:/etc/letsencrypt
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done'"
+    networks:
+      - frontend-net
 
-volumes:
-  postgres-data:
-  backend-uploads:
+networks:
+  frontend-net:
+    driver: bridge
+  backend-net:
+    driver: bridge

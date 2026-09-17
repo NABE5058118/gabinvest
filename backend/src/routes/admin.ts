@@ -1,23 +1,55 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { prisma } from '../lib/prisma.js';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import { fileTypeFromFile } from 'file-type';
+import { z } from 'zod';
 
 const router = Router();
 
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
-const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'change-me-admin-in-production';
+const objectTypeEnum = ['Офис', 'Склад', 'Торговое помещение', 'Другое'] as const;
+type ObjectType = typeof objectTypeEnum[number];
+
+const createObjectSchema = z.object({
+  title: z.string().min(1).max(200),
+  type: z.enum(objectTypeEnum),
+  price: z.coerce.number().int().positive(),
+  yieldPercent: z.coerce.number().min(0).max(100),
+  location: z.string().min(1).max(300),
+  city: z.string().max(100).nullable().optional(),
+  area: z.coerce.number().int().positive(),
+  roi: z.coerce.number().min(0).nullable().optional(),
+  description: z.string().max(5000).nullable().optional(),
+  image: z.string().url().nullable().optional(),
+});
+
+const updateObjectSchema = createObjectSchema.partial();
+
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
+
+async function verifyFileType(filePath: string, expectedMime: string): Promise<boolean> {
+  try {
+    const type = await fileTypeFromFile(filePath);
+    if (!type) return false;
+    return type.mime === expectedMime;
+  } catch {
+    return false;
+  }
+}
 
 function requireAdmin(req: Request, res: Response, next: Function) {
   const header = req.headers.authorization;
   if (header?.startsWith('Bearer ')) {
     const token = header.slice(7);
     try {
-      const payload = jwt.verify(token, ADMIN_JWT_SECRET) as { role?: string };
+      const payload = jwt.verify(token, ADMIN_JWT_SECRET!, { algorithms: ['HS256'] }) as { role?: string };
       if (payload.role !== 'admin') {
         return res.status(401).json({ error: 'Unauthorized' });
       }
@@ -40,8 +72,13 @@ const storage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, unique + path.extname(file.originalname));
+    const ext = path.extname(file.originalname).toLowerCase();
+    const allowedExts = ['.pdf', '.pptx', '.jpg', '.jpeg', '.png', '.webp'];
+    if (!allowedExts.includes(ext)) {
+      return cb(new Error('Invalid file extension'), '');
+    }
+    const unique = crypto.randomUUID();
+    cb(null, unique + ext);
   },
 });
 
@@ -52,7 +89,10 @@ const upload = multer({
     const allowed = [
       'application/pdf',
       'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'application/octet-stream',
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/jpg',
     ];
     if (allowed.includes(file.mimetype)) {
       cb(null, true);
@@ -67,8 +107,13 @@ const imageStorage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, unique + path.extname(file.originalname));
+    const ext = path.extname(file.originalname).toLowerCase();
+    const allowedExts = ['.jpg', '.jpeg', '.png', '.webp'];
+    if (!allowedExts.includes(ext)) {
+      return cb(new Error('Invalid file extension'), '');
+    }
+    const unique = crypto.randomUUID();
+    cb(null, unique + ext);
   },
 });
 
@@ -99,17 +144,22 @@ router.get('/objects', requireAdmin, async (req: Request, res: Response) => {
 
 router.post('/objects', requireAdmin, async (req: Request, res: Response) => {
   try {
-    const data = req.body;
+    const parsed = createObjectSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.errors[0].message });
+    }
+
+    const data = parsed.data;
     const obj = await prisma.object.create({
       data: {
         title: data.title,
         type: data.type,
-        price: Number(data.price),
-        yieldPercent: Number(data.yieldPercent),
+        price: data.price,
+        yieldPercent: data.yieldPercent,
         location: data.location,
         city: data.city || null,
-        area: Number(data.area),
-        roi: data.roi ? Number(data.roi) : null,
+        area: data.area,
+        roi: data.roi || null,
         description: data.description || null,
         image: data.image || null,
       },
@@ -124,18 +174,23 @@ router.post('/objects', requireAdmin, async (req: Request, res: Response) => {
 router.put('/objects/:id', requireAdmin, async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
-    const data = req.body;
+    const parsed = updateObjectSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.errors[0].message });
+    }
+
+    const data = parsed.data;
     const obj = await prisma.object.update({
       where: { id },
       data: {
         title: data.title,
         type: data.type,
-        price: Number(data.price),
-        yieldPercent: Number(data.yieldPercent),
+        price: data.price,
+        yieldPercent: data.yieldPercent,
         location: data.location,
         city: data.city || null,
-        area: Number(data.area),
-        roi: data.roi ? Number(data.roi) : null,
+        area: data.area,
+        roi: data.roi || null,
         description: data.description || null,
         image: data.image || null,
       },
@@ -150,7 +205,25 @@ router.put('/objects/:id', requireAdmin, async (req: Request, res: Response) => 
 router.delete('/objects/:id', requireAdmin, async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
+    const obj = await prisma.object.findUnique({
+      where: { id },
+      select: { offerFileUrl: true, image: true },
+    });
+
     await prisma.object.delete({ where: { id } });
+
+    if (obj) {
+      [obj.offerFileUrl, obj.image].forEach((filePath) => {
+        if (filePath) {
+          const filename = path.basename(filePath);
+          const fullPath = path.join(uploadsDir, filename);
+          if (fs.existsSync(fullPath)) {
+            fs.unlinkSync(fullPath);
+          }
+        }
+      });
+    }
+
     res.status(204).send();
   } catch (error) {
     console.error('Error deleting object:', error);
@@ -169,6 +242,15 @@ router.post(
 
       if (!file) {
         return res.status(400).json({ error: 'File is required' });
+      }
+
+      const expectedMime = file.mimetype === 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+        ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+        : file.mimetype;
+      const isValid = await verifyFileType(file.path, expectedMime);
+      if (!isValid) {
+        fs.unlinkSync(file.path);
+        return res.status(400).json({ error: 'Invalid file content' });
       }
 
       const fileUrl = `/uploads/${file.filename}`;
@@ -190,7 +272,7 @@ router.post(
   }
 );
 
-router.get('/objects/:id/offer', async (req: Request, res: Response) => {
+router.get('/objects/:id/offer', requireAdmin, async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
     const obj = await prisma.object.findUnique({
@@ -218,7 +300,7 @@ router.get('/objects/:id/offer', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/objects/:id/offer/download', async (req: Request, res: Response) => {
+router.get('/objects/:id/offer/download', requireAdmin, async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
     const obj = await prisma.object.findUnique({
@@ -234,8 +316,13 @@ router.get('/objects/:id/offer/download', async (req: Request, res: Response) =>
       return res.status(404).json({ error: 'Offer not found' });
     }
 
-    const filePath = path.join(uploadsDir, path.basename(obj.offerFileUrl));
-    res.download(filePath, obj.offerFileName || 'offer.pdf');
+    const basename = path.basename(obj.offerFileUrl);
+    if (!/^[a-zA-Z0-9_\-\.]+$/.test(basename)) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+    const filePath = path.join(uploadsDir, basename);
+    const safeName = path.basename(obj.offerFileName || 'offer.pdf').replace(/[^\w\-\.А-Яа-яЁё ]+/g, '').slice(0, 200) || 'offer.pdf';
+    res.download(filePath, safeName);
   } catch (error) {
     console.error('Error downloading offer:', error);
     res.status(500).json({ error: 'Failed to download offer' });
@@ -249,6 +336,12 @@ router.post('/objects/:id/image', requireAdmin, imageUpload.single('image'), asy
 
     if (!file) {
       return res.status(400).json({ error: 'File is required' });
+    }
+
+    const isValid = await verifyFileType(file.path, file.mimetype);
+    if (!isValid) {
+      fs.unlinkSync(file.path);
+      return res.status(400).json({ error: 'Invalid image content' });
     }
 
     const imageUrl = `/uploads/${file.filename}`;

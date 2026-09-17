@@ -6,8 +6,20 @@ import { z } from 'zod';
 
 const router = Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production';
-const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'change-me-admin-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET;
+
+if (process.env.NODE_ENV !== 'test') {
+  if (!JWT_SECRET) {
+    console.error('FATAL: JWT_SECRET is not set');
+    process.exit(1);
+  }
+
+  if (!ADMIN_JWT_SECRET) {
+    console.error('FATAL: ADMIN_JWT_SECRET is not set');
+    process.exit(1);
+  }
+}
 
 const adminLoginSchema = z.object({
   login: z.string().min(1, 'Введите логин'),
@@ -41,8 +53,8 @@ router.post('/login', async (req: Request, res: Response) => {
 
     const token = jwt.sign(
       { userId: admin.id, role: 'admin' },
-      ADMIN_JWT_SECRET,
-      { expiresIn: '12h' }
+      ADMIN_JWT_SECRET as string,
+      { expiresIn: '12h', algorithm: 'HS256' }
     );
 
     res.json({

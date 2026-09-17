@@ -5,6 +5,9 @@ import { z } from 'zod';
 
 const router = Router();
 
+const escapeHtml = (s: string) =>
+  s.replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+
 const leadSchema = z.object({
   objectId: z.string().min(1, 'Объект не указан'),
   name: z.string().min(2, 'Имя слишком короткое'),
@@ -57,13 +60,13 @@ router.post('/', async (req: Request, res: Response) => {
       const message = `
 <b>Новая заявка!</b>
 
-<b>Объект:</b> ${obj.title}
-<b>Локация:</b> ${obj.location}
+<b>Объект:</b> ${escapeHtml(obj.title)}
+<b>Локация:</b> ${escapeHtml(obj.location)}
 <b>Цена:</b> ${obj.price.toLocaleString('ru-RU')} ₽
 
-<b>Клиент:</b> ${name}
-<b>Телефон:</b> ${phone}
-${comment ? `<b>Комментарий:</b> ${comment}` : ''}
+<b>Клиент:</b> ${escapeHtml(name)}
+<b>Телефон:</b> ${escapeHtml(phone)}
+${comment ? `<b>Комментарий:</b> ${escapeHtml(comment)}` : ''}
 
 <a href="https://gab-invest.ru/objects/${obj.id}">Ссылка на объект</a>
       `.trim();
