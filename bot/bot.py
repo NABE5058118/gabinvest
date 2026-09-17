@@ -2,7 +2,6 @@ import os, asyncio, logging, sys
 from aiogram import Bot, Dispatcher, types, Router
 from aiogram.types import WebAppInfo
 from aiogram.client.session.aiohttp import AiohttpSession
-import aiohttp
 
 logging.basicConfig(
     level=logging.INFO,
@@ -19,25 +18,6 @@ if not BOT_TOKEN:
 
 if PROXY_URL:
     logging.info(f"Using proxy: {PROXY_URL}")
-
-
-class ProxyClientSession(aiohttp.ClientSession):
-    def __init__(self, proxy_url: str, **kwargs):
-        super().__init__(**kwargs)
-        self._proxy_url = proxy_url
-
-    async def request(self, method, url, **kwargs):
-        if self._proxy_url and 'proxy' not in kwargs:
-            kwargs['proxy'] = self._proxy_url
-        return await super().request(method, url, **kwargs)
-
-
-def create_bot_session(proxy_url: str | None) -> AiohttpSession:
-    if not proxy_url:
-        return AiohttpSession()
-    session = ProxyClientSession(proxy_url=proxy_url, connector=aiohttp.TCPConnector())
-    return AiohttpSession(session=session)
-
 
 dp = Dispatcher()
 router = Router()
@@ -65,7 +45,7 @@ async def run_bot():
 
     while True:
         try:
-            session = create_bot_session(PROXY_URL)
+            session = AiohttpSession(proxy=PROXY_URL) if PROXY_URL else None
             bot = Bot(token=BOT_TOKEN, session=session)
             await bot.delete_webhook(drop_pending_updates=True)
             logging.info("Webhook deleted, starting polling")
