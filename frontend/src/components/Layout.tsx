@@ -1,12 +1,11 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { LayoutGrid, Heart, FileText, Shield, User, LogOut } from 'lucide-react';
+import { LayoutGrid, Heart, FileText, User, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import styles from './Layout.module.css';
 
 export default function Layout() {
   const { user } = useAuth();
   const location = useLocation();
-  const isAdmin = typeof window !== 'undefined' && !!localStorage.getItem('adminToken');
   const isAdminPage = location.pathname.startsWith('/admin');
 
   const handleAdminLogout = () => {
