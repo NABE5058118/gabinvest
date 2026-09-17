@@ -59,6 +59,7 @@ router.post('/register', async (req: Request, res: Response) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        role: user.role || 'user',
       },
       token,
     });
@@ -100,6 +101,7 @@ router.post('/login', async (req: Request, res: Response) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        role: user.role || 'user',
       },
       token,
     });

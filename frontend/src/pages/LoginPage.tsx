@@ -21,7 +21,11 @@ export default function LoginPage() {
     try {
       const res = await api.post('/api/auth/login', { login, password });
       authLogin(res.data.user, res.data.token);
-      navigate('/');
+      if (res.data.user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Ошибка входа');
     } finally {
