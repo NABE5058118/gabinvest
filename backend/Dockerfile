@@ -16,7 +16,7 @@ FROM node:22-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl openssl ca-certificates && rm -rf /var/lib/apt/lists/*
-RUN useradd -m -u 1001 appuser && mkdir -p /app/uploads && chown -R appuser:appuser /app
+RUN useradd -m -u 1001 appuser && mkdir -p /app/uploads && chown -R appuser:appuser /app && chmod 755 /app/uploads
 
 USER appuser
 

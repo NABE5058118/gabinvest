@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -217,11 +217,16 @@ router.delete('/objects/:id', requireAdmin, async (req: Request, res: Response) 
 
     if (obj) {
       [obj.offerFileUrl, obj.image].forEach((filePath) => {
-        if (filePath) {
+        if (!filePath) return;
+        try {
           const filename = path.basename(filePath);
           const fullPath = path.join(uploadsDir, filename);
           if (fs.existsSync(fullPath)) {
             fs.unlinkSync(fullPath);
+          }
+        } catch (fileError: any) {
+          if (fileError?.code !== 'EACCES') {
+            throw fileError;
           }
         }
       });
@@ -252,7 +257,13 @@ router.post(
         : file.mimetype;
       const isValid = await verifyFileType(file.path, expectedMime);
       if (!isValid) {
-        fs.unlinkSync(file.path);
+        try {
+          fs.unlinkSync(file.path);
+        } catch (fileError: any) {
+          if (fileError?.code !== 'EACCES') {
+            throw fileError;
+          }
+        }
         return res.status(400).json({ error: 'Invalid file content' });
       }
 
@@ -333,42 +344,72 @@ router.get('/objects/:id/offer/download', requireAdmin, async (req: Request, res
 });
 
 router.post('/objects/:id/image', requireAdmin, imageUpload.single('image'), async (req: Request, res: Response) => {
-  try {
-    const id = String(req.params.id);
-    const file = req.file;
+    try {
+      const id = String(req.params.id);
+      const file = req.file;
 
-    if (!file) {
-      return res.status(400).json({ error: 'File is required' });
+      if (!file) {
+        return res.status(400).json({ error: 'File is required' });
+      }
+
+      const isValid = await verifyFileType(file.path, file.mimetype);
+      if (!isValid) {
+        try {
+          fs.unlinkSync(file.path);
+        } catch (fileError: any) {
+          if (fileError?.code !== 'EACCES') {
+            throw fileError;
+          }
+        }
+        return res.status(400).json({ error: 'Invalid image content' });
+      }
+
+      const imageUrl = `/uploads/${file.filename}`;
+
+      const obj = await prisma.object.update({
+        where: { id },
+        data: { image: imageUrl },
+      });
+
+      res.json(obj);
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      const message = error?.code === 'EACCES'
+        ? 'Нет прав на запись в папку загрузок'
+        : 'Failed to upload image';
+      res.status(500).json({ error: message });
     }
-
-    const isValid = await verifyFileType(file.path, file.mimetype);
-    if (!isValid) {
-      fs.unlinkSync(file.path);
-      return res.status(400).json({ error: 'Invalid image content' });
-    }
-
-    const imageUrl = `/uploads/${file.filename}`;
-
-    const obj = await prisma.object.update({
-      where: { id },
-      data: { image: imageUrl },
-    });
-
-    res.json(obj);
-  } catch (error) {
-    console.error('Error uploading image:', error);
-    res.status(500).json({ error: 'Failed to upload image' });
-  }
 });
 
 router.delete('/objects/:id/image', requireAdmin, async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
-    const obj = await prisma.object.update({
+    const obj = await prisma.object.findUnique({
+      where: { id },
+      select: { image: true },
+    });
+
+    const filename = obj?.image ? path.basename(obj.image) : null;
+
+    await prisma.object.update({
       where: { id },
       data: { image: null },
     });
-    res.json(obj);
+
+    if (filename) {
+      try {
+        const fullPath = path.join(uploadsDir, filename);
+        if (fs.existsSync(fullPath)) {
+          fs.unlinkSync(fullPath);
+        }
+      } catch (fileError: any) {
+        if (fileError?.code !== 'EACCES') {
+          throw fileError;
+        }
+      }
+    }
+
+    res.json(obj || {});
   } catch (error) {
     console.error('Error removing image:', error);
     res.status(500).json({ error: 'Failed to remove image' });
