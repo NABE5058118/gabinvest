@@ -1,7 +1,15 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/index';
 import { prisma } from '../src/lib/prisma';
+
+vi.mock('../src/utils/telegram', async () => {
+  const actual = await vi.importActual<typeof import('../src/utils/telegram')>('../src/utils/telegram');
+  return {
+    ...actual,
+    validateTelegramInitData: () => true,
+  };
+});
 
 describe('API Integration Tests', () => {
   let server: import('http').Server;

@@ -117,6 +117,10 @@ app.get('/health', (req, res) => {
 
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Unhandled error:', err);
+  if (err.message === 'Not allowed by CORS') {
+    res.status(403).json({ error: 'Not allowed by CORS' });
+    return;
+  }
   res.status(500).json({ error: 'Internal server error' });
 });
 

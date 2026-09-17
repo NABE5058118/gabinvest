@@ -2,6 +2,9 @@ FROM node:22-slim AS builder
 
 WORKDIR /app
 
+ARG VITE_API_URL
+ARG VITE_ADMIN_TOKEN
+
 COPY package*.json ./
 RUN npm ci
 
