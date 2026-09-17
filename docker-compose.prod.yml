@@ -102,3 +102,7 @@ networks:
     driver: bridge
   backend-net:
     driver: bridge
+
+volumes:
+  postgres-data:
+  backend-uploads:
