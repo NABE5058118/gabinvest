@@ -80,7 +80,8 @@ services:
     environment:
       BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
       WEB_APP_URL: "${WEB_APP_URL}"
-      PROXY_URL: "${PROXY_URL}"
+      HTTP_PROXY: "${PROXY_URL}"
+      HTTPS_PROXY: "${PROXY_URL}"
       PYTHONUNBUFFERED: "1"
     depends_on:
       backend:
