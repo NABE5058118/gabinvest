@@ -19,8 +19,6 @@ if not BOT_TOKEN:
 if PROXY_URL:
     logging.info(f"Using proxy: {PROXY_URL}")
 
-session = AiohttpSession(proxy=PROXY_URL) if PROXY_URL else None
-bot = Bot(token=BOT_TOKEN, session=session)
 dp = Dispatcher()
 router = Router()
 dp.include_router(router)
@@ -41,15 +39,28 @@ async def start(message: types.Message):
     )
 
 
-async def main():
-    await bot.delete_webhook(drop_pending_updates=True)
-    logging.info("Webhook deleted, starting polling")
-    await dp.start_polling(bot)
+async def run_bot():
+    retry_delay = 5
+    max_retry_delay = 60
+
+    while True:
+        try:
+            session = AiohttpSession(proxy=PROXY_URL) if PROXY_URL else None
+            bot = Bot(token=BOT_TOKEN, session=session)
+            await bot.delete_webhook(drop_pending_updates=True)
+            logging.info("Webhook deleted, starting polling")
+            await dp.start_polling(bot)
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            logging.exception(f"Bot polling failed: {e}")
+            logging.info(f"Retrying in {retry_delay}s...")
+            await asyncio.sleep(retry_delay)
+            retry_delay = min(retry_delay * 2, max_retry_delay)
 
 
 if __name__ == '__main__':
     try:
-        asyncio.run(main())
-    except Exception as e:
-        logging.exception(f"Bot error: {e}")
-        raise
+        asyncio.run(run_bot())
+    except KeyboardInterrupt:
+        logging.info("Bot stopped")
