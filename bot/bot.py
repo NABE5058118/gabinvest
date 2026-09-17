@@ -2,7 +2,6 @@ import os, asyncio, logging, sys
 from aiogram import Bot, Dispatcher, types, Router
 from aiogram.types import WebAppInfo
 from aiogram.client.session.aiohttp import AiohttpSession
-from aiohttp_socks import ProxyConnector
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,8 +45,7 @@ async def run_bot():
 
     while True:
         try:
-            connector = ProxyConnector.from_url(PROXY_URL) if PROXY_URL else None
-            session = AiohttpSession(connector=connector) if connector else None
+            session = AiohttpSession(proxy=PROXY_URL) if PROXY_URL else None
             bot = Bot(token=BOT_TOKEN, session=session)
             await bot.delete_webhook(drop_pending_updates=True)
             logging.info("Webhook deleted, starting polling")
