@@ -113,7 +113,7 @@ export default function AdminObjectForm() {
       area: Number(form.area),
       roi: form.roi ? Number(form.roi) : null,
       description: form.description || null,
-      image: existingImage || imagePreview || null,
+      image: existingImage || null,
     };
 
     try {
@@ -130,8 +130,9 @@ export default function AdminObjectForm() {
         }
         navigate(`/admin/objects/${data.id}`);
       }
-    } catch (err) {
-      setError('Ошибка сохранения');
+    } catch (err: any) {
+      const backendMessage = err?.response?.data?.error;
+      setError(backendMessage || 'Ошибка сохранения');
     } finally {
       setLoading(false);
     }
