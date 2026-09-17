@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { API_URL } from '../utils/api';
+import { adminApi } from '../utils/adminApi';
 import styles from './LeadsPage.module.css';
 
 type Lead = {
@@ -22,7 +22,6 @@ export default function LeadsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN || '';
 
   useEffect(() => {
     fetchLeads();
@@ -31,13 +30,7 @@ export default function LeadsPage() {
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/api/leads`, {
-        headers: {
-          'x-admin-token': ADMIN_TOKEN,
-        },
-      });
-      if (!response.ok) throw new Error('Failed to fetch');
-      const data = await response.json();
+      const { data } = await adminApi.get('/api/leads');
       setLeads(data);
     } catch (err) {
       setError('Ошибка загрузки');
