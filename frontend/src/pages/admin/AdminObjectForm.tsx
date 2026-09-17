@@ -20,6 +20,24 @@ type ObjectItem = {
 
 const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN || '';
 
+const RUSSIAN_CITIES = [
+  'Москва',
+  'Санкт-Петербург',
+  'Новосибирск',
+  'Екатеринбург',
+  'Казань',
+  'Нижний Новгород',
+  'Челябинск',
+  'Самара',
+  'Омск',
+  'Ростов-на-Дону',
+  'Уфа',
+  'Красноярск',
+  'Пермь',
+  'Воронеж',
+  'Волгоград',
+];
+
 export default function AdminObjectForm() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -209,11 +227,16 @@ export default function AdminObjectForm() {
 
         <div className={styles.field}>
           <label className={styles.label}>Город</label>
-          <input
-            className={styles.input}
+          <select
+            className={styles.select}
             value={form.city}
             onChange={(e) => setForm({ ...form, city: e.target.value })}
-          />
+          >
+            <option value="">Не указано</option>
+            {RUSSIAN_CITIES.map((city) => (
+              <option key={city} value={city}>{city}</option>
+            ))}
+          </select>
         </div>
 
         <div className={styles.field}>

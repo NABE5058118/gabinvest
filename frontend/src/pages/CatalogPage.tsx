@@ -3,8 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { Filter, X, Heart, MapPin, LayoutGrid } from 'lucide-react';
 import { useFavorites } from '../context/FavoritesContext';
 import { useObjects } from '../utils/useObjects';
-import { API_URL } from '../utils/api';
 import styles from './CatalogPage.module.css';
+
+const RUSSIAN_CITIES = [
+  'Москва',
+  'Санкт-Петербург',
+  'Новосибирск',
+  'Екатеринбург',
+  'Казань',
+  'Нижний Новгород',
+  'Челябинск',
+  'Самара',
+  'Омск',
+  'Ростов-на-Дону',
+  'Уфа',
+  'Красноярск',
+  'Пермь',
+  'Воронеж',
+  'Волгоград',
+];
 
 export default function CatalogPage() {
   const navigate = useNavigate();
@@ -19,16 +36,6 @@ export default function CatalogPage() {
     city: '',
   });
   const { objects, loading, error } = useObjects();
-  const [cities, setCities] = useState<string[]>([]);
-  const [citiesLoading, setCitiesLoading] = useState(true);
-
-  useEffect(() => {
-    fetch(`${API_URL}/api/cities`)
-      .then((res) => res.json())
-      .then((data: string[]) => setCities(data))
-      .catch(() => setCities([]))
-      .finally(() => setCitiesLoading(false));
-  }, []);
 
   if (loading) {
     return (
@@ -71,7 +78,7 @@ export default function CatalogPage() {
     setShowFilters(false);
   };
 
-  const citiesList = citiesLoading ? [] : cities;
+  const citiesList = RUSSIAN_CITIES;
 
   const typeLabels: Record<string, string> = {
     'Офис': 'Офис',
@@ -118,12 +125,16 @@ export default function CatalogPage() {
           value={filters.minArea}
           onChange={(e) => setFilters({ ...filters, minArea: e.target.value })}
         />
-        <input
+        <select
           className={styles.chip}
-          placeholder="Город"
           value={filters.city}
           onChange={(e) => setFilters({ ...filters, city: e.target.value })}
-        />
+        >
+          <option value="">Город</option>
+          {RUSSIAN_CITIES.map((city) => (
+            <option key={city} value={city}>{city}</option>
+          ))}
+        </select>
         <button className={styles.resetBtn} onClick={resetFilters}>
           Сбросить
         </button>
