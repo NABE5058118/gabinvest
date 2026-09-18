@@ -44,6 +44,7 @@ model Lead {
   objectId  String
   userId    String?
   user      User?    @relation(fields: [userId], references: [id])
+  clientId  String?
   name      String
   phone     String
   comment   String?
@@ -54,6 +55,7 @@ model Lead {
   consents  Consent[]
 
   @@index([userId])
+  @@index([clientId])
 }
 
 model User {

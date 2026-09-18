@@ -62,3 +62,11 @@ export const getTelegramUserId = (): string => {
   localStorage.setItem('fallback_user_id', newId);
   return newId;
 };
+
+export const getLeadClientId = (): string => {
+  const stored = localStorage.getItem('lead_client_id');
+  if (stored) return stored;
+  const newId = 'lead-client-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+  localStorage.setItem('lead_client_id', newId);
+  return newId;
+};

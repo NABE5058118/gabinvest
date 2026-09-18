@@ -18,10 +18,15 @@ const leadSchema = z.object({
   consent: z.boolean().refine((v) => v === true, {
     message: 'Необходимо согласие на обработку персональных данных',
   }),
+  clientId: z.string().optional(),
 });
 
 const statusSchema = z.object({
   status: z.enum(['new', 'in_progress', 'done', 'cancelled']),
+});
+
+const clientIdSchema = z.object({
+  clientId: z.string().min(1, 'clientId required'),
 });
 
 const MANAGER_CHAT_ID = process.env.MANAGER_CHAT_ID || '';
@@ -66,7 +71,7 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: parsed.error.errors[0].message });
     }
 
-    const { objectId, name, phone, comment, consent } = parsed.data;
+    const { objectId, name, phone, comment, consent, clientId } = parsed.data;
     const userId = req.userId || undefined;
 
     const obj = await prisma.object.findUnique({
@@ -82,6 +87,7 @@ router.post('/', async (req: Request, res: Response) => {
       data: {
         objectId,
         userId,
+        clientId: clientId || undefined,
         name,
         phone,
         comment,
@@ -119,6 +125,27 @@ ${comment ? `<b>Комментарий:</b> ${escapeHtml(comment)}` : ''}
   } catch (error) {
     console.error('Error creating lead:', error);
     res.status(500).json({ error: 'Failed to create lead' });
+  }
+});
+
+router.get('/my', async (req: Request, res: Response) => {
+  try {
+    const parsed = clientIdSchema.safeParse({
+      clientId: req.headers['x-client-id'] || req.query.clientId,
+    });
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.errors[0].message });
+    }
+
+    const leads = await prisma.lead.findMany({
+      where: { clientId: parsed.data.clientId },
+      include: { object: { select: { id: true, title: true, location: true, price: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(leads);
+  } catch (error) {
+    console.error('Error fetching client leads:', error);
+    res.status(500).json({ error: 'Failed to fetch leads' });
   }
 });
 

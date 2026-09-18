@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { ObjectType } from '../utils/types';
 import { api } from '../utils/api';
+import { getLeadClientId } from '../utils/types';
 import styles from './LeadFormPage.module.css';
 
 export default function LeadFormPage() {
@@ -58,6 +59,7 @@ export default function LeadFormPage() {
         phone: form.phone,
         comment: form.comment,
         consent: agreed,
+        clientId: getLeadClientId(),
       });
       setSubmitted(true);
       setTimeout(() => navigate('/lead-success'), 800);

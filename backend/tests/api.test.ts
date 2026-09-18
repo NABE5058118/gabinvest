@@ -183,17 +183,55 @@ describe('API Integration Tests', () => {
     });
   });
 
+  describe('GET /api/leads/my', () => {
+    it('should return leads by clientId', async () => {
+      const objects = await prisma.object.findMany();
+      if (objects.length === 0) {
+        it.skip('no objects in database');
+        return;
+      }
+
+      const clientId = 'test-client-' + Date.now();
+
+      await request(app)
+        .post('/api/leads')
+        .send({
+          objectId: objects[0].id,
+          name: 'Client User',
+          phone: '+79999999998',
+          comment: 'client lead',
+          consent: true,
+          clientId,
+        });
+
+      const res = await request(app)
+        .get('/api/leads/my')
+        .set('x-client-id', clientId);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body.length).toBe(1);
+      expect(res.body[0]).toHaveProperty('name', 'Client User');
+    });
+
+    it('should return 400 without clientId', async () => {
+      const res = await request(app).get('/api/leads/my');
+      expect(res.status).toBe(400);
+    });
+  });
+
   describe('Admin API', () => {
     const ADMIN_TOKEN = 'change-me-in-production';
 
     it('POST /api/admin/auth/login should return JWT for admin', async () => {
-      const email = `admin-test-${Date.now()}@gab-invest.ru`;
-      const phone = `+790000000${Date.now() % 10000}`;
+      const email = `admin-test-${Date.now()}-${Math.random().toString(36).slice(2)}@gab-invest.ru`;
+      const phone = `+790000000${Date.now() % 10000}${Math.floor(Math.random() * 10)}`;
+      const passwordHash = await bcrypt.hash('admin123', 10);
       const admin = await prisma.user.create({
         data: {
           email,
           phone,
-          passwordHash: await bcrypt.hash('admin123', 10),
+          passwordHash,
           role: 'admin',
         },
       });
