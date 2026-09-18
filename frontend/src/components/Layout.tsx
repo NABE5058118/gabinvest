@@ -24,6 +24,10 @@ export default function Layout() {
       <nav className={styles.nav}>
         {isAdminPage ? (
           <>
+            <NavLink to="/admin/leads" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
+              <FileText size={24} strokeWidth={2} />
+              <span>Заявки</span>
+            </NavLink>
             <button className={styles.navItem} onClick={handleAdminLogout}>
               <LogOut size={24} strokeWidth={2} />
               <span>Выход</span>
@@ -39,7 +43,7 @@ export default function Layout() {
               <Heart size={24} strokeWidth={2} />
               <span>Избранное</span>
             </NavLink>
-            <NavLink to="/leads" className={styles.navItem}>
+            <NavLink to="/profile/leads" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
               <FileText size={24} strokeWidth={2} />
               <span>Заявки</span>
             </NavLink>

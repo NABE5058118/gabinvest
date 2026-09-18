@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { sendTelegramMessage } from '../utils/telegram.js';
 import { z } from 'zod';
 import { requireAdmin } from '../routes/admin.js';
+import { authMiddleware } from '../middleware/jwt.js';
 
 const router = Router();
 
@@ -17,6 +18,10 @@ const leadSchema = z.object({
   consent: z.boolean().refine((v) => v === true, {
     message: 'Необходимо согласие на обработку персональных данных',
   }),
+});
+
+const statusSchema = z.object({
+  status: z.enum(['new', 'in_progress', 'done', 'cancelled']),
 });
 
 const MANAGER_CHAT_ID = process.env.MANAGER_CHAT_ID || '';
@@ -35,6 +40,25 @@ router.get('/', requireAdmin, async (req: Request, res: Response) => {
   }
 });
 
+router.get('/me', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const leads = await prisma.lead.findMany({
+      where: { userId },
+      include: { object: { select: { id: true, title: true, location: true, price: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(leads);
+  } catch (error) {
+    console.error('Error fetching user leads:', error);
+    res.status(500).json({ error: 'Failed to fetch leads' });
+  }
+});
+
 router.post('/', async (req: Request, res: Response) => {
   try {
     const parsed = leadSchema.safeParse(req.body);
@@ -43,6 +67,7 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const { objectId, name, phone, comment, consent } = parsed.data;
+    const userId = req.userId || undefined;
 
     const obj = await prisma.object.findUnique({
       where: { id: objectId },
@@ -56,6 +81,7 @@ router.post('/', async (req: Request, res: Response) => {
     const lead = await prisma.lead.create({
       data: {
         objectId,
+        userId,
         name,
         phone,
         comment,
@@ -65,6 +91,7 @@ router.post('/', async (req: Request, res: Response) => {
             version: '1.0',
             ipAddress: req.ip || req.socket.remoteAddress || undefined,
             userAgent: req.get('User-Agent') || undefined,
+            userId,
           },
         },
       },
@@ -92,6 +119,26 @@ ${comment ? `<b>Комментарий:</b> ${escapeHtml(comment)}` : ''}
   } catch (error) {
     console.error('Error creating lead:', error);
     res.status(500).json({ error: 'Failed to create lead' });
+  }
+});
+
+router.patch('/:id/status', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const parsed = statusSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.errors[0].message });
+    }
+
+    const lead = await prisma.lead.update({
+      where: { id },
+      data: { status: parsed.data.status },
+    });
+
+    res.json(lead);
+  } catch (error) {
+    console.error('Error updating lead status:', error);
+    res.status(500).json({ error: 'Failed to update lead status' });
   }
 });
 

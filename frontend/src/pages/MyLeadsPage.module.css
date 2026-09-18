@@ -64,20 +64,20 @@
   text-transform: uppercase;
 }
 
-.statusSelect {
-  font-size: 12px;
-  padding: 2px 4px;
-  border: 1px solid #e5e5e5;
-  border-radius: 4px;
-  background: #fff;
-  color: #666;
-  text-transform: uppercase;
-}
-
 .itemMeta {
   font-size: 13px;
   color: #666;
   line-height: 1.6;
+}
+
+.objectBtn {
+  margin-top: 12px;
+  padding: 8px 16px;
+  border: 1px solid #000;
+  background: #000;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 14px;
 }
 
 .empty {

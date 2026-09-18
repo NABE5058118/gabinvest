@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 
 vi.mock('../src/utils/telegram', async () => {
   const actual = await vi.importActual<typeof import('../src/utils/telegram')>('../src/utils/telegram');
@@ -140,6 +141,48 @@ describe('API Integration Tests', () => {
     });
   });
 
+  describe('GET /api/leads/me', () => {
+    it('should require auth', async () => {
+      const res = await request(app).get('/api/leads/me');
+      expect(res.status).toBe(401);
+    });
+
+    it('should return user leads', async () => {
+      const objects = await prisma.object.findMany();
+      if (objects.length === 0) {
+        it.skip('no objects in database');
+        return;
+      }
+
+      const user = await prisma.user.create({
+        data: {
+          email: `leads-me-${Date.now()}@gab-invest.ru`,
+          phone: `+790000000${Date.now() % 10000}`,
+          passwordHash: await bcrypt.hash('pass123', 10),
+        },
+      });
+
+      await request(app)
+        .post('/api/leads')
+        .send({
+          objectId: objects[0].id,
+          name: 'Test User',
+          phone: user.phone || '+79999999999',
+          comment: 'Test',
+          consent: true,
+        });
+
+      const token = jwt.sign({ userId: user.id }, 'test-jwt-secret', { expiresIn: '1h', algorithm: 'HS256' });
+
+      const res = await request(app)
+        .get('/api/leads/me')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+    });
+  });
+
   describe('Admin API', () => {
     const ADMIN_TOKEN = 'change-me-in-production';
 
@@ -257,6 +300,53 @@ describe('API Integration Tests', () => {
         .set('x-admin-token', ADMIN_TOKEN);
 
       expect(res.status).toBe(204);
+    });
+
+    it('PATCH /api/leads/:id/status should update lead status', async () => {
+      const objects = await prisma.object.findMany();
+      if (objects.length === 0) {
+        it.skip('no objects in database');
+        return;
+      }
+
+      const lead = await prisma.lead.create({
+        data: {
+          objectId: objects[0].id,
+          name: 'Status Test',
+          phone: '+79999999999',
+        },
+      });
+
+      const res = await request(app)
+        .patch(`/api/leads/${lead.id}/status`)
+        .set('x-admin-token', ADMIN_TOKEN)
+        .send({ status: 'in_progress' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('in_progress');
+    });
+
+    it('PATCH /api/leads/:id/status should return 400 for invalid status', async () => {
+      const objects = await prisma.object.findMany();
+      if (objects.length === 0) {
+        it.skip('no objects in database');
+        return;
+      }
+
+      const lead = await prisma.lead.create({
+        data: {
+          objectId: objects[0].id,
+          name: 'Status Test 2',
+          phone: '+79999999998',
+        },
+      });
+
+      const res = await request(app)
+        .patch(`/api/leads/${lead.id}/status`)
+        .set('x-admin-token', ADMIN_TOKEN)
+        .send({ status: 'invalid' });
+
+      expect(res.status).toBe(400);
     });
   });
 

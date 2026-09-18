@@ -4,6 +4,7 @@ import ObjectPage from './pages/ObjectPage';
 import OfferPage from './pages/OfferPage';
 import LeadFormPage from './pages/LeadFormPage';
 import LeadSuccessPage from './pages/LeadSuccessPage';
+import MyLeadsPage from './pages/MyLeadsPage';
 import LeadsPage from './pages/LeadsPage';
 import FavoritesPage from './pages/FavoritesPage';
 import ProfilePage from './pages/ProfilePage';
@@ -32,7 +33,7 @@ export default function App() {
               <Route path="objects/:id/lead" element={<LeadFormPage />} />
               <Route path="lead-success" element={<LeadSuccessPage />} />
               <Route path="favorites" element={<FavoritesPage />} />
-              <Route path="leads" element={<LeadsPage />} />
+              <Route path="profile/leads" element={<MyLeadsPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="profile/edit" element={<ProfileEditPage />} />
             </Route>
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="/admin-login" element={<AdminLoginPage />} />
             <Route path="/admin" element={<AdminRoute><Layout /></AdminRoute>}>
               <Route index element={<AdminObjectsPage />} />
+              <Route path="leads" element={<LeadsPage />} />
               <Route path="objects/new" element={<AdminObjectForm />} />
               <Route path="objects/:id" element={<AdminObjectForm />} />
               <Route path="objects/:id/offer" element={<AdminOfferUpload />} />

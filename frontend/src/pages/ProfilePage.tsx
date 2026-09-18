@@ -1,4 +1,4 @@
-import { User, ChevronRight, Settings, Mail, Phone, LogOut } from 'lucide-react';
+import { User, ChevronRight, Settings, Mail, Phone, LogOut, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import styles from './ProfilePage.module.css';
@@ -37,6 +37,13 @@ export default function ProfilePage() {
             <div className={styles.menuItemLeft}>
               <Settings size={20} strokeWidth={2} />
               <span>Настройки</span>
+            </div>
+            <ChevronRight size={20} strokeWidth={2} className={styles.menuItemRight} />
+          </button>
+          <button className={styles.menuItem} onClick={() => navigate('/profile/leads')}>
+            <div className={styles.menuItemLeft}>
+              <FileText size={20} strokeWidth={2} />
+              <span>Мои заявки</span>
             </div>
             <ChevronRight size={20} strokeWidth={2} className={styles.menuItemRight} />
           </button>

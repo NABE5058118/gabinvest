@@ -35,6 +35,21 @@ export type LeadPayload = {
   comment?: string;
 };
 
+export type Lead = {
+  id: string;
+  objectId: string;
+  name: string;
+  phone: string;
+  comment?: string;
+  status: string;
+  createdAt: string;
+  object?: {
+    title: string;
+    location: string;
+    price: number;
+  };
+};
+
 export const formatPrice = (price: number) =>
   `${price.toLocaleString('ru-RU')} ₽`;
 

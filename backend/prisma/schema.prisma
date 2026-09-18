@@ -42,6 +42,8 @@ model CommercialOffer {
 model Lead {
   id        String   @id @default(cuid())
   objectId  String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
   name      String
   phone     String
   comment   String?
@@ -50,6 +52,8 @@ model Lead {
   updatedAt DateTime @updatedAt
   object    Object   @relation(fields: [objectId], references: [id], onDelete: Cascade)
   consents  Consent[]
+
+  @@index([userId])
 }
 
 model User {
@@ -62,10 +66,11 @@ model User {
   firstName    String?
   lastName     String?
   username     String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   favorites    Favorite[]
   consents     Consent[]
+  leads        Lead[]
 }
 
 model Favorite {
