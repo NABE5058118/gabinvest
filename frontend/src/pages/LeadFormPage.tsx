@@ -17,6 +17,8 @@ export default function LeadFormPage() {
     comment: '',
   });
   const [agreed, setAgreed] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -42,9 +44,6 @@ export default function LeadFormPage() {
       </div>
     );
   }
-
-  const [submitted, setSubmitted] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
