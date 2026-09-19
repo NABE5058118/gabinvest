@@ -7,4 +7,5 @@ services:
     environment:
       BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
       WEB_APP_URL: "${WEB_APP_URL}"
+      ADMIN_TELEGRAM_IDS: "${ADMIN_TELEGRAM_IDS}"
       PYTHONUNBUFFERED: "1"

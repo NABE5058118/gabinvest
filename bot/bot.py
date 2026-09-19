@@ -10,6 +10,7 @@ logging.basicConfig(
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 WEB_APP_URL = os.getenv('WEB_APP_URL', 'https://gabinvest.cloud-ip.cc')
+ADMIN_TELEGRAM_IDS = os.getenv('ADMIN_TELEGRAM_IDS', '')
 
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN is not set. Add TELEGRAM_BOT_TOKEN to .env")
@@ -17,6 +18,35 @@ if not BOT_TOKEN:
 dp = Dispatcher()
 router = Router()
 dp.include_router(router)
+
+
+@router.message(lambda msg: msg.text == '/admin')
+async def admin(message: types.Message):
+    if not ADMIN_TELEGRAM_IDS:
+        return
+
+    try:
+        allowed_ids = [int(part.strip()) for part in ADMIN_TELEGRAM_IDS.split(',') if part.strip()]
+    except ValueError:
+        return
+
+    if message.from_user.id not in allowed_ids:
+        return
+
+    if not WEB_APP_URL:
+        return
+
+    await message.answer(
+        'Панель администратора',
+        reply_markup=types.InlineKeyboardMarkup(
+            inline_keyboard=[[
+                types.InlineKeyboardButton(
+                    text='Открыть админ панель',
+                    url=f"{WEB_APP_URL.rstrip('/')}/admin"
+                )
+            ]]
+        )
+    )
 
 
 @router.message(lambda msg: msg.text == '/start')
