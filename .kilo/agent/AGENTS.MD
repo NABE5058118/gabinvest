@@ -32,7 +32,7 @@
 - Продакшен на сервере Selectel: Ubuntu 24.04, Docker Compose, Nginx reverse proxy
 - Путь проекта на сервере: `/opt/Gab_invest/gabinvest`
 - Frontend собирается в nginx:alpine, проксирует `/api/` и `/uploads/` на backend
-- Backend: node:22-slim, миграции применяются при старте контейнера
+- Backend: node:24-slim, миграции применяются при старте контейнера
 - База данных: PostgreSQL 17 в Docker, том `postgres-data`
 - Загрузки: том `backend-uploads` для файлов КП
 - Переменные окружения: `.env` в корне проекта, `docker-compose.prod.yml` подтягивает их
