@@ -70,38 +70,6 @@ services:
       - frontend-net
       - backend-net
 
-  bot:
-    build:
-      context: ./bot
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    environment:
-      BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
-      WEB_APP_URL: "${WEB_APP_URL}"
-      PROXY_URL: "${PROXY_URL}"
-      PYTHONUNBUFFERED: "1"
-    depends_on:
-      backend:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import os; os.path.exists('/proc/1')\""]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    networks:
-      - backend-net
-
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - ./data/certbot/www:/var/www/certbot
-      - /etc/letsencrypt:/etc/letsencrypt
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done'"
-    networks:
-      - frontend-net
-
 networks:
   frontend-net:
     driver: bridge

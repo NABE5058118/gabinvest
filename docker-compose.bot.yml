@@ -1,0 +1,10 @@
+services:
+  bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
+      WEB_APP_URL: "${WEB_APP_URL}"
+      PYTHONUNBUFFERED: "1"

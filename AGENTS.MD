@@ -2,10 +2,12 @@ index-VEppiFoK.js:193  GET https://gabinvest.cloud-ip.cc/api/objects 500 (Intern
 
 ## Commands
 
-- `docker compose -f docker-compose.prod.yml up -d --build` — поднять продакшен
-- `docker compose -f docker-compose.prod.yml ps` — статус контейнеров
-- `docker compose -f docker-compose.prod.yml logs --tail=50` — логи
-- `docker compose -f docker-compose.prod.yml down` — остановить стек
+- `docker compose -f docker-compose.prod.yml up -d --build` — поднять продакшен на RF (postgres + backend + frontend)
+- `docker compose -f docker-compose.prod.yml ps` — статус контейнеров RF
+- `docker compose -f docker-compose.prod.yml logs --tail=50` — логи RF
+- `docker compose -f docker-compose.prod.yml down` — остановить стек RF
+- `docker compose -f docker-compose.bot.yml up -d --build` — поднять бота на NL
+- `docker compose -f docker-compose.bot.yml logs -f` — логи бота на NL
 - `cd backend && npm test` — backend тесты
 - `cd frontend && npm test` — frontend тесты
 - `cd backend && npx prisma migrate deploy` — применить миграции
@@ -28,10 +30,11 @@ index-VEppiFoK.js:193  GET https://gabinvest.cloud-ip.cc/api/objects 500 (Intern
 - Избранное: привязано к telegramId через `/api/favorites`
 - Заявки: создаются через `/api/leads`, уведомления в Telegram менеджеру
 - Файлы КП: загрузка через multer в `/uploads`, скачивание через `/api/admin/objects/:id/offer/download`
-- Бот: aiogram 3.x, polling, WEB_APP_URL указывает на фронтенд
+- Бот: aiogram 3.x, polling, WEB_APP_URL указывает на фронтенд, без прокси, развёрнут на отдельном NL-сервере
 - Безопасность: fail2ban для SSH и nginx, ufw firewall, только 22/80/443 порты
-- Продакшен на сервере Selectel: Ubuntu 24.04, Docker Compose, Nginx reverse proxy
-- Путь проекта на сервере: `/opt/Gab_invest/gabinvest`
+- Продакшен на двух серверах Selectel:
+  - RF: 135.106.210.253 — postgres, backend, frontend (nginx), certbot
+  - NL: 163.5.157.243 — bot (aiogram polling)
 - Frontend собирается в nginx:alpine, проксирует `/api/` и `/uploads/` на backend
 - Backend: node:22-slim, миграции применяются при старте контейнера
 - База данных: PostgreSQL 17 в Docker, том `postgres-data`

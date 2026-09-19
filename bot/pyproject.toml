@@ -5,7 +5,6 @@ description = "GAB Invest Telegram Bot"
 requires-python = ">=3.11"
 dependencies = [
     "aiogram>=3.4,<4",
-    "aiohttp-socks",
 ]
 
 [build-system]
