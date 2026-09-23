@@ -75,9 +75,10 @@ describe('API Integration Tests', () => {
         .send({ initData: 'query_id=test&user={"id":123456,"first_name":"Test","username":"testuser"}' });
 
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('id');
-      expect(res.body.telegramId).toBe('123456');
-      expect(res.body.firstName).toBe('Test');
+      expect(res.body).toHaveProperty('user');
+      expect(res.body.user).toHaveProperty('id');
+      expect(res.body.user.telegramId).toBe('123456');
+      expect(res.body.user.firstName).toBe('Test');
     });
 
     it('should update existing user', async () => {
@@ -86,7 +87,7 @@ describe('API Integration Tests', () => {
         .send({ initData: 'query_id=test&user={"id":123456,"first_name":"Updated","username":"testuser"}' });
 
       expect(res.status).toBe(200);
-      expect(res.body.firstName).toBe('Updated');
+      expect(res.body.user.firstName).toBe('Updated');
     });
 
     it('should return 400 for missing initData', async () => {

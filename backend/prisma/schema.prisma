@@ -8,6 +8,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum PlacementType {
+  standard
+  paid
+  exclusive
+}
+
+enum ModerationStatus {
+  pending
+  approved
+  rejected
+}
+
+enum PriceIndicator {
+  below_market
+  market
+  above_market
+}
+
 model Object {
   id              String    @id @default(cuid())
   title           String
@@ -17,17 +35,146 @@ model Object {
   location        String
   city            String?
   area            Int
-  roi             Float?
   image           String?
   description     String?
+  monthlyRent     Int?
+  annualRevenue   Int?
+  leaseEndDate    DateTime?
+  anchorTenantName String?
+  priceIndicator  PriceIndicator?
+  images          ObjectImage[]
   offerFileUrl    String?
   offerFileName   String?
   offerFileType   String?
+  expenses        Expense[]
+  legalConstraints LegalConstraint[]
+  engineeringSpec EngineeringSpec?
+  vatRate         VatRate?
+  moderation      Moderation?
+  placement       Placement?
+  tenants         Tenant[]
+  leases          Lease[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   commercialOffer CommercialOffer?
   leads           Lead[]
   favorites       Favorite[]
+}
+
+model ObjectImage {
+  id        String   @id @default(cuid())
+  objectId  String
+  url       String
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+  object    Object   @relation(fields: [objectId], references: [id], onDelete: Cascade)
+
+  @@index([objectId])
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  isAnchor  Boolean  @default(false)
+  category  String?
+  objectId  String
+  object    Object   @relation(fields: [objectId], references: [id], onDelete: Cascade)
+  leases    Lease[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([objectId])
+}
+
+model Lease {
+  id              String   @id @default(cuid())
+  objectId        String
+  tenantId        String
+  startDate       DateTime
+  endDate         DateTime
+  monthlyRent     Int
+  isFixed         Boolean  @default(true)
+  percentOfTurnover Float?
+  indexationPercent Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  object          Object   @relation(fields: [objectId], references: [id], onDelete: Cascade)
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([objectId])
+  @@index([tenantId])
+  @@index([endDate])
+}
+
+model Expense {
+  id                String   @id @default(cuid())
+  objectId          String
+  name              String
+  amount            Int
+  compensatedByTenant Boolean @default(false)
+  ownerOnly         Boolean  @default(false)
+  note              String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  object            Object   @relation(fields: [objectId], references: [id], onDelete: Cascade)
+
+  @@index([objectId])
+}
+
+model LegalConstraint {
+  id        String   @id @default(cuid())
+  objectId  String
+  type      String
+  description String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  object    Object   @relation(fields: [objectId], references: [id], onDelete: Cascade)
+
+  @@index([objectId])
+}
+
+model EngineeringSpec {
+  id           String   @id @default(cuid())
+  objectId     String   @unique
+  electricityKw Int?
+  waterParams  String?
+  gasParams    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  object       Object   @relation(fields: [objectId], references: [id], onDelete: Cascade)
+}
+
+model VatRate {
+  id        String   @id @default(cuid())
+  objectId  String   @unique
+  rate      Int
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  object    Object   @relation(fields: [objectId], references: [id], onDelete: Cascade)
+}
+
+model Moderation {
+  id          String         @id @default(cuid())
+  objectId    String         @unique
+  status      ModerationStatus @default(pending)
+  note        String?
+  moderatedAt DateTime?
+  moderatedBy String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  object      Object         @relation(fields: [objectId], references: [id], onDelete: Cascade)
+}
+
+model Placement {
+  id          String        @id @default(cuid())
+  objectId    String        @unique
+  type        PlacementType @default(standard)
+  price       Int?
+  isExclusive Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  object      Object        @relation(fields: [objectId], references: [id], onDelete: Cascade)
 }
 
 model CommercialOffer {
@@ -101,4 +248,18 @@ model Consent {
 
   @@index([userId])
   @@index([leadId])
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  objectId    String
+  amount      Int
+  currency    String   @default("RUB")
+  method      String?
+  status      String   @default("pending")
+  paidAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([objectId])
 }

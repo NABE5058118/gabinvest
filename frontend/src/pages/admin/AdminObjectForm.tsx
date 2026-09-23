@@ -13,9 +13,15 @@ type ObjectItem = {
   location: string;
   city?: string;
   area: number;
-  roi?: number;
+  monthlyRent?: number;
+  annualRevenue?: number;
+  leaseEndDate?: string;
+  anchorTenantName?: string;
+  priceIndicator?: string;
   description?: string;
   image?: string;
+  moderation?: { status: string };
+  placement?: { type: string; price?: number; isExclusive: boolean };
 };
 
 const RUSSIAN_CITIES = [
@@ -47,9 +53,17 @@ export default function AdminObjectForm() {
     location: '',
     city: '',
     area: '',
-    roi: '',
+    monthlyRent: '',
+    annualRevenue: '',
+    leaseEndDate: '',
+    anchorTenantName: '',
+    priceIndicator: '',
     description: '',
   });
+  const [moderationStatus, setModerationStatus] = useState('pending');
+  const [placementType, setPlacementType] = useState('standard');
+  const [placementPrice, setPlacementPrice] = useState('');
+  const [isExclusive, setIsExclusive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -69,10 +83,20 @@ export default function AdminObjectForm() {
             location: data.location,
             city: data.city || '',
             area: String(data.area),
-            roi: data.roi ? String(data.roi) : '',
+            monthlyRent: data.monthlyRent ? String(data.monthlyRent) : '',
+            annualRevenue: data.annualRevenue ? String(data.annualRevenue) : '',
+            leaseEndDate: data.leaseEndDate ? data.leaseEndDate.slice(0, 10) : '',
+            anchorTenantName: data.anchorTenantName || '',
+            priceIndicator: data.priceIndicator || '',
             description: data.description || '',
           });
           setExistingImage(data.image || null);
+          if (data.moderation) setModerationStatus(data.moderation.status);
+          if (data.placement) {
+            setPlacementType(data.placement.type);
+            setPlacementPrice(data.placement.price ? String(data.placement.price) : '');
+            setIsExclusive(data.placement.isExclusive);
+          }
         })
         .catch(() => setError('Ошибка загрузки'));
     }
@@ -111,25 +135,44 @@ export default function AdminObjectForm() {
       location: form.location,
       city: form.city || null,
       area: Number(form.area),
-      roi: form.roi ? Number(form.roi) : null,
+      monthlyRent: form.monthlyRent ? Number(form.monthlyRent) : null,
+      annualRevenue: form.annualRevenue ? Number(form.annualRevenue) : null,
+      leaseEndDate: form.leaseEndDate ? new Date(form.leaseEndDate) : null,
+      anchorTenantName: form.anchorTenantName || null,
+      priceIndicator: form.priceIndicator || null,
       description: form.description || null,
       image: existingImage || null,
     };
 
     try {
+      let data;
       if (id && id !== 'new') {
-        const { data } = await adminApi.put(`/api/admin/objects/${id}`, payload);
+        const res = await adminApi.put(`/api/admin/objects/${id}`, payload);
+        data = res.data;
         if (imageFile) {
           await uploadImage(data.id);
         }
-        navigate(`/admin/objects/${data.id}`);
       } else {
-        const { data } = await adminApi.post('/api/admin/objects', payload);
+        const res = await adminApi.post('/api/admin/objects', payload);
+        data = res.data;
         if (imageFile) {
           await uploadImage(data.id);
         }
-        navigate(`/admin/objects/${data.id}`);
       }
+
+      if (moderationStatus) {
+        await adminApi.patch(`/api/admin/objects/${data.id}/moderation`, {
+          status: moderationStatus,
+        });
+      }
+
+      await adminApi.patch(`/api/admin/objects/${data.id}/placement`, {
+        type: placementType,
+        price: placementPrice || null,
+        isExclusive,
+      });
+
+      navigate(`/admin/objects/${data.id}`);
     } catch (err: any) {
       const backendMessage = err?.response?.data?.error;
       setError(backendMessage || 'Ошибка сохранения');
@@ -150,6 +193,8 @@ export default function AdminObjectForm() {
       </header>
 
       <form className={styles.form} onSubmit={handleSubmit}>
+        {error && <div className={styles.error}>{error}</div>}
+
         <div className={styles.field}>
           <label className={styles.label}>Название</label>
           <input
@@ -233,13 +278,56 @@ export default function AdminObjectForm() {
         </div>
 
         <div className={styles.field}>
-          <label className={styles.label}>ROI, %</label>
+          <label className={styles.label}>Арендный поток /мес, ₽</label>
           <input
             className={styles.input}
             type="number"
-            value={form.roi}
-            onChange={(e) => setForm({ ...form, roi: e.target.value })}
+            value={form.monthlyRent}
+            onChange={(e) => setForm({ ...form, monthlyRent: e.target.value })}
           />
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>Годовая выручка, ₽</label>
+          <input
+            className={styles.input}
+            type="number"
+            value={form.annualRevenue}
+            onChange={(e) => setForm({ ...form, annualRevenue: e.target.value })}
+          />
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>Окончание договора аренды</label>
+          <input
+            className={styles.input}
+            type="date"
+            value={form.leaseEndDate}
+            onChange={(e) => setForm({ ...form, leaseEndDate: e.target.value })}
+          />
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>Якорный арендатор</label>
+          <input
+            className={styles.input}
+            value={form.anchorTenantName}
+            onChange={(e) => setForm({ ...form, anchorTenantName: e.target.value })}
+          />
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>Индикация цены</label>
+          <select
+            className={styles.select}
+            value={form.priceIndicator}
+            onChange={(e) => setForm({ ...form, priceIndicator: e.target.value })}
+          >
+            <option value="">Не указано</option>
+            <option value="below_market">Ниже рынка</option>
+            <option value="market">По рынку</option>
+            <option value="above_market">Выше рынка</option>
+          </select>
         </div>
 
         <div className={styles.field}>
@@ -252,7 +340,54 @@ export default function AdminObjectForm() {
           />
         </div>
 
-        {error && <div className={styles.error}>{error}</div>}
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Размещение</h3>
+          <div className={styles.field}>
+            <label className={styles.label}>Тип размещения</label>
+            <select
+              className={styles.select}
+              value={placementType}
+              onChange={(e) => setPlacementType(e.target.value)}
+            >
+              <option value="standard">Стандартное (бесплатное)</option>
+              <option value="paid">Платное (3 000 ₽)</option>
+              <option value="exclusive">Эксклюзивное</option>
+            </select>
+          </div>
+          <div className={styles.field}>
+            <label className={styles.label}>Цена размещения, ₽</label>
+            <input
+              className={styles.input}
+              type="number"
+              value={placementPrice}
+              onChange={(e) => setPlacementPrice(e.target.value)}
+            />
+          </div>
+          <label className={styles.checkbox}>
+            <input
+              type="checkbox"
+              checked={isExclusive}
+              onChange={(e) => setIsExclusive(e.target.checked)}
+            />
+            <span>Эксклюзив</span>
+          </label>
+        </div>
+
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Модерация</h3>
+          <div className={styles.field}>
+            <label className={styles.label}>Статус</label>
+            <select
+              className={styles.select}
+              value={moderationStatus}
+              onChange={(e) => setModerationStatus(e.target.value)}
+            >
+              <option value="pending">На проверке</option>
+              <option value="approved">Одобрено</option>
+              <option value="rejected">Отклонено</option>
+            </select>
+          </div>
+        </div>
 
         <div className={styles.field}>
           <label className={styles.label}>Фото объекта</label>

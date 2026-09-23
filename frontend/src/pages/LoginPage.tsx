@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, MessageCircle } from 'lucide-react';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import styles from './Auth.module.css';
@@ -38,6 +38,10 @@ export default function LoginPage() {
     }
   };
 
+  const handleTelegramAuth = () => {
+    navigate('/telegram-auth');
+  };
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -47,38 +51,45 @@ export default function LoginPage() {
         <h1 className={styles.title}>Вход</h1>
       </header>
 
-      <form className={styles.form} onSubmit={handleSubmit}>
+      <div className={styles.form}>
         {error && <div className={styles.error}>{error}</div>}
 
-        <div className={styles.field}>
-          <label className={styles.label}>Телефон или email</label>
-          <input
-            className={styles.input}
-            value={login}
-            onChange={(e) => setLogin(e.target.value)}
-            required
-          />
-        </div>
+        <form onSubmit={handleSubmit}>
+          <div className={styles.field}>
+            <label className={styles.label}>Телефон или email</label>
+            <input
+              className={styles.input}
+              value={login}
+              onChange={(e) => setLogin(e.target.value)}
+              required
+            />
+          </div>
 
-        <div className={styles.field}>
-          <label className={styles.label}>Пароль</label>
-          <input
-            className={styles.input}
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
+          <div className={styles.field}>
+            <label className={styles.label}>Пароль</label>
+            <input
+              className={styles.input}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
 
-        <button type="submit" className={styles.submitBtn} disabled={loading}>
-          {loading ? 'Вход...' : 'Войти'}
+          <button type="submit" className={styles.submitBtn} disabled={loading}>
+            {loading ? 'Вход...' : 'Войти'}
+          </button>
+        </form>
+
+        <button className={styles.telegramBtn} onClick={handleTelegramAuth}>
+          <MessageCircle size={20} strokeWidth={2} />
+          Войти через Telegram
         </button>
 
         <p className={styles.footer}>
           Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
         </p>
-      </form>
+      </div>
     </div>
   );
 }

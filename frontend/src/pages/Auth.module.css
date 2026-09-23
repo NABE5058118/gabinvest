@@ -44,6 +44,9 @@
 .label {
   font-size: 13px;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .input {
@@ -80,4 +83,77 @@
 .footer a {
   color: #000;
   text-decoration: underline;
+}
+
+.telegramBtn {
+  width: 100%;
+  padding: 14px;
+  background: #0088cc;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.telegramBtn:hover {
+  background: #0077b5;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.success {
+  text-align: center;
+  padding: 120px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.success p {
+  font-size: 16px;
+  color: #16a34a;
+  font-weight: 500;
+}
+
+.telegramInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px;
+  background: #f0f4ff;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.telegramAvatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.telegramName {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.telegramUsername {
+  font-size: 14px;
+  color: #666;
 }

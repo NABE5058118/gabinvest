@@ -154,14 +154,20 @@ router.post('/telegram', async (req: Request, res: Response) => {
       },
     });
 
+    const token = signToken(dbUser.id);
+
     res.json({
-      id: dbUser.id,
-      phone: dbUser.phone,
-      email: dbUser.email,
-      firstName: dbUser.firstName,
-      lastName: dbUser.lastName,
-      username: dbUser.username,
-      telegramId: dbUser.telegramId,
+      user: {
+        id: dbUser.id,
+        phone: dbUser.phone,
+        email: dbUser.email,
+        firstName: dbUser.firstName,
+        lastName: dbUser.lastName,
+        username: dbUser.username,
+        telegramId: dbUser.telegramId,
+        role: dbUser.role || 'user',
+      },
+      token,
     });
   } catch (error) {
     console.error('Error in telegram auth:', error);
@@ -208,7 +214,7 @@ router.put('/profile', authMiddleware, async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { firstName, lastName, username } = req.body;
+    const { firstName, lastName, username, phone } = req.body;
 
     const dbUser = await prisma.user.update({
       where: { id: userId },
@@ -216,6 +222,7 @@ router.put('/profile', authMiddleware, async (req: Request, res: Response) => {
         firstName: firstName || undefined,
         lastName: lastName || undefined,
         username: username || undefined,
+        phone: phone || undefined,
       },
     });
 
