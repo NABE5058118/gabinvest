@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Smartphone, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Smartphone, CheckCircle, MessageCircle } from 'lucide-react';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import styles from './Auth.module.css';
 
-type Step = 'loading' | 'phone' | 'success';
+type Step = 'checking' | 'phone' | 'success' | 'error';
 
 export default function TelegramAuthPage() {
   const navigate = useNavigate();
   const { login: authLogin } = useAuth();
-  const [step, setStep] = useState<Step>('loading');
+  const [step, setStep] = useState<Step>('checking');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -23,7 +23,7 @@ export default function TelegramAuthPage() {
       setStep('phone');
     } else {
       setError('Откройте приложение через Telegram');
-      setStep('loading');
+      setStep('error');
     }
   }, []);
 
@@ -33,8 +33,13 @@ export default function TelegramAuthPage() {
     setError(null);
 
     try {
+      const initData = window.Telegram?.WebApp?.initData;
+      if (!initData) {
+        throw new Error('initData отсутствует. Откройте страницу через Telegram.');
+      }
+
       const res = await api.post('/api/auth/telegram', {
-        initData: window.Telegram?.WebApp?.initData,
+        initData,
       });
       authLogin(res.data.user, res.data.token);
 
@@ -54,7 +59,7 @@ export default function TelegramAuthPage() {
     }
   };
 
-  if (step === 'loading') {
+  if (step === 'checking') {
     return (
       <div className={styles.page}>
         <div className={styles.loading}>Загрузка...</div>
@@ -68,6 +73,33 @@ export default function TelegramAuthPage() {
         <div className={styles.success}>
           <CheckCircle size={48} strokeWidth={2} color="#16a34a" />
           <p>Авторизация успешна!</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'error') {
+    return (
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <button className={styles.backBtn} onClick={() => navigate(-1)}>
+            <ArrowLeft size={24} strokeWidth={2} />
+          </button>
+          <h1 className={styles.title}>Вход через Telegram</h1>
+        </header>
+
+        <div className={styles.form}>
+          <div className={styles.errorBox}>
+            <MessageCircle size={48} strokeWidth={1.5} color="#999" />
+            <p>{error}</p>
+            <p className={styles.errorHint}>
+              Чтобы войти через Telegram, откройте эту страницу внутри Telegram-приложения.
+            </p>
+          </div>
+
+          <button className={styles.telegramBtn} onClick={() => navigate('/login')}>
+            Войти другим способом
+          </button>
         </div>
       </div>
     );
