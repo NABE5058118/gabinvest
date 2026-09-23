@@ -19,6 +19,7 @@ import AdminOfferUpload from './pages/admin/AdminOfferUpload';
 import ModerationQueuePage from './pages/admin/ModerationQueuePage';
 import Layout from './components/Layout';
 import AdminRoute from './components/AdminRoute';
+import TelegramAutoAuth from './components/TelegramAutoAuth';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { AuthProvider } from './context/AuthContext';
 
@@ -27,6 +28,7 @@ export default function App() {
     <AuthProvider>
       <FavoritesProvider>
         <BrowserRouter>
+          <TelegramAutoAuth />
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<CatalogPage />} />
