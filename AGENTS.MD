@@ -36,7 +36,7 @@ index-VEppiFoK.js:193  GET https://gabinvest.cloud-ip.cc/api/objects 500 (Intern
   - RF: 135.106.210.253 — postgres, backend, frontend (nginx), certbot
   - NL: 163.5.157.243 — bot (aiogram polling)
 - Frontend собирается в nginx:alpine, проксирует `/api/` и `/uploads/` на backend
-- Backend: node:22-slim, миграции применяются при старте контейнера
+- Backend: node:24-slim, миграции применяются при старте контейнера
 - База данных: PostgreSQL 17 в Docker, том `postgres-data`
 - Загрузки: том `backend-uploads` для файлов КП
 - Переменные окружения: `.env` в корне проекта, `docker-compose.prod.yml` подтягивает их

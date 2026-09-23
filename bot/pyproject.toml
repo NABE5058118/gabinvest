@@ -2,7 +2,7 @@
 name = "gab-invest-bot"
 version = "1.0.0"
 description = "GAB Invest Telegram Bot"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "aiogram>=3.4,<4",
 ]
