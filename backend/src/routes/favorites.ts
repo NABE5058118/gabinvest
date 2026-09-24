@@ -1,4 +1,4 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { authMiddleware } from '../middleware/jwt.js';
 
@@ -9,6 +9,16 @@ router.use(authMiddleware);
 router.get('/', async (req: Request, res: Response) => {
   try {
     const userId = req.userId as string;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
     const favorites = await prisma.favorite.findMany({
       where: { userId },
       include: { object: true },
@@ -25,6 +35,24 @@ router.post('/:objectId', async (req: Request, res: Response) => {
   try {
     const userId = req.userId as string;
     const objectId = String(req.params.objectId);
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const object = await prisma.object.findUnique({
+      where: { id: objectId },
+      select: { id: true },
+    });
+
+    if (!object) {
+      return res.status(404).json({ error: 'Object not found' });
+    }
 
     const favorite = await prisma.favorite.upsert({
       where: {
@@ -51,6 +79,19 @@ router.delete('/:objectId', async (req: Request, res: Response) => {
   try {
     const userId = req.userId as string;
     const objectId = String(req.params.objectId);
+
+    const favorite = await prisma.favorite.findUnique({
+      where: {
+        userId_objectId: {
+          userId,
+          objectId,
+        },
+      },
+    });
+
+    if (!favorite) {
+      return res.status(404).json({ error: 'Favorite not found' });
+    }
 
     await prisma.favorite.delete({
       where: {
