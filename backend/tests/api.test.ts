@@ -69,25 +69,38 @@ describe('API Integration Tests', () => {
   });
 
   describe('POST /api/auth/telegram', () => {
-    it('should create a new user', async () => {
+    it('should create a new user with telegram data', async () => {
       const res = await request(app)
         .post('/api/auth/telegram')
-        .send({ initData: 'query_id=test&user={"id":123456,"first_name":"Test","username":"testuser"}' });
+        .send({ initData: 'query_id=test&user={"id":123456,"first_name":"Test","username":"testuser","language_code":"ru","is_premium":true,"allows_write_to_pm":true}' });
 
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('user');
       expect(res.body.user).toHaveProperty('id');
       expect(res.body.user.telegramId).toBe('123456');
       expect(res.body.user.firstName).toBe('Test');
+      expect(res.body.user.username).toBe('testuser');
+      expect(res.body.user.telegramLang).toBe('ru');
+      expect(res.body.user.telegramPremium).toBe(true);
+      expect(res.body.user.telegramAllowsPm).toBe(true);
     });
 
-    it('should update existing user', async () => {
-      const res = await request(app)
+    it('should update existing user and preserve phone', async () => {
+      const first = await request(app)
         .post('/api/auth/telegram')
-        .send({ initData: 'query_id=test&user={"id":123456,"first_name":"Updated","username":"testuser"}' });
+        .send({ initData: 'query_id=test&user={"id":123457,"first_name":"First","username":"firstuser"}' });
 
-      expect(res.status).toBe(200);
-      expect(res.body.user.firstName).toBe('Updated');
+      expect(first.status).toBe(200);
+      const createdId = first.body.user.id;
+
+      const second = await request(app)
+        .post('/api/auth/telegram')
+        .send({ initData: 'query_id=test&user={"id":123457,"first_name":"Updated","username":"updateduser","language_code":"en"}' });
+
+      expect(second.status).toBe(200);
+      expect(second.body.user.id).toBe(createdId);
+      expect(second.body.user.firstName).toBe('Updated');
+      expect(second.body.user.telegramLang).toBe('en');
     });
 
     it('should return 400 for missing initData', async () => {
@@ -96,6 +109,33 @@ describe('API Integration Tests', () => {
         .send({});
 
       expect(res.status).toBe(400);
+    });
+
+    it('should return 400 for invalid initData', async () => {
+      const res = await request(app)
+        .post('/api/auth/telegram')
+        .send({ initData: 'invalid' });
+
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe('Telegram registration flow', () => {
+    it('should register via telegram and then access protected route', async () => {
+      const res = await request(app)
+        .post('/api/auth/telegram')
+        .send({ initData: 'query_id=test&user={"id":999001,"first_name":"Reg","username":"reguser"}' });
+
+      expect(res.status).toBe(200);
+      const token = res.body.token;
+
+      const me = await request(app)
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(me.status).toBe(200);
+      expect(me.body.telegramId).toBe('999001');
+      expect(me.body.firstName).toBe('Reg');
     });
   });
 

@@ -139,19 +139,31 @@ router.post('/telegram', async (req: Request, res: Response) => {
 
     const telegramId = String(user.id);
 
+    const updateData: any = {
+      firstName: user.first_name || undefined,
+      lastName: user.last_name || undefined,
+      username: user.username || undefined,
+    };
+    if (user.photo_url !== undefined) updateData.telegramPhotoUrl = user.photo_url;
+    if (user.language_code !== undefined) updateData.telegramLang = user.language_code;
+    if (user.is_premium !== undefined) updateData.telegramPremium = user.is_premium;
+    if (user.allows_write_to_pm !== undefined) updateData.telegramAllowsPm = user.allows_write_to_pm;
+
+    const createData: any = {
+      telegramId,
+      firstName: user.first_name || undefined,
+      lastName: user.last_name || undefined,
+      username: user.username || undefined,
+      telegramPhotoUrl: user.photo_url || undefined,
+      telegramLang: user.language_code || undefined,
+      telegramPremium: user.is_premium || undefined,
+      telegramAllowsPm: user.allows_write_to_pm || undefined,
+    };
+
     const dbUser = await prisma.user.upsert({
       where: { telegramId },
-      update: {
-        firstName: user.first_name || undefined,
-        lastName: user.last_name || undefined,
-        username: user.username || undefined,
-      },
-      create: {
-        telegramId,
-        firstName: user.first_name || undefined,
-        lastName: user.last_name || undefined,
-        username: user.username || undefined,
-      },
+      update: updateData,
+      create: createData,
     });
 
     const token = signToken(dbUser.id);
@@ -165,6 +177,10 @@ router.post('/telegram', async (req: Request, res: Response) => {
         lastName: dbUser.lastName,
         username: dbUser.username,
         telegramId: dbUser.telegramId,
+        telegramPhotoUrl: dbUser.telegramPhotoUrl,
+        telegramLang: dbUser.telegramLang,
+        telegramPremium: dbUser.telegramPremium,
+        telegramAllowsPm: dbUser.telegramAllowsPm,
         role: dbUser.role || 'user',
       },
       token,

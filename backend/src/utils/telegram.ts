@@ -6,6 +6,10 @@ export interface TelegramUser {
   first_name?: string;
   last_name?: string;
   username?: string;
+  photo_url?: string;
+  language_code?: string;
+  is_premium?: boolean;
+  allows_write_to_pm?: boolean;
 }
 
 export function validateTelegramInitData(initData: string, botToken: string): boolean {
@@ -59,7 +63,17 @@ export function parseInitData(initData: string): TelegramUser | null {
     const params = new URLSearchParams(initData);
     const userStr = params.get('user');
     if (!userStr) return null;
-    return JSON.parse(userStr);
+    const parsed = JSON.parse(userStr);
+    return {
+      id: parsed.id,
+      first_name: parsed.first_name,
+      last_name: parsed.last_name,
+      username: parsed.username,
+      photo_url: parsed.photo_url,
+      language_code: parsed.language_code,
+      is_premium: parsed.is_premium,
+      allows_write_to_pm: parsed.allows_write_to_pm,
+    };
   } catch {
     return null;
   }

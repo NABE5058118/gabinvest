@@ -206,20 +206,24 @@ model Lead {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  telegramId   String?    @unique
-  phone        String?    @unique
-  email        String?    @unique
-  passwordHash String?
-  role         String?    @default("user")
-  firstName    String?
-  lastName     String?
-  username     String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  favorites    Favorite[]
-  consents     Consent[]
-  leads        Lead[]
+  id               String     @id @default(cuid())
+  telegramId       String?    @unique
+  telegramPhotoUrl String?
+  telegramLang     String?
+  telegramPremium  Boolean?   @default(false)
+  telegramAllowsPm Boolean?   @default(false)
+  phone            String?    @unique
+  email            String?    @unique
+  passwordHash     String?
+  role             String?    @default("user")
+  firstName        String?
+  lastName         String?
+  username         String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  favorites        Favorite[]
+  consents         Consent[]
+  leads            Lead[]
 }
 
 model Favorite {
