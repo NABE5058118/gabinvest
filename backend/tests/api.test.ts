@@ -137,6 +137,30 @@ describe('API Integration Tests', () => {
       expect(me.body.telegramId).toBe('999001');
       expect(me.body.firstName).toBe('Reg');
     });
+
+    it('should sync user from bot and preserve previous fields', async () => {
+      const created = await request(app)
+        .post('/api/auth/telegram')
+        .send({ initData: 'query_id=test&user={"id":999002,"first_name":"Bot","username":"botuser"}' });
+
+      expect(created.status).toBe(200);
+
+      const sync = await request(app)
+        .post('/api/auth/telegram/bot-sync')
+        .send({
+          telegramId: 999002,
+          firstName: 'Updated',
+          lastName: 'User',
+          username: 'updateduser',
+          languageCode: 'ru',
+        });
+
+      expect(sync.status).toBe(200);
+      expect(sync.body.firstName).toBe('Updated');
+      expect(sync.body.lastName).toBe('User');
+      expect(sync.body.username).toBe('updateduser');
+      expect(sync.body.telegramId).toBe('999002');
+    });
   });
 
   describe('POST /api/leads', () => {

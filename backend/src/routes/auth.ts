@@ -191,6 +191,56 @@ router.post('/telegram', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/telegram/bot-sync', async (req: Request, res: Response) => {
+  try {
+    const { telegramId, firstName, lastName, username, photoUrl, languageCode, isPremium, allowsWriteToPm } = req.body;
+
+    if (!telegramId) {
+      return res.status(400).json({ error: 'telegramId is required' });
+    }
+
+    const updateData: any = {};
+    if (firstName !== undefined) updateData.firstName = firstName || undefined;
+    if (lastName !== undefined) updateData.lastName = lastName || undefined;
+    if (username !== undefined) updateData.username = username || undefined;
+    if (photoUrl !== undefined) updateData.telegramPhotoUrl = photoUrl || undefined;
+    if (languageCode !== undefined) updateData.telegramLang = languageCode || undefined;
+    if (isPremium !== undefined) updateData.telegramPremium = isPremium;
+    if (allowsWriteToPm !== undefined) updateData.telegramAllowsPm = allowsWriteToPm;
+
+    const createData: any = {
+      telegramId: String(telegramId),
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
+      username: username || undefined,
+      telegramPhotoUrl: photoUrl || undefined,
+      telegramLang: languageCode || undefined,
+      telegramPremium: isPremium || undefined,
+      telegramAllowsPm: allowsWriteToPm || undefined,
+    };
+
+    const dbUser = await prisma.user.upsert({
+      where: { telegramId: String(telegramId) },
+      update: updateData,
+      create: createData,
+    });
+
+    res.json({
+      id: dbUser.id,
+      telegramId: dbUser.telegramId,
+      firstName: dbUser.firstName,
+      lastName: dbUser.lastName,
+      username: dbUser.username,
+      phone: dbUser.phone,
+      email: dbUser.email,
+      createdAt: dbUser.createdAt,
+    });
+  } catch (error) {
+    console.error('Error in telegram bot sync:', error);
+    res.status(500).json({ error: 'Failed to sync user' });
+  }
+});
+
 router.get('/me', authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.userId;
