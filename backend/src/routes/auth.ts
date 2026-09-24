@@ -166,7 +166,7 @@ router.post('/telegram', async (req: Request, res: Response) => {
       create: createData,
     });
 
-    const token = signToken(dbUser.id);
+    const token = signToken(dbUser.telegramId || dbUser.id);
 
     res.json({
       user: {

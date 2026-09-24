@@ -224,6 +224,7 @@ describe('API Integration Tests', () => {
           email: `leads-me-${Date.now()}@gab-invest.ru`,
           phone: `+790000000${Date.now() % 10000}`,
           passwordHash: await bcrypt.hash('pass123', 10),
+          telegramId: `test-user-${Date.now()}`,
         },
       });
 
@@ -237,7 +238,7 @@ describe('API Integration Tests', () => {
           consent: true,
         });
 
-      const token = jwt.sign({ userId: user.id }, 'test-jwt-secret', { expiresIn: '1h', algorithm: 'HS256' });
+      const token = jwt.sign({ telegramId: user.telegramId }, 'test-jwt-secret', { expiresIn: '1h', algorithm: 'HS256' });
 
       const res = await request(app)
         .get('/api/leads/me')
