@@ -51,6 +51,14 @@ export default function CatalogPage() {
   const hasTelegram = typeof window !== 'undefined' && !!window.Telegram?.WebApp?.initData;
 
   if (!hasTelegram) {
+    const tgInfo = typeof window !== 'undefined' ? {
+      hasTelegram: !!window.Telegram,
+      hasWebApp: !!window.Telegram?.WebApp,
+      hasInitData: !!window.Telegram?.WebApp?.initData,
+      initDataLength: window.Telegram?.WebApp?.initData?.length || 0,
+      user: window.Telegram?.WebApp?.initDataUnsafe?.user || null,
+    } : null;
+
     return (
       <div className={styles.page}>
         <div className={styles.empty}>
@@ -59,6 +67,9 @@ export default function CatalogPage() {
           </div>
           <p className={styles.emptyText}>Откройте каталог через Telegram-бота</p>
           <p className={styles.emptyHint}>На текущий момент вход и регистрация работают только через Telegram.</p>
+          {import.meta.env.DEV && tgInfo && (
+            <pre className={styles.debugInfo}>{JSON.stringify(tgInfo, null, 2)}</pre>
+          )}
         </div>
       </div>
     );
