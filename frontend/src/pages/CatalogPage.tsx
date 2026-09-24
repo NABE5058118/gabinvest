@@ -48,6 +48,22 @@ export default function CatalogPage() {
   const [lastRotation, setLastRotation] = useState<string | null>(null);
   const { objects, loading, error } = useObjects();
 
+  const hasTelegram = typeof window !== 'undefined' && !!window.Telegram?.WebApp?.initData;
+
+  if (!hasTelegram) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.empty}>
+          <div className={styles.emptyIcon}>
+            <LayoutGrid size={64} strokeWidth={1} color="#ccc" />
+          </div>
+          <p className={styles.emptyText}>Откройте каталог через Telegram-бота</p>
+          <p className={styles.emptyHint}>На текущий момент вход и регистрация работают только через Telegram.</p>
+        </div>
+      </div>
+    );
+  }
+
   const fetchObjectsWithRotation = useCallback(() => {
     setRotationKey((k) => k + 1);
   }, []);

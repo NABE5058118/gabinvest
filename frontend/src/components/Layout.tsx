@@ -52,12 +52,7 @@ export default function Layout() {
                 <User size={24} strokeWidth={2} />
                 <span>Профиль</span>
               </NavLink>
-            ) : (
-              <NavLink to="/login" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
-                <User size={24} strokeWidth={2} />
-                <span>Вход</span>
-              </NavLink>
-            )}
+            ) : null}
           </>
         )}
       </nav>
