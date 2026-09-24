@@ -48,7 +48,7 @@ export default function CatalogPage() {
   const [lastRotation, setLastRotation] = useState<string | null>(null);
   const { objects, loading, error } = useObjects();
 
-  const hasTelegram = typeof window !== 'undefined' && !!window.Telegram?.WebApp?.initData;
+  const hasTelegram = typeof window !== 'undefined' && !!window.Telegram?.WebApp;
 
   if (!hasTelegram) {
     const tgInfo = typeof window !== 'undefined' ? {
@@ -67,7 +67,7 @@ export default function CatalogPage() {
           </div>
           <p className={styles.emptyText}>Откройте каталог через Telegram-бота</p>
           <p className={styles.emptyHint}>На текущий момент вход и регистрация работают только через Telegram.</p>
-          {import.meta.env.DEV && tgInfo && (
+          {tgInfo && (
             <pre className={styles.debugInfo}>{JSON.stringify(tgInfo, null, 2)}</pre>
           )}
         </div>

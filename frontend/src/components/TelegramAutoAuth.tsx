@@ -12,31 +12,35 @@ export default function TelegramAutoAuth() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (!window.Telegram?.WebApp?.initData) return;
+    if (!window.Telegram?.WebApp) return;
     if (localStorage.getItem('token')) return;
 
-    let cancelled = false;
+    const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
+    if (!tgUser?.id) return;
 
+    let cancelled = false;
     setStatus('loading');
 
     api
       .post('/api/auth/telegram', {
-        initData: window.Telegram.WebApp.initData,
+        initData: window.Telegram.WebApp.initData || '',
       })
       .then((res) => {
         if (cancelled) return;
         const user = res.data.user;
         authLogin(user, res.data.token);
+        setStatus('done');
         if (user.phone) {
-          setStatus('done');
           navigate('/', { replace: true });
         } else {
-          setStatus('done');
           navigate('/telegram-auth', { replace: true });
         }
       })
-      .catch(() => {
-        if (!cancelled) setStatus('error');
+      .catch((err) => {
+        if (!cancelled) {
+          setStatus('error');
+          console.error('Telegram auto auth failed', err);
+        }
       });
 
     return () => {
