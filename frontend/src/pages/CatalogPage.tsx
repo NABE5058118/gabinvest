@@ -75,6 +75,13 @@ export default function CatalogPage() {
     );
   }
 
+  const tgDebug = typeof window !== 'undefined' ? {
+    hasInitData: !!window.Telegram?.WebApp?.initData,
+    initDataLength: window.Telegram?.WebApp?.initData?.length || 0,
+    user: window.Telegram?.WebApp?.initDataUnsafe?.user || null,
+    token: typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null,
+  } : null;
+
   const fetchObjectsWithRotation = useCallback(() => {
     setRotationKey((k) => k + 1);
   }, []);
@@ -168,6 +175,16 @@ export default function CatalogPage() {
 
   return (
     <div className={styles.page}>
+      {tgDebug && (
+        <div className={styles.debugBanner}>
+          <div>
+            <strong>Telegram debug</strong>
+            <div>initData: {tgDebug.hasInitData ? `yes (${tgDebug.initDataLength})` : 'no'}</div>
+            <div>user: {JSON.stringify(tgDebug.user)}</div>
+            <div>token: {tgDebug.token ? `present (${tgDebug.token.length})` : 'missing'}</div>
+          </div>
+        </div>
+      )}
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>GAB Invest</h1>

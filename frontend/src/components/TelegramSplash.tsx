@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-type Status = 'loading' | 'ready' | 'error';
+type Status = 'loading' | 'ready';
 
 export default function TelegramSplash({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>('loading');
@@ -17,17 +17,28 @@ export default function TelegramSplash({ children }: { children: React.ReactNode
       return;
     }
 
-    if (tg.WebApp.readyState === 'loading') {
-      const onReady = () => {
-        setStatus('ready');
-      };
-      tg.WebApp.onEvent('readyStateChange', onReady);
-      return () => {
-        tg.WebApp.offEvent('readyStateChange', onReady);
-      };
+    const webApp = tg.WebApp;
+
+    if (webApp.readyState === 'ready') {
+      setStatus('ready');
+      return;
     }
 
-    setStatus('ready');
+    const timeout = setTimeout(() => {
+      setStatus('ready');
+    }, 1500);
+
+    const onReady = () => {
+      clearTimeout(timeout);
+      setStatus('ready');
+    };
+
+    webApp.onEvent('ready', onReady);
+
+    return () => {
+      clearTimeout(timeout);
+      webApp.offEvent('ready', onReady);
+    };
   }, []);
 
   if (status === 'loading') {
