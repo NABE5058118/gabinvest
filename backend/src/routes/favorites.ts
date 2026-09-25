@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { authMiddleware } from '../middleware/jwt.js';
-import { createLogger } from '../utils/logger.ts';
+import { createLogger } from '../utils/logger.js';
 
 const router = Router();
 const logger = createLogger('favorites');

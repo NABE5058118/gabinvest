@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
-import { createLogger } from '../utils/logger.ts';
+import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('jwt');
 

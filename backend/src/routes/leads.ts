@@ -4,7 +4,7 @@ import { sendTelegramMessage } from '../utils/telegram.js';
 import { z } from 'zod';
 import { requireAdmin } from '../routes/admin.js';
 import { authMiddleware } from '../middleware/jwt.js';
-import { createLogger } from '../utils/logger.ts';
+import { createLogger } from '../utils/logger.js';
 
 const router = Router();
 const logger = createLogger('leads');

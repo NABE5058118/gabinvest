@@ -13,7 +13,7 @@ import favoritesRouter from './routes/favorites.js';
 import adminRouter from './routes/admin.js';
 import adminAuthRouter from './routes/admin-auth.js';
 import authRouter from './routes/auth.js';
-import { getLogger, createLogger } from './utils/logger.ts';
+import { getLogger, createLogger } from './utils/logger.js';
 
 dotenv.config();
 

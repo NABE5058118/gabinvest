@@ -10,8 +10,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "declaration": true,
-    "allowImportingTsExtensions": true
+    "declaration": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]

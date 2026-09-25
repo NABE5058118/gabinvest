@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { fileTypeFromFile } from 'file-type';
 import { z } from 'zod';
-import { createLogger } from '../utils/logger.ts';
+import { createLogger } from '../utils/logger.js';
 
 const router = Router();
 const logger = createLogger('admin');
