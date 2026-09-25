@@ -1,26 +1,18 @@
 import AdminLoginPage from '../pages/AdminLoginPage';
-import { useAuth } from '../context/AuthContext';
+
+function getAdminUser() {
+  try {
+    const stored = localStorage.getItem('adminUser');
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const adminUser = getAdminUser();
 
-  if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#fff',
-        color: '#000',
-        fontSize: 14,
-      }}>
-        Загрузка...
-      </div>
-    );
-  }
-
-  if (!user || user.role !== 'admin') {
+  if (!adminUser || adminUser.role !== 'admin') {
     return <AdminLoginPage />;
   }
 
