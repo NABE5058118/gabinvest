@@ -4,7 +4,7 @@ import { validateTelegramInitData, parseInitData } from '../utils/telegram.js';
 import bcrypt from 'bcrypt';
 import { signToken, authMiddleware } from '../middleware/jwt.js';
 import { z } from 'zod';
-import { createLogger } from '../utils/logger.js';
+import { createLogger } from '../utils/logger.ts';
 
 const router = Router();
 const logger = createLogger('auth');

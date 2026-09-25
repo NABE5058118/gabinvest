@@ -1,6 +1,6 @@
 import axios from 'axios';
 import crypto from 'crypto';
-import { createLogger } from './logger.js';
+import { createLogger } from './logger.ts';
 
 const logger = createLogger('telegram');
 
