@@ -4,8 +4,10 @@ import { sendTelegramMessage } from '../utils/telegram.js';
 import { z } from 'zod';
 import { requireAdmin } from '../routes/admin.js';
 import { authMiddleware } from '../middleware/jwt.js';
+import { createLogger } from '../utils/logger.js';
 
 const router = Router();
+const logger = createLogger('leads');
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -38,9 +40,10 @@ router.get('/', requireAdmin, async (req: Request, res: Response) => {
       include: { object: true },
       orderBy: { createdAt: 'desc' },
     });
+    logger.info('Fetched leads', { count: leads.length });
     res.json(leads);
   } catch (error) {
-    console.error('Error fetching leads:', error);
+    logger.error('Error fetching leads:', error);
     res.status(500).json({ error: 'Failed to fetch leads' });
   }
 });
@@ -57,9 +60,10 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
       include: { object: { select: { id: true, title: true, location: true, price: true } } },
       orderBy: { createdAt: 'desc' },
     });
+    logger.info('Fetched user leads', { userId, count: leads.length });
     res.json(leads);
   } catch (error) {
-    console.error('Error fetching user leads:', error);
+    logger.error('Error fetching user leads:', error);
     res.status(500).json({ error: 'Failed to fetch leads' });
   }
 });
@@ -103,6 +107,8 @@ router.post('/', async (req: Request, res: Response) => {
       },
     });
 
+    logger.info('Lead created', { leadId: lead.id, objectId, userId });
+
     if (MANAGER_CHAT_ID && BOT_TOKEN) {
       const message = `
 <b>Новая заявка!</b>
@@ -119,11 +125,12 @@ ${comment ? `<b>Комментарий:</b> ${escapeHtml(comment)}` : ''}
       `.trim();
 
       sendTelegramMessage(BOT_TOKEN, MANAGER_CHAT_ID, message);
+      logger.info('Telegram notification sent', { leadId: lead.id, chatId: MANAGER_CHAT_ID });
     }
 
     res.status(201).json({ success: true, lead });
   } catch (error) {
-    console.error('Error creating lead:', error);
+    logger.error('Error creating lead:', error);
     res.status(500).json({ error: 'Failed to create lead' });
   }
 });
@@ -142,9 +149,10 @@ router.get('/my', async (req: Request, res: Response) => {
       include: { object: { select: { id: true, title: true, location: true, price: true } } },
       orderBy: { createdAt: 'desc' },
     });
+    logger.info('Fetched client leads', { clientId: parsed.data.clientId, count: leads.length });
     res.json(leads);
   } catch (error) {
-    console.error('Error fetching client leads:', error);
+    logger.error('Error fetching client leads:', error);
     res.status(500).json({ error: 'Failed to fetch leads' });
   }
 });
@@ -162,9 +170,10 @@ router.patch('/:id/status', requireAdmin, async (req: Request, res: Response) =>
       data: { status: parsed.data.status },
     });
 
+    logger.info('Lead status updated', { leadId: id, status: parsed.data.status });
     res.json(lead);
   } catch (error) {
-    console.error('Error updating lead status:', error);
+    logger.error('Error updating lead status:', error);
     res.status(500).json({ error: 'Failed to update lead status' });
   }
 });

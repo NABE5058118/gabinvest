@@ -1,11 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('jwt');
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
 if (process.env.NODE_ENV !== 'test' && !JWT_SECRET) {
-  console.error('FATAL: JWT_SECRET is not set');
+  logger.fatal('JWT_SECRET is not set');
   process.exit(1);
 }
 

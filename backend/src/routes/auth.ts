@@ -4,8 +4,10 @@ import { validateTelegramInitData, parseInitData } from '../utils/telegram.js';
 import bcrypt from 'bcrypt';
 import { signToken, authMiddleware } from '../middleware/jwt.js';
 import { z } from 'zod';
+import { createLogger } from '../utils/logger.js';
 
 const router = Router();
+const logger = createLogger('auth');
 
 const registerSchema = z.object({
   phone: z.string().min(10, 'Некорректный номер телефона'),
@@ -52,6 +54,7 @@ router.post('/register', async (req: Request, res: Response) => {
     });
 
     const token = signToken(user.id);
+    logger.info('User registered', { userId: user.id });
     res.status(201).json({
       user: {
         id: user.id,
@@ -64,7 +67,7 @@ router.post('/register', async (req: Request, res: Response) => {
       token,
     });
   } catch (error) {
-    console.error('Error registering user:', error);
+    logger.error('Error registering user:', error);
     res.status(500).json({ error: 'Failed to register' });
   }
 });
@@ -94,6 +97,7 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     const token = signToken(user.id);
+    logger.info('User logged in', { userId: user.id });
     res.json({
       user: {
         id: user.id,
@@ -106,7 +110,7 @@ router.post('/login', async (req: Request, res: Response) => {
       token,
     });
   } catch (error) {
-    console.error('Error logging in:', error);
+    logger.error('Error logging in:', error);
     res.status(500).json({ error: 'Failed to login' });
   }
 });
@@ -166,6 +170,8 @@ router.post('/telegram', async (req: Request, res: Response) => {
       create: createData,
     });
 
+    logger.info('Telegram auth success', { telegramId: dbUser.telegramId, userId: dbUser.id });
+
     const token = signToken(dbUser.telegramId || dbUser.id);
 
     res.json({
@@ -186,7 +192,7 @@ router.post('/telegram', async (req: Request, res: Response) => {
       token,
     });
   } catch (error) {
-    console.error('Error in telegram auth:', error);
+    logger.error('Error in telegram auth:', error);
     res.status(500).json({ error: 'Failed to authenticate' });
   }
 });
@@ -236,7 +242,7 @@ router.post('/telegram/bot-sync', async (req: Request, res: Response) => {
       createdAt: dbUser.createdAt,
     });
   } catch (error) {
-    console.error('Error in telegram bot sync:', error);
+    logger.error('Error in telegram bot sync:', error);
     res.status(500).json({ error: 'Failed to sync user' });
   }
 });
@@ -268,7 +274,7 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
 
     res.json(dbUser);
   } catch (error) {
-    console.error('Error fetching profile:', error);
+    logger.error('Error fetching profile:', error);
     res.status(500).json({ error: 'Failed to fetch profile' });
   }
 });
@@ -292,6 +298,7 @@ router.put('/profile', authMiddleware, async (req: Request, res: Response) => {
       },
     });
 
+    logger.info('Profile updated', { userId: dbUser.id });
     res.json({
       id: dbUser.id,
       phone: dbUser.phone,
@@ -301,7 +308,7 @@ router.put('/profile', authMiddleware, async (req: Request, res: Response) => {
       username: dbUser.username,
     });
   } catch (error) {
-    console.error('Error updating profile:', error);
+    logger.error('Error updating profile:', error);
     res.status(500).json({ error: 'Failed to update profile' });
   }
 });

@@ -13,27 +13,31 @@ import favoritesRouter from './routes/favorites.js';
 import adminRouter from './routes/admin.js';
 import adminAuthRouter from './routes/admin-auth.js';
 import authRouter from './routes/auth.js';
+import { getLogger, createLogger } from './utils/logger.js';
 
 dotenv.config();
+
+const logger = createLogger('app');
+const requestLogger = createLogger('http');
 
 if (process.env.NODE_ENV !== 'test') {
   const requiredEnv = ['DATABASE_URL', 'JWT_SECRET', 'ADMIN_JWT_SECRET', 'TELEGRAM_BOT_TOKEN'];
   const weakDefaults = new Set(['change-me-in-production', 'change-me-admin-in-production']);
   const missing = requiredEnv.filter((key) => !process.env[key]);
   if (missing.length > 0) {
-    console.error(`Missing required env vars: ${missing.join(', ')}`);
+    logger.fatal(`Missing required env vars: ${missing.join(', ')}`);
     process.exit(1);
   }
   if (weakDefaults.has(process.env.JWT_SECRET || '')) {
-    console.error('FATAL: JWT_SECRET uses a weak default value');
+    logger.fatal('JWT_SECRET uses a weak default value');
     process.exit(1);
   }
   if (weakDefaults.has(process.env.ADMIN_JWT_SECRET || '')) {
-    console.error('FATAL: ADMIN_JWT_SECRET uses a weak default value');
+    logger.fatal('ADMIN_JWT_SECRET uses a weak default value');
     process.exit(1);
   }
   if (!process.env.ADMIN_TOKEN) {
-    console.error('FATAL: ADMIN_TOKEN is not set');
+    logger.fatal('ADMIN_TOKEN is not set');
     process.exit(1);
   }
 }
@@ -48,7 +52,7 @@ async function validateSchema() {
     const requiredTables = ['User', 'Object', 'Favorite', 'Lead', 'CommercialOffer', 'Consent', 'Tenant', 'Lease', 'Expense', 'LegalConstraint', 'EngineeringSpec', 'VatRate', 'Moderation', 'Placement', 'Payment'];
     const missingTables = requiredTables.filter((t) => !tableNames.includes(t));
     if (missingTables.length > 0) {
-      console.error(`Missing tables: ${missingTables.join(', ')}. Run: npx prisma migrate deploy`);
+      logger.fatal(`Missing tables: ${missingTables.join(', ')}. Run: npx prisma migrate deploy`);
       process.exit(1);
     }
 
@@ -59,13 +63,13 @@ async function validateSchema() {
     const requiredUserColumns = ['id', 'telegramId', 'phone', 'email', 'passwordHash', 'firstName', 'lastName', 'username'];
     const missingUserColumns = requiredUserColumns.filter((c) => !userColumnNames.includes(c));
     if (missingUserColumns.length > 0) {
-      console.error(`User table missing columns: ${missingUserColumns.join(', ')}. Run: npx prisma migrate deploy`);
+      logger.fatal(`User table missing columns: ${missingUserColumns.join(', ')}. Run: npx prisma migrate deploy`);
       process.exit(1);
     }
 
-    console.log('Database schema validated successfully');
+    logger.info('Database schema validated successfully');
   } catch (error) {
-    console.error('Schema validation failed:', error);
+    logger.fatal('Schema validation failed', error);
     process.exit(1);
   }
 }
@@ -81,6 +85,20 @@ const uploadsDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
+
+app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const start = Date.now();
+  requestLogger.info(`${req.method} ${req.originalUrl}`, {
+    ip: req.ip,
+    userAgent: req.headers['user-agent'],
+  });
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
+    requestLogger.log(level, `${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`);
+  });
+  next();
+});
 
 app.use(helmet());
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(',').map((o) => o.trim()).filter(Boolean);
@@ -142,7 +160,13 @@ app.get('/uploads/:filename', (req, res) => {
 });
 
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Unhandled error:', err);
+  logger.error('Unhandled error', {
+    message: err.message,
+    stack: err.stack,
+    url: req.originalUrl,
+    method: req.method,
+    ip: req.ip,
+  });
   if (err.message === 'Not allowed by CORS') {
     res.status(403).json({ error: 'Not allowed by CORS' });
     return;
@@ -155,7 +179,7 @@ export { app };
 if (process.env.NODE_ENV !== 'test') {
   validateSchema().then(() => {
     app.listen(PORT, () => {
-      console.log(`Backend running on port ${PORT}`);
+      logger.info(`Backend running on port ${PORT}`);
     });
   });
 }

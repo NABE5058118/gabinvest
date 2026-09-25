@@ -1,7 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { createLogger } from '../utils/logger.js';
 
 const router = Router();
+const logger = createLogger('cities');
 
 router.get('/', async (req: Request, res: Response) => {
   try {
@@ -12,9 +14,11 @@ router.get('/', async (req: Request, res: Response) => {
       distinct: ['city'],
     });
 
-    res.json(cities.map((c) => c.city).filter((city): city is string => city !== null));
+    const filtered = cities.map((c) => c.city).filter((city): city is string => city !== null);
+    logger.info('Fetched cities', { count: filtered.length });
+    res.json(filtered);
   } catch (error) {
-    console.error('Error fetching cities:', error);
+    logger.error('Error fetching cities:', error);
     res.status(500).json({ error: 'Failed to fetch cities' });
   }
 });

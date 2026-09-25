@@ -8,8 +8,10 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { fileTypeFromFile } from 'file-type';
 import { z } from 'zod';
+import { createLogger } from '../utils/logger.js';
 
 const router = Router();
+const logger = createLogger('admin');
 
 const objectTypeEnum = ['Офис', 'Склад', 'Торговое помещение', 'Другое'] as const;
 type ObjectType = typeof objectTypeEnum[number];
@@ -164,7 +166,7 @@ router.get('/objects', requireAdmin, async (req: Request, res: Response) => {
     });
     res.json(objects);
   } catch (error) {
-    console.error('Error fetching admin objects:', error);
+    logger.error('Error fetching admin objects:', error);
     res.status(500).json({ error: 'Failed to fetch objects' });
   }
 });
@@ -202,7 +204,7 @@ router.post('/objects', requireAdmin, async (req: Request, res: Response) => {
     });
     res.status(201).json(obj);
   } catch (error) {
-    console.error('Error creating object:', error);
+    logger.error('Error creating object:', error);
     res.status(500).json({ error: 'Failed to create object' });
   }
 });
@@ -237,7 +239,7 @@ router.put('/objects/:id', requireAdmin, async (req: Request, res: Response) => 
     });
     res.json(obj);
   } catch (error) {
-    console.error('Error updating object:', error);
+    logger.error('Error updating object:', error);
     res.status(500).json({ error: 'Failed to update object' });
   }
 });
@@ -271,7 +273,7 @@ router.delete('/objects/:id', requireAdmin, async (req: Request, res: Response) 
 
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting object:', error);
+    logger.error('Error deleting object:', error);
     res.status(500).json({ error: 'Failed to delete object' });
   }
 });
@@ -317,7 +319,7 @@ router.post(
 
       res.json(obj);
     } catch (error) {
-      console.error('Error uploading offer:', error);
+      logger.error('Error uploading offer:', error);
       res.status(500).json({ error: 'Failed to upload offer' });
     }
   }
@@ -346,7 +348,7 @@ router.get('/objects/:id/offer', requireAdmin, async (req: Request, res: Respons
       fileType: obj.offerFileType,
     });
   } catch (error) {
-    console.error('Error fetching offer:', error);
+    logger.error('Error fetching offer:', error);
     res.status(500).json({ error: 'Failed to fetch offer' });
   }
 });
@@ -376,7 +378,7 @@ router.get('/objects/:id/offer/download', requireAdmin, async (req: Request, res
     const safeName = path.basename(obj.offerFileName || 'offer.pdf').replace(/[^\w\-\.А-Яа-яЁё ]+/g, '').slice(0, 200) || 'offer.pdf';
     res.download(filePath, safeName);
   } catch (error) {
-    console.error('Error downloading offer:', error);
+    logger.error('Error downloading offer:', error);
     res.status(500).json({ error: 'Failed to download offer' });
   }
 });
@@ -411,7 +413,7 @@ router.post('/objects/:id/image', requireAdmin, imageUpload.single('image'), asy
 
       res.json(obj);
     } catch (error: any) {
-      console.error('Error uploading image:', error);
+      logger.error('Error uploading image:', error);
       const message = error?.code === 'EACCES'
         ? 'Нет прав на запись в папку загрузок'
         : 'Failed to upload image';
@@ -450,7 +452,7 @@ router.delete('/objects/:id/image', requireAdmin, async (req: Request, res: Resp
 
     res.json(obj || {});
   } catch (error) {
-    console.error('Error removing image:', error);
+    logger.error('Error removing image:', error);
     res.status(500).json({ error: 'Failed to remove image' });
   }
 });
@@ -487,7 +489,7 @@ router.post('/objects/:id/images', requireAdmin, imageUpload.single('image'), as
 
     res.status(201).json(img);
   } catch (error: any) {
-    console.error('Error uploading image:', error);
+    logger.error('Error uploading image:', error);
     res.status(500).json({ error: 'Failed to upload image' });
   }
 });
@@ -522,7 +524,7 @@ router.delete('/objects/:id/images/:imageId', requireAdmin, async (req: Request,
 
     res.status(204).send();
   } catch (error) {
-    console.error('Error removing image:', error);
+    logger.error('Error removing image:', error);
     res.status(500).json({ error: 'Failed to remove image' });
   }
 });
@@ -537,7 +539,7 @@ router.get('/objects/:id/tenants', requireAdmin, async (req: Request, res: Respo
     });
     res.json(tenants);
   } catch (error) {
-    console.error('Error fetching tenants:', error);
+    logger.error('Error fetching tenants:', error);
     res.status(500).json({ error: 'Failed to fetch tenants' });
   }
 });
@@ -558,7 +560,7 @@ router.post('/objects/:id/tenants', requireAdmin, async (req: Request, res: Resp
 
     res.status(201).json(tenant);
   } catch (error) {
-    console.error('Error creating tenant:', error);
+    logger.error('Error creating tenant:', error);
     res.status(500).json({ error: 'Failed to create tenant' });
   }
 });
@@ -579,7 +581,7 @@ router.delete('/objects/:id/tenants/:tenantId', requireAdmin, async (req: Reques
     await prisma.tenant.delete({ where: { id: tenantId } });
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting tenant:', error);
+    logger.error('Error deleting tenant:', error);
     res.status(500).json({ error: 'Failed to delete tenant' });
   }
 });
@@ -594,7 +596,7 @@ router.get('/objects/:id/leases', requireAdmin, async (req: Request, res: Respon
     });
     res.json(leases);
   } catch (error) {
-    console.error('Error fetching leases:', error);
+    logger.error('Error fetching leases:', error);
     res.status(500).json({ error: 'Failed to fetch leases' });
   }
 });
@@ -620,7 +622,7 @@ router.post('/objects/:id/leases', requireAdmin, async (req: Request, res: Respo
 
     res.status(201).json(lease);
   } catch (error) {
-    console.error('Error creating lease:', error);
+    logger.error('Error creating lease:', error);
     res.status(500).json({ error: 'Failed to create lease' });
   }
 });
@@ -641,7 +643,7 @@ router.delete('/objects/:id/leases/:leaseId', requireAdmin, async (req: Request,
     await prisma.lease.delete({ where: { id: leaseId } });
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting lease:', error);
+    logger.error('Error deleting lease:', error);
     res.status(500).json({ error: 'Failed to delete lease' });
   }
 });
@@ -655,7 +657,7 @@ router.get('/objects/:id/expenses', requireAdmin, async (req: Request, res: Resp
     });
     res.json(expenses);
   } catch (error) {
-    console.error('Error fetching expenses:', error);
+    logger.error('Error fetching expenses:', error);
     res.status(500).json({ error: 'Failed to fetch expenses' });
   }
 });
@@ -678,7 +680,7 @@ router.post('/objects/:id/expenses', requireAdmin, async (req: Request, res: Res
 
     res.status(201).json(expense);
   } catch (error) {
-    console.error('Error creating expense:', error);
+    logger.error('Error creating expense:', error);
     res.status(500).json({ error: 'Failed to create expense' });
   }
 });
@@ -699,7 +701,7 @@ router.delete('/objects/:id/expenses/:expenseId', requireAdmin, async (req: Requ
     await prisma.expense.delete({ where: { id: expenseId } });
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting expense:', error);
+    logger.error('Error deleting expense:', error);
     res.status(500).json({ error: 'Failed to delete expense' });
   }
 });
@@ -713,7 +715,7 @@ router.get('/objects/:id/legal-constraints', requireAdmin, async (req: Request, 
     });
     res.json(constraints);
   } catch (error) {
-    console.error('Error fetching legal constraints:', error);
+    logger.error('Error fetching legal constraints:', error);
     res.status(500).json({ error: 'Failed to fetch legal constraints' });
   }
 });
@@ -733,7 +735,7 @@ router.post('/objects/:id/legal-constraints', requireAdmin, async (req: Request,
 
     res.status(201).json(constraint);
   } catch (error) {
-    console.error('Error creating legal constraint:', error);
+    logger.error('Error creating legal constraint:', error);
     res.status(500).json({ error: 'Failed to create legal constraint' });
   }
 });
@@ -754,7 +756,7 @@ router.delete('/objects/:id/legal-constraints/:constraintId', requireAdmin, asyn
     await prisma.legalConstraint.delete({ where: { id: constraintId } });
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting legal constraint:', error);
+    logger.error('Error deleting legal constraint:', error);
     res.status(500).json({ error: 'Failed to delete legal constraint' });
   }
 });
@@ -772,7 +774,7 @@ router.get('/objects/:id/engineering', requireAdmin, async (req: Request, res: R
 
     res.json(spec);
   } catch (error) {
-    console.error('Error fetching engineering spec:', error);
+    logger.error('Error fetching engineering spec:', error);
     res.status(500).json({ error: 'Failed to fetch engineering spec' });
   }
 });
@@ -799,7 +801,7 @@ router.post('/objects/:id/engineering', requireAdmin, async (req: Request, res: 
 
     res.json(spec);
   } catch (error) {
-    console.error('Error saving engineering spec:', error);
+    logger.error('Error saving engineering spec:', error);
     res.status(500).json({ error: 'Failed to save engineering spec' });
   }
 });
@@ -817,7 +819,7 @@ router.get('/objects/:id/vat', requireAdmin, async (req: Request, res: Response)
 
     res.json(vat);
   } catch (error) {
-    console.error('Error fetching VAT rate:', error);
+    logger.error('Error fetching VAT rate:', error);
     res.status(500).json({ error: 'Failed to fetch VAT rate' });
   }
 });
@@ -842,7 +844,7 @@ router.post('/objects/:id/vat', requireAdmin, async (req: Request, res: Response
 
     res.json(vat);
   } catch (error) {
-    console.error('Error saving VAT rate:', error);
+    logger.error('Error saving VAT rate:', error);
     res.status(500).json({ error: 'Failed to save VAT rate' });
   }
 });
@@ -860,7 +862,7 @@ router.get('/objects/:id/moderation', requireAdmin, async (req: Request, res: Re
 
     res.json(moderation);
   } catch (error) {
-    console.error('Error fetching moderation:', error);
+    logger.error('Error fetching moderation:', error);
     res.status(500).json({ error: 'Failed to fetch moderation' });
   }
 });
@@ -889,7 +891,7 @@ router.patch('/objects/:id/moderation', requireAdmin, async (req: Request, res: 
 
     res.json(moderation);
   } catch (error) {
-    console.error('Error updating moderation:', error);
+    logger.error('Error updating moderation:', error);
     res.status(500).json({ error: 'Failed to update moderation' });
   }
 });
@@ -907,7 +909,7 @@ router.get('/objects/:id/placement', requireAdmin, async (req: Request, res: Res
 
     res.json(placement);
   } catch (error) {
-    console.error('Error fetching placement:', error);
+    logger.error('Error fetching placement:', error);
     res.status(500).json({ error: 'Failed to fetch placement' });
   }
 });
@@ -934,7 +936,7 @@ router.patch('/objects/:id/placement', requireAdmin, async (req: Request, res: R
 
     res.json(placement);
   } catch (error) {
-    console.error('Error updating placement:', error);
+    logger.error('Error updating placement:', error);
     res.status(500).json({ error: 'Failed to update placement' });
   }
 });
@@ -948,7 +950,7 @@ router.get('/objects/:id/payments', requireAdmin, async (req: Request, res: Resp
     });
     res.json(payments);
   } catch (error) {
-    console.error('Error fetching payments:', error);
+    logger.error('Error fetching payments:', error);
     res.status(500).json({ error: 'Failed to fetch payments' });
   }
 });
@@ -971,7 +973,7 @@ router.post('/objects/:id/payments', requireAdmin, async (req: Request, res: Res
 
     res.status(201).json(payment);
   } catch (error) {
-    console.error('Error creating payment:', error);
+    logger.error('Error creating payment:', error);
     res.status(500).json({ error: 'Failed to create payment' });
   }
 });
@@ -997,7 +999,7 @@ router.get('/moderation/queue', requireAdmin, async (req: Request, res: Response
     });
     res.json(moderations);
   } catch (error) {
-    console.error('Error fetching moderation queue:', error);
+    logger.error('Error fetching moderation queue:', error);
     res.status(500).json({ error: 'Failed to fetch moderation queue' });
   }
 });

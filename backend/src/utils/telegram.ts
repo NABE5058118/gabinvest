@@ -1,5 +1,8 @@
 import axios from 'axios';
 import crypto from 'crypto';
+import { createLogger } from './logger.js';
+
+const logger = createLogger('telegram');
 
 export interface TelegramUser {
   id: number;
@@ -54,7 +57,7 @@ export async function sendTelegramMessage(
       parse_mode: 'HTML',
     });
   } catch (error) {
-    console.error('Failed to send Telegram message:', error);
+    logger.error('Failed to send Telegram message:', error);
   }
 }
 

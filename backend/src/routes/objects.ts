@@ -1,7 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { createLogger } from '../utils/logger.js';
 
 const router = Router();
+const logger = createLogger('objects');
 
 const ITEMS_PER_PAGE = 20;
 
@@ -102,7 +104,7 @@ router.get('/', async (req: Request, res: Response) => {
       rotationTimestamp,
     });
   } catch (error) {
-    console.error('Error fetching objects:', error);
+    logger.error('Error fetching objects:', error);
     res.status(500).json({ error: 'Failed to fetch objects' });
   }
 });
@@ -118,7 +120,7 @@ router.get('/cities', async (req: Request, res: Response) => {
 
     res.json(cities.map((c) => c.city).filter((city): city is string => city !== null));
   } catch (error) {
-    console.error('Error fetching cities:', error);
+    logger.error('Error fetching cities:', error);
     res.status(500).json({ error: 'Failed to fetch cities' });
   }
 });
@@ -134,7 +136,7 @@ router.get('/anchor-tenants', async (req: Request, res: Response) => {
 
     res.json(tenants.map((t) => t.name));
   } catch (error) {
-    console.error('Error fetching anchor tenants:', error);
+    logger.error('Error fetching anchor tenants:', error);
     res.status(500).json({ error: 'Failed to fetch anchor tenants' });
   }
 });
@@ -163,7 +165,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 
     res.json(object);
   } catch (error) {
-    console.error('Error fetching object:', error);
+    logger.error('Error fetching object:', error);
     res.status(500).json({ error: 'Failed to fetch object' });
   }
 });

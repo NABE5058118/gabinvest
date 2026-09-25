@@ -3,20 +3,22 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
 import { z } from 'zod';
+import { createLogger } from '../utils/logger.js';
 
 const router = Router();
+const logger = createLogger('admin-auth');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET;
 
 if (process.env.NODE_ENV !== 'test') {
   if (!JWT_SECRET) {
-    console.error('FATAL: JWT_SECRET is not set');
+    logger.fatal('JWT_SECRET is not set');
     process.exit(1);
   }
 
   if (!ADMIN_JWT_SECRET) {
-    console.error('FATAL: ADMIN_JWT_SECRET is not set');
+    logger.fatal('ADMIN_JWT_SECRET is not set');
     process.exit(1);
   }
 }
@@ -30,6 +32,7 @@ router.post('/login', async (req: Request, res: Response) => {
   try {
     const parsed = adminLoginSchema.safeParse(req.body);
     if (!parsed.success) {
+      logger.warn('Admin login validation failed', { errors: parsed.error.errors.map((e) => e.message) });
       return res.status(400).json({ error: parsed.error.errors[0].message });
     }
 
@@ -43,11 +46,13 @@ router.post('/login', async (req: Request, res: Response) => {
     });
 
     if (!admin || !admin.passwordHash) {
+      logger.warn('Admin login failed: user not found', { login });
       return res.status(401).json({ error: 'Неверный логин или пароль' });
     }
 
     const isValid = await bcrypt.compare(password, admin.passwordHash);
     if (!isValid) {
+      logger.warn('Admin login failed: invalid password', { login, userId: admin.id });
       return res.status(401).json({ error: 'Неверный логин или пароль' });
     }
 
@@ -57,6 +62,7 @@ router.post('/login', async (req: Request, res: Response) => {
       { expiresIn: '12h', algorithm: 'HS256' }
     );
 
+    logger.info('Admin login success', { userId: admin.id, login });
     res.json({
       user: {
         id: admin.id,
@@ -69,7 +75,7 @@ router.post('/login', async (req: Request, res: Response) => {
       token,
     });
   } catch (error) {
-    console.error('Error in admin login:', error);
+    logger.error('Error in admin login', error);
     res.status(500).json({ error: 'Failed to login' });
   }
 });

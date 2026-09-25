@@ -1,8 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { authMiddleware } from '../middleware/jwt.js';
+import { createLogger } from '../utils/logger.js';
 
 const router = Router();
+const logger = createLogger('favorites');
 
 router.use(authMiddleware);
 
@@ -24,9 +26,10 @@ router.get('/', async (req: Request, res: Response) => {
       include: { object: true },
     });
 
+    logger.info('Fetched favorites', { userId, count: favorites.length });
     res.json(favorites.map((f: { object: any }) => f.object));
   } catch (error) {
-    console.error('Error fetching favorites:', error);
+    logger.error('Error fetching favorites:', error);
     res.status(500).json({ error: 'Failed to fetch favorites' });
   }
 });
@@ -68,9 +71,10 @@ router.post('/:objectId', async (req: Request, res: Response) => {
       },
     });
 
+    logger.info('Favorite added', { userId, objectId });
     res.status(201).json(favorite);
   } catch (error) {
-    console.error('Error adding favorite:', error);
+    logger.error('Error adding favorite:', error);
     res.status(500).json({ error: 'Failed to add favorite' });
   }
 });
@@ -102,9 +106,10 @@ router.delete('/:objectId', async (req: Request, res: Response) => {
       },
     });
 
+    logger.info('Favorite removed', { userId, objectId });
     res.status(204).send();
   } catch (error) {
-    console.error('Error removing favorite:', error);
+    logger.error('Error removing favorite:', error);
     res.status(500).json({ error: 'Failed to remove favorite' });
   }
 });
