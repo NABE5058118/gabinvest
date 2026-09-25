@@ -71,7 +71,7 @@ async def admin(message: types.Message):
             inline_keyboard=[[
                 types.InlineKeyboardButton(
                     text='Открыть админ панель',
-                    web_app=WebAppInfo(url=f"{WEB_APP_URL.rstrip('/')}/admin")
+                    url=f"{WEB_APP_URL.rstrip('/')}/admin-login"
                 )
             ]]
         )

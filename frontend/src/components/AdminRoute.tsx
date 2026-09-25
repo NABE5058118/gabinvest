@@ -1,4 +1,5 @@
 import { Navigate } from 'react-router-dom';
+import AdminLoginPage from '../pages/AdminLoginPage';
 import { useAuth } from '../context/AuthContext';
 
 export default function AdminRoute({ children }: { children: React.ReactNode }) {
@@ -21,7 +22,7 @@ export default function AdminRoute({ children }: { children: React.ReactNode }) 
   }
 
   if (!user || user.role !== 'admin') {
-    return <Navigate to="/" replace />;
+    return <AdminLoginPage />;
   }
 
   return children;
