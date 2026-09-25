@@ -9,7 +9,6 @@ import LeadsPage from './pages/LeadsPage';
 import FavoritesPage from './pages/FavoritesPage';
 import ProfilePage from './pages/ProfilePage';
 import ProfileEditPage from './pages/ProfileEditPage';
-import AdminLoginPage from './pages/AdminLoginPage';
 import AdminObjectsPage from './pages/admin/AdminObjectsPage';
 import AdminObjectForm from './pages/admin/AdminObjectForm';
 import AdminOfferUpload from './pages/admin/AdminOfferUpload';
@@ -41,7 +40,6 @@ export default function App() {
             {/* <Route path="/login" element={<LoginPage />} /> */}
             {/* <Route path="/register" element={<RegisterPage />} /> */}
             {/* <Route path="/telegram-auth" element={<TelegramAuthPage />} /> */}
-            <Route path="/admin-login" element={<AdminLoginPage />} />
             <Route path="/admin" element={<AdminRoute><Layout /></AdminRoute>}>
               <Route index element={<AdminObjectsPage />} />
               <Route path="leads" element={<LeadsPage />} />
