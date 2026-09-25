@@ -48,40 +48,6 @@ export default function CatalogPage() {
   const [lastRotation, setLastRotation] = useState<string | null>(null);
   const { objects, loading, error } = useObjects();
 
-  const hasTelegram = typeof window !== 'undefined' && !!window.Telegram?.WebApp;
-
-  if (!hasTelegram) {
-    const tgInfo = typeof window !== 'undefined' ? {
-      hasTelegram: !!window.Telegram,
-      hasWebApp: !!window.Telegram?.WebApp,
-      hasInitData: !!window.Telegram?.WebApp?.initData,
-      initDataLength: window.Telegram?.WebApp?.initData?.length || 0,
-      user: window.Telegram?.WebApp?.initDataUnsafe?.user || null,
-    } : null;
-
-    return (
-      <div className={styles.page}>
-        <div className={styles.empty}>
-          <div className={styles.emptyIcon}>
-            <LayoutGrid size={64} strokeWidth={1} color="#ccc" />
-          </div>
-          <p className={styles.emptyText}>Откройте каталог через Telegram-бота</p>
-          <p className={styles.emptyHint}>На текущий момент вход и регистрация работают только через Telegram.</p>
-          {tgInfo && (
-            <pre className={styles.debugInfo}>{JSON.stringify(tgInfo, null, 2)}</pre>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  const tgDebug = typeof window !== 'undefined' ? {
-    hasInitData: !!window.Telegram?.WebApp?.initData,
-    initDataLength: window.Telegram?.WebApp?.initData?.length || 0,
-    user: window.Telegram?.WebApp?.initDataUnsafe?.user || null,
-    token: typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null,
-  } : null;
-
   const fetchObjectsWithRotation = useCallback(() => {
     setRotationKey((k) => k + 1);
   }, []);
@@ -175,16 +141,6 @@ export default function CatalogPage() {
 
   return (
     <div className={styles.page}>
-      {tgDebug && (
-        <div className={styles.debugBanner}>
-          <div>
-            <strong>Telegram debug</strong>
-            <div>initData: {tgDebug.hasInitData ? `yes (${tgDebug.initDataLength})` : 'no'}</div>
-            <div>user: {JSON.stringify(tgDebug.user)}</div>
-            <div>token: {tgDebug.token ? `present (${tgDebug.token.length})` : 'missing'}</div>
-          </div>
-        </div>
-      )}
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>GAB Invest</h1>
