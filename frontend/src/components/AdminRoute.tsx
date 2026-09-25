@@ -1,4 +1,3 @@
-import { Navigate } from 'react-router-dom';
 import AdminLoginPage from '../pages/AdminLoginPage';
 import { useAuth } from '../context/AuthContext';
 
