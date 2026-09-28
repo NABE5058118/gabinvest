@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { adminApi } from '../utils/adminApi';
-import styles from './Auth.module.css';
+import { adminApi } from '@utils/adminApi';
+import styles from '@styles/Auth.module.css';
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
@@ -21,8 +21,8 @@ export default function AdminLoginPage() {
       localStorage.setItem('adminToken', data.token);
       localStorage.setItem('adminUser', JSON.stringify(data.user));
       window.location.reload();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Ошибка входа');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Ошибка входа');
     } finally {
       setLoading(false);
     }

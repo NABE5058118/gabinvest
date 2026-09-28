@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, MessageCircle } from 'lucide-react';
-import { api } from '../utils/api';
-import { useAuth } from '../context/AuthContext';
-import styles from './Auth.module.css';
+import { api } from '@utils/api';
+import { useAuth } from '@context/AuthContext';
+import styles from '@styles/Auth.module.css';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -27,8 +27,8 @@ export default function RegisterPage() {
       const res = await api.post('/api/auth/register', form);
       authLogin(res.data.user, res.data.token);
       navigate('/');
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Ошибка регистрации');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Ошибка регистрации');
     } finally {
       setLoading(false);
     }

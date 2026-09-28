@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
-import { AuthProvider, useAuth } from '../context/AuthContext';
-import { FavoritesProvider, useFavorites } from '../context/FavoritesContext';
-import { api } from '../utils/api';
+import { AuthProvider, useAuth } from '@context/AuthContext';
+import { FavoritesProvider, useFavorites } from '@context/FavoritesContext';
+import { api } from '@utils/api';
 
-vi.mock('../utils/api', () => ({
+vi.mock('@utils/api', () => ({
   api: {
     post: vi.fn(),
     get: vi.fn(),
@@ -58,7 +58,7 @@ describe('AuthContext', () => {
     localStorage.setItem('token', 'fake-token');
     localStorage.setItem('user', JSON.stringify(mockUser));
 
-    (api.get as any).mockResolvedValue({ data: mockUser });
+    (api.get as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue({ data: mockUser });
 
     await act(async () => {
       render(
@@ -120,8 +120,8 @@ describe('FavoritesContext', () => {
     localStorage.setItem('token', 'fake-token');
     localStorage.setItem('user', JSON.stringify(mockUser));
 
-    (api.get as any).mockResolvedValue({ data: [] });
-    (api.post as any).mockResolvedValue({ data: {} });
+    (api.get as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue({ data: [] });
+    (api.post as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue({ data: {} });
 
     await act(async () => {
       render(

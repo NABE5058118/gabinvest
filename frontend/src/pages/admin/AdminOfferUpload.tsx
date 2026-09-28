@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Upload } from 'lucide-react';
-import { adminApi } from '../../utils/adminApi';
-import styles from './AdminOfferUpload.module.css';
+import { adminApi } from '@utils/adminApi';
+import styles from '@styles/AdminOfferUpload.module.css';
 
 type ObjectItem = {
   id: string;
@@ -42,7 +42,7 @@ export default function AdminOfferUpload() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       navigate(`/admin/objects/${data.id}`);
-    } catch (err) {
+    } catch {
       setError('Ошибка загрузки файла');
     } finally {
       setLoading(false);

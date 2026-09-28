@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, MessageCircle } from 'lucide-react';
-import { api } from '../utils/api';
-import { useAuth } from '../context/AuthContext';
-import styles from './Auth.module.css';
+import { api } from '@utils/api';
+import { useAuth } from '@context/AuthContext';
+import styles from '@styles/Auth.module.css';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -26,12 +26,12 @@ export default function LoginPage() {
       } else {
         navigate('/');
       }
-    } catch (err: any) {
-      const status = err.response?.status;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } }).response?.status;
       if (status === 429) {
         setError('Слишком много попыток. Подождите 15 минут.');
       } else {
-        setError(err.response?.data?.error || 'Ошибка входа');
+        setError((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Ошибка входа');
       }
     } finally {
       setLoading(false);

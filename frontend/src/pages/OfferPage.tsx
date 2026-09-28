@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, ChevronDown, Download } from 'lucide-react';
-import { ObjectType } from '../utils/types';
-import { API_URL } from '../utils/api';
-import { api } from '../utils/api';
-import styles from './OfferPage.module.css';
+import { ObjectType } from '@utils/types';
+import { API_URL } from '@utils/api';
+import { api } from '@utils/api';
+import styles from '@styles/OfferPage.module.css';
 
 function ExpandableSection({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -56,7 +56,8 @@ export default function OfferPage() {
     );
   }
 
-  const offer = (object.commercialOffer?.content || {}) as Record<string, any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const offer = (object.commercialOffer?.content || {}) as any;
 
   const handleDownload = () => {
     if (object.offerFileUrl) {
@@ -111,7 +112,8 @@ export default function OfferPage() {
                 {offer.арендный_бизнес.якорные_арендаторы && (
                   <div className={styles.subsection}>
                     <h3 className={styles.subsectionTitle}>Якорные арендаторы</h3>
-                    {offer.арендный_бизнес.якорные_арендаторы.map((tenant: any, idx: number) => (
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {(offer.арендный_бизнес.якорные_арендаторы as any).map((tenant: { название: string; площадь: string; срок_договора: string }, idx: number) => (
                       <div key={idx} className={styles.tenantRow}>
                         <span className={styles.tenantName}>{tenant.название}</span>
                         <span className={styles.tenantValue}>{tenant.площадь} м² • {tenant.срок_договора}</span>

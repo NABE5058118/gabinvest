@@ -1,20 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { api } from '../utils/api';
-import { getLeadClientId } from '../utils/types';
-import { Lead } from '../utils/types';
-import styles from './MyLeadsPage.module.css';
+import { api } from '@utils/api';
+import { getLeadClientId } from '@utils/types';
+import { Lead } from '@utils/types';
+import styles from '@styles/MyLeadsPage.module.css';
 
 export default function MyLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchLeads();
-  }, []);
 
   const fetchLeads = async () => {
     try {
@@ -23,12 +19,17 @@ export default function MyLeadsPage() {
         headers: { 'x-client-id': getLeadClientId() },
       });
       setLeads(data);
-    } catch (err) {
+    } catch {
       setError('Ошибка загрузки');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchLeads();
+  }, []);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);

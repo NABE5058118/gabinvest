@@ -23,7 +23,7 @@ export interface ObjectType {
   commercialOffer?: {
     id: string;
     objectId: string;
-    content: any;
+    content: unknown;
   };
   tenants?: Array<{
     id: string;
@@ -81,7 +81,7 @@ export interface ObjectType {
 export type CommercialOffer = {
   id: string;
   objectId: string;
-  content: any;
+  content: unknown;
 };
 
 export type LeadPayload = {

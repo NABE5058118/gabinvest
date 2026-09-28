@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { adminApi } from '../../utils/adminApi';
+import { adminApi } from '@utils/adminApi';
 import { CITIES } from '../../data/cities';
-import styles from './AdminObjectForm.module.css';
+import styles from '@styles/AdminObjectForm.module.css';
 
 type ObjectItem = {
   id: string;
@@ -156,8 +156,8 @@ export default function AdminObjectForm() {
       });
 
       navigate(`/admin/objects/${data.id}`);
-    } catch (err: any) {
-      const backendMessage = err?.response?.data?.error;
+    } catch (err: unknown) {
+      const backendMessage = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
       setError(backendMessage || 'Ошибка сохранения');
     } finally {
       setLoading(false);

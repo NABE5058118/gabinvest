@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { LayoutGrid, Heart, FileText, User, LogOut } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import styles from './Layout.module.css';
+import { useAuth } from '@context/AuthContext';
+import styles from '@styles/Layout.module.css';
 
 export default function Layout() {
   const { user } = useAuth();

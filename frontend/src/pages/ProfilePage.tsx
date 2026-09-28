@@ -1,7 +1,7 @@
 import { User, ChevronRight, Settings, Mail, Phone, LogOut, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import styles from './ProfilePage.module.css';
+import { useAuth } from '@context/AuthContext';
+import styles from '@styles/ProfilePage.module.css';
 
 export default function ProfilePage() {
   const navigate = useNavigate();

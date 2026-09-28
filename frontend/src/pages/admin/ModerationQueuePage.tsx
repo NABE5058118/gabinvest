@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, XCircle, Eye } from 'lucide-react';
-import { adminApi } from '../../utils/adminApi';
-import styles from './ModerationQueue.module.css';
+import { adminApi } from '@utils/adminApi';
+import styles from '@styles/ModerationQueue.module.css';
 
 type ModerationItem = {
   id: string;
@@ -28,20 +28,30 @@ export default function ModerationQueuePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchItems();
-  }, [statusFilter]);
+    let cancelled = false;
+    const load = async () => {
+      try {
+        setLoading(true);
+        const { data } = await adminApi.get(`/api/admin/moderation/queue?status=${statusFilter}`);
+        if (!cancelled) {
+          setItems(data);
+        }
+      } catch {
+        if (!cancelled) {
+          setError('Ошибка загрузки');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+    load();
 
-  const fetchItems = async () => {
-    try {
-      setLoading(true);
-      const { data } = await adminApi.get(`/api/admin/moderation/queue?status=${statusFilter}`);
-      setItems(data);
-    } catch (err) {
-      setError('Ошибка загрузки');
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [statusFilter]);
 
   const handleStatusUpdate = async (objectId: string, newStatus: string) => {
     try {

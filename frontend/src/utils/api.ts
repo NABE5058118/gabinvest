@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getInitData } from '../utils/telegram';
+import { getInitData } from '@utils/telegram';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -40,7 +40,7 @@ export type ObjectType = {
 export type CommercialOffer = {
   id: string;
   objectId: string;
-  content: any;
+  content: unknown;
 };
 
 export type LeadPayload = {

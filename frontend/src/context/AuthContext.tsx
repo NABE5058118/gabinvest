@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { api } from '../utils/api';
-import { getInitData, getTelegramUser } from '../utils/telegram';
+import { api } from '@utils/api';
+import { getInitData, getTelegramUser } from '@utils/telegram';
 
 type User = {
   id: string;
@@ -49,7 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token && stored) {
       try {
         const parsed = JSON.parse(stored);
-        setUser(parsed);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setUser(parsed as User);
         api
           .get<User>('/api/auth/me')
           .then((res) => {
@@ -93,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) {

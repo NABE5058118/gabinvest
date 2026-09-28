@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Check } from 'lucide-react';
-import styles from './LeadSuccessPage.module.css';
+import styles from '@styles/LeadSuccessPage.module.css';
 
 export default function LeadSuccessPage() {
   const navigate = useNavigate();

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { adminApi } from '../utils/adminApi';
-import { Lead } from '../utils/types';
-import styles from './LeadsPage.module.css';
+import { adminApi } from '@utils/adminApi';
+import { Lead } from '@utils/types';
+import styles from '@styles/LeadsPage.module.css';
 
 const STATUS_OPTIONS = [
   { value: 'new', label: 'Новая' },
@@ -18,21 +18,22 @@ export default function LeadsPage() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchLeads();
-  }, []);
-
   const fetchLeads = async () => {
     try {
       setLoading(true);
       const { data } = await adminApi.get('/api/leads');
       setLeads(data);
-    } catch (err) {
+    } catch {
       setError('Ошибка загрузки');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchLeads();
+  }, []);
 
   const handleStatusChange = async (leadId: string, status: string) => {
     try {

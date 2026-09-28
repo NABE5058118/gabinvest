@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
-import { api } from '../utils/api';
+import { api } from '@utils/api';
 
 type FavoritesContextValue = {
   favoriteIds: Set<string>;
@@ -22,6 +22,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       if (stored) {
         try {
           const parsed = JSON.parse(stored) as string[];
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setFavoriteIds(new Set(parsed));
         } catch {
           // ignore
@@ -97,6 +98,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useFavorites() {
   const ctx = useContext(FavoritesContext);
   if (!ctx) {

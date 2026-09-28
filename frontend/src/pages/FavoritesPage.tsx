@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { Heart } from 'lucide-react';
-import { useFavorites } from '../context/FavoritesContext';
-import { useObjects } from '../utils/useObjects';
-import { ObjectType } from '../utils/types';
-import styles from './FavoritesPage.module.css';
+import { useFavorites } from '@context/FavoritesContext';
+import { useObjects } from '@utils/useObjects';
+import { ObjectType } from '@utils/types';
+import styles from '@styles/FavoritesPage.module.css';
 
 export default function FavoritesPage() {
   const navigate = useNavigate();
@@ -46,23 +46,25 @@ export default function FavoritesPage() {
             </button>
           </div>
         ) : (
-          favorites.map((obj) => (
-            <div key={obj.id} className={styles.card} onClick={() => navigate(`/objects/${obj.id}`)}>
-              <div className={styles.cardImage}>
-                <div className={styles.placeholder}>
-                  <Heart size={48} strokeWidth={1} color="#ccc" />
+          <div className={styles.list}>
+            {favorites.map((obj) => (
+              <div key={obj.id} className={styles.card} onClick={() => navigate(`/objects/${obj.id}`)}>
+                <div className={styles.cardImage}>
+                  <div className={styles.placeholder}>
+                    <Heart size={48} strokeWidth={1} color="#ccc" />
+                  </div>
+                </div>
+                <div className={styles.cardBody}>
+                  <h3 className={styles.cardTitle}>{obj.title}</h3>
+                  <p className={styles.cardLocation}>{obj.location}</p>
+                  <div className={styles.cardFooter}>
+                    <span className={styles.price}>{obj.price.toLocaleString('ru-RU')} ₽</span>
+                    <span className={styles.yield}>Доходность: {obj.yieldPercent}%</span>
+                  </div>
                 </div>
               </div>
-              <div className={styles.cardBody}>
-                <h3 className={styles.cardTitle}>{obj.title}</h3>
-                <p className={styles.cardLocation}>{obj.location}</p>
-                <div className={styles.cardFooter}>
-                  <span className={styles.price}>{obj.price.toLocaleString('ru-RU')} ₽</span>
-                  <span className={styles.yield}>Доходность: {obj.yieldPercent}%</span>
-                </div>
-              </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../utils/api';
-import { useAuth } from '../context/AuthContext';
+import { api } from '@utils/api';
+import { useAuth } from '@context/AuthContext';
 
 type Status = 'idle' | 'loading' | 'done' | 'error';
 
@@ -19,6 +19,7 @@ export default function TelegramAutoAuth() {
     if (!tgUser?.id) return;
 
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatus('loading');
 
     api

@@ -1,10 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Heart, MapPin, LayoutGrid, Users, Calendar, FileText, Wrench, Percent, TrendingUp, Landmark } from 'lucide-react';
-import { useFavorites } from '../context/FavoritesContext';
-import { ObjectType } from '../utils/types';
-import { api } from '../utils/api';
-import styles from './ObjectPage.module.css';
+import { useFavorites } from '@context/FavoritesContext';
+import { ObjectType } from '@utils/types';
+import { api } from '@utils/api';
+import styles from '@styles/ObjectPage.module.css';
 
 export default function ObjectPage() {
   const { id } = useParams();

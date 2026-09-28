@@ -1,4 +1,4 @@
-import AdminLoginPage from '../pages/AdminLoginPage';
+import AdminLoginPage from '@pages/AdminLoginPage';
 
 function getAdminUser() {
   try {

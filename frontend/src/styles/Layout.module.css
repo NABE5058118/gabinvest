@@ -2,7 +2,10 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  width: 100vw;
+  height: 100dvh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   background: #fff;
 }
 
@@ -10,6 +13,9 @@
   flex: 1;
   overflow-y: auto;
   padding-bottom: 80px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 .nav {
@@ -24,6 +30,24 @@
   justify-content: space-around;
   align-items: center;
   z-index: 100;
+}
+
+@media (min-width: 768px) {
+  .nav {
+    max-width: 768px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 16px 16px 0 0;
+    border-left: 1px solid #e5e5e5;
+    border-right: 1px solid #e5e5e5;
+  }
+}
+
+@media (min-width: 1024px) {
+
+  .nav {
+    max-width: 1024px;
+  }
 }
 
 .navItem {

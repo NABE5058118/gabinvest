@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { api } from '../utils/api';
-import styles from './ProfileEditPage.module.css';
+import { useAuth } from '@context/AuthContext';
+import { api } from '@utils/api';
+import styles from '@styles/ProfileEditPage.module.css';
 
 export default function ProfileEditPage() {
   const navigate = useNavigate();
@@ -18,6 +18,7 @@ export default function ProfileEditPage() {
 
   useEffect(() => {
     if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         firstName: user.firstName || '',
         lastName: user.lastName || '',

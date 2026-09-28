@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Upload } from 'lucide-react';
-import { adminApi } from '../../utils/adminApi';
-import styles from './AdminObjects.module.css';
+import { adminApi } from '@utils/adminApi';
+import styles from '@styles/AdminObjects.module.css';
 
 type ObjectItem = {
   id: string;
@@ -26,21 +26,22 @@ export default function AdminObjectsPage() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchItems();
-  }, []);
-
   const fetchItems = async () => {
     try {
       setLoading(true);
       const { data } = await adminApi.get('/api/admin/objects');
       setItems(data);
-    } catch (err) {
+    } catch {
       setError('Ошибка загрузки');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchItems();
+  }, []);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Удалить объект?')) return;

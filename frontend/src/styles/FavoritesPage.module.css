@@ -28,6 +28,12 @@
   min-height: 100vh;
 }
 
+@media (min-width: 768px) {
+  .content {
+    padding: 0;
+  }
+}
+
 .empty {
   text-align: center;
   padding: 80px 20px;
@@ -58,11 +64,32 @@
   color: #000;
 }
 
+.list {
+  display: grid;
+  gap: 16px;
+  padding: 12px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .list {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+}
+
 .card {
   border: 1px solid #e5e5e5;
   border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 12px;
+  margin-bottom: 0;
   cursor: pointer;
 }
 

@@ -7,6 +7,7 @@ export default function TelegramSplash({ children }: { children: React.ReactNode
 
   useEffect(() => {
     if (typeof window === 'undefined') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStatus('ready');
       return;
     }

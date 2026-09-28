@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { ObjectType } from '../utils/types';
-import { api } from '../utils/api';
-import { getLeadClientId } from '../utils/types';
-import styles from './LeadFormPage.module.css';
+import { ObjectType } from '@utils/types';
+import { api } from '@utils/api';
+import { getLeadClientId } from '@utils/types';
+import styles from '@styles/LeadFormPage.module.css';
 
 export default function LeadFormPage() {
   const { id } = useParams();

@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Filter, X, Heart, MapPin, LayoutGrid, RefreshCw, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { useFavorites } from '../context/FavoritesContext';
-import { useObjects } from '../utils/useObjects';
+import { useFavorites } from '@context/FavoritesContext';
+import { useObjects } from '@utils/useObjects';
 import { CITIES, OBJECT_TYPES } from '../data/cities';
-import styles from './CatalogPage.module.css';
+import styles from '@styles/CatalogPage.module.css';
 
 type SortOption = 'createdAt' | 'price' | 'area' | 'yieldPercent' | 'leaseEndDate';
 

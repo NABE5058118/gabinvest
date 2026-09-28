@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Smartphone, CheckCircle } from 'lucide-react';
-import { api } from '../utils/api';
-import { useAuth } from '../context/AuthContext';
-import styles from './Auth.module.css';
+import { api } from '@utils/api';
+import { useAuth } from '@context/AuthContext';
+import styles from '@styles/Auth.module.css';
 
 export default function TelegramAuthPage() {
   const navigate = useNavigate();
@@ -38,8 +38,8 @@ export default function TelegramAuthPage() {
 
       setSuccess(true);
       setTimeout(() => navigate('/', { replace: true }), 800);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Ошибка');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Ошибка');
     } finally {
       setLoading(false);
     }
