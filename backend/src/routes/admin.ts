@@ -3,12 +3,12 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { prisma } from '../lib/prisma.ts';
+import { prisma } from '../lib/prisma.js';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { fileTypeFromFile } from 'file-type';
 import { z } from 'zod';
-import { createLogger } from '../utils/logger.ts';
+import { createLogger } from '../utils/logger.js';
 
 const router = Router();
 const logger = createLogger('admin');

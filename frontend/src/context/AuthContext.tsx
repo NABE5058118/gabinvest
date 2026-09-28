@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { api } from '../utils/api';
+import { getInitData, getTelegramUser } from '../utils/telegram';
 
 type User = {
   id: string;
@@ -66,6 +67,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout();
       }
     }
+
+    const tgUser = getTelegramUser();
+    const initData = getInitData();
+    if (tgUser?.id && initData) {
+      setLoading(true);
+      api
+        .post('/api/auth/telegram', { initData })
+        .then((res) => {
+          login(res.data.user, res.data.token);
+        })
+        .catch(() => {
+          setLoading(false);
+        });
+      return;
+    }
+
     setLoading(false);
   }, []);
 
