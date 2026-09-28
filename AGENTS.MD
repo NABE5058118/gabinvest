@@ -47,11 +47,14 @@ index-VEppiFoK.js:193  GET https://gabinvest.cloud-ip.cc/api/objects 500 (Intern
 
 ## Current State
 
-- Backend: 15/15 тестов проходят, TypeScript без ошибок
+- Backend: 26/26 тестов проходят, TypeScript без ошибок локально
 - Frontend: 5/5 тестов проходят, TypeScript без ошибок
 - Миграции Prisma созданы: `20260913115613_init`
-- Локально всё работает, на сервере есть проблемы с запуском:
-  - Backend падает с ошибкой модуля `/app/dist/routes/objects`
-  - Frontend падает с `host not found in upstream "backend"`
-  - Бот падает с таймаутом к Telegram API
-- Нужно доделать деплой на сервер Selectel
+- Исправлен вход в админку: после логина `/admin` теперь корректно подхватывает `adminUser` из `localStorage` через `window.location.reload()`
+- Добавлен централизованный логгер бэкенда `backend/src/utils/logger.ts` с уровнями `debug/info/warn/error/fatal`, ISO-таймстемпами и авто-редакцией чувствительных полей
+- Заменены все `console.error`/`console.log` в бэкенде на логгер, добавлен HTTP-миддлвар для логирования запросов/ответов
+- Проблема: Docker-сборка бэкенда падает на `TS2307` для `./utils/logger.js`; локально `tsc` проходит. Сейчас импорты логгера сделаны в `.js` формате как остальной бэкенд, `allowImportingTsExtensions` убран из `tsconfig.json`
+- На сервере RF остаётся открытым:
+  - Frontend падал с `host not found in upstream "backend"`
+  - Бот падал с таймаутом к Telegram API
+- Деплой: git pull → docker compose prod → проверка логов
