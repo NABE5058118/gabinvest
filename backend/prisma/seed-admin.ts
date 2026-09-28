@@ -8,6 +8,33 @@ async function main() {
   const adminPhone = process.env.ADMIN_PHONE || '+79000000000';
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
   const adminFirstName = process.env.ADMIN_FIRST_NAME || 'Admin';
+  const adminTelegramId = process.env.ADMIN_TELEGRAM_ID;
+
+  if (adminTelegramId) {
+    const existing = await prisma.user.findFirst({
+      where: { telegramId: adminTelegramId },
+    });
+
+    if (existing) {
+      const updated = await prisma.user.update({
+        where: { id: existing.id },
+        data: { role: 'admin' },
+      });
+      console.log('Admin role assigned to telegram user:', updated.telegramId);
+      return;
+    }
+
+    const user = await prisma.user.create({
+      data: {
+        telegramId: adminTelegramId,
+        firstName: adminFirstName,
+        role: 'admin',
+      },
+    });
+
+    console.log('Admin user created by telegram id:', user.telegramId);
+    return;
+  }
 
   const existing = await prisma.user.findFirst({
     where: { OR: [{ email: adminEmail }, { phone: adminPhone }] },
