@@ -53,13 +53,32 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+const IMAGE_MIME_ALIASES: Record<string, string> = {
+  'image/jpg': 'image/jpeg',
+};
+
+function normalizeMime(mime: string): string {
+  return IMAGE_MIME_ALIASES[mime] || mime;
+}
+
+const ALLOWED_IMAGE_MIMES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/jpg',
+]);
+
 async function verifyFileType(filePath: string, expectedMime: string): Promise<boolean> {
   try {
     const type = await fileTypeFromFile(filePath);
-    if (!type) return false;
-    return type.mime === expectedMime;
+    if (!type) {
+      const ext = path.extname(filePath).toLowerCase();
+      return ALLOWED_IMAGE_MIMES.has(normalizeMime(expectedMime)) || ['.jpg', '.jpeg', '.png', '.webp'].includes(ext);
+    }
+    return normalizeMime(type.mime) === normalizeMime(expectedMime);
   } catch {
-    return false;
+    const ext = path.extname(filePath).toLowerCase();
+    return ALLOWED_IMAGE_MIMES.has(normalizeMime(expectedMime)) || ['.jpg', '.jpeg', '.png', '.webp'].includes(ext);
   }
 }
 
@@ -168,6 +187,33 @@ router.get('/objects', requireAdmin, async (req: Request, res: Response) => {
   } catch (error) {
     logger.error('Error fetching admin objects:', error);
     res.status(500).json({ error: 'Failed to fetch objects' });
+  }
+});
+
+router.get('/objects/:id', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const obj = await prisma.object.findUnique({
+      where: { id },
+      include: {
+        images: true,
+        tenants: true,
+        expenses: true,
+        legalConstraints: true,
+        engineeringSpec: true,
+        vatRate: true,
+        moderation: true,
+        placement: true,
+        leases: { include: { tenant: true } },
+      },
+    });
+    if (!obj) {
+      return res.status(404).json({ error: 'Object not found' });
+    }
+    res.json(obj);
+  } catch (error) {
+    logger.error('Error fetching object:', error);
+    res.status(500).json({ error: 'Failed to fetch object' });
   }
 });
 
