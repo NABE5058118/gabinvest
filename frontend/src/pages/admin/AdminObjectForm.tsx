@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { adminApi } from '../../utils/adminApi';
+import { CITIES } from '../../data/cities';
 import styles from './AdminObjectForm.module.css';
 
 type ObjectItem = {
@@ -23,24 +24,6 @@ type ObjectItem = {
   moderation?: { status: string };
   placement?: { type: string; price?: number; isExclusive: boolean };
 };
-
-const RUSSIAN_CITIES = [
-  'Москва',
-  'Санкт-Петербург',
-  'Новосибирск',
-  'Екатеринбург',
-  'Казань',
-  'Нижний Новгород',
-  'Челябинск',
-  'Самара',
-  'Омск',
-  'Ростов-на-Дону',
-  'Уфа',
-  'Красноярск',
-  'Пермь',
-  'Воронеж',
-  'Волгоград',
-];
 
 export default function AdminObjectForm() {
   const { id } = useParams();
@@ -260,7 +243,7 @@ export default function AdminObjectForm() {
             onChange={(e) => setForm({ ...form, city: e.target.value })}
           >
             <option value="">Не указано</option>
-            {RUSSIAN_CITIES.map((city) => (
+            {CITIES.map((city) => (
               <option key={city} value={city}>{city}</option>
             ))}
           </select>

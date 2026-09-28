@@ -3,25 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Filter, X, Heart, MapPin, LayoutGrid, RefreshCw, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useFavorites } from '../context/FavoritesContext';
 import { useObjects } from '../utils/useObjects';
+import { CITIES, OBJECT_TYPES } from '../data/cities';
 import styles from './CatalogPage.module.css';
-
-const RUSSIAN_CITIES = [
-  'Москва',
-  'Санкт-Петербург',
-  'Новосибирск',
-  'Екатеринбург',
-  'Казань',
-  'Нижний Новгород',
-  'Челябинск',
-  'Самара',
-  'Омск',
-  'Ростов-на-Дону',
-  'Уфа',
-  'Красноярск',
-  'Пермь',
-  'Воронеж',
-  'Волгоград',
-];
 
 type SortOption = 'createdAt' | 'price' | 'area' | 'yieldPercent' | 'leaseEndDate';
 
@@ -189,10 +172,9 @@ export default function CatalogPage() {
           onChange={(e) => setFilters({ ...filters, type: e.target.value })}
         >
           <option value="all">Тип</option>
-          <option value="Офис">Офис</option>
-          <option value="Склад">Склад</option>
-          <option value="Торговое помещение">Торговое помещение</option>
-          <option value="Другое">Другое</option>
+          {OBJECT_TYPES.map((type) => (
+            <option key={type} value={type}>{type}</option>
+          ))}
         </select>
         <input
           className={styles.chip}
@@ -214,7 +196,7 @@ export default function CatalogPage() {
           onChange={(e) => setFilters({ ...filters, city: e.target.value })}
         >
           <option value="">Город</option>
-          {RUSSIAN_CITIES.map((city) => (
+          {CITIES.map((city) => (
             <option key={city} value={city}>{city}</option>
           ))}
         </select>
@@ -319,38 +301,16 @@ export default function CatalogPage() {
             <div className={styles.filterBody}>
               <div className={styles.filterSection}>
                 <h3 className={styles.filterSectionTitle}>Тип объекта</h3>
-                <label className={styles.checkbox}>
-                  <input
-                    type="checkbox"
-                    checked={filters.type === 'Офис'}
-                    onChange={(e) => setFilters({ ...filters, type: e.target.checked ? 'Офис' : 'all' })}
-                  />
-                  <span>Офис</span>
-                </label>
-                <label className={styles.checkbox}>
-                  <input
-                    type="checkbox"
-                    checked={filters.type === 'Склад'}
-                    onChange={(e) => setFilters({ ...filters, type: e.target.checked ? 'Склад' : 'all' })}
-                  />
-                  <span>Склад</span>
-                </label>
-                <label className={styles.checkbox}>
-                  <input
-                    type="checkbox"
-                    checked={filters.type === 'Торговое помещение'}
-                    onChange={(e) => setFilters({ ...filters, type: e.target.checked ? 'Торговое помещение' : 'all' })}
-                  />
-                  <span>Торговое помещение</span>
-                </label>
-                <label className={styles.checkbox}>
-                  <input
-                    type="checkbox"
-                    checked={filters.type === 'Другое'}
-                    onChange={(e) => setFilters({ ...filters, type: e.target.checked ? 'Другое' : 'all' })}
-                  />
-                  <span>Другое</span>
-                </label>
+                {OBJECT_TYPES.map((type) => (
+                  <label key={type} className={styles.checkbox}>
+                    <input
+                      type="checkbox"
+                      checked={filters.type === type}
+                      onChange={(e) => setFilters({ ...filters, type: e.target.checked ? type : 'all' })}
+                    />
+                    <span>{type}</span>
+                  </label>
+                ))}
               </div>
 
               <div className={styles.filterSection}>
@@ -454,7 +414,7 @@ export default function CatalogPage() {
                   onChange={(e) => setFilters({ ...filters, city: e.target.value })}
                 >
                   <option value="">Выберите город</option>
-                  {RUSSIAN_CITIES.map((city) => (
+                  {CITIES.map((city) => (
                     <option key={city} value={city}>{city}</option>
                   ))}
                 </select>

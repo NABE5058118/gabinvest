@@ -6,14 +6,14 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { prisma } from './lib/prisma.js';
-import objectsRouter from './routes/objects.js';
-import leadsRouter from './routes/leads.js';
-import favoritesRouter from './routes/favorites.js';
-import adminRouter from './routes/admin.js';
-import adminAuthRouter from './routes/admin-auth.js';
-import authRouter from './routes/auth.js';
-import { getLogger, createLogger } from './utils/logger.js';
+import { prisma } from './lib/prisma.ts';
+import objectsRouter from './routes/objects.ts';
+import leadsRouter from './routes/leads.ts';
+import favoritesRouter from './routes/favorites.ts';
+import adminRouter from './routes/admin.ts';
+import adminAuthRouter from './routes/admin-auth.ts';
+import authRouter from './routes/auth.ts';
+import { getLogger, createLogger } from './utils/logger.ts';
 
 dotenv.config();
 

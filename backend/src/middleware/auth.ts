@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { validateTelegramInitData } from '../utils/telegram.js';
+import { validateTelegramInitData } from '../utils/telegram.ts';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 

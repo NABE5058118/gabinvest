@@ -1,10 +1,10 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../lib/prisma.js';
-import { sendTelegramMessage } from '../utils/telegram.js';
+import { prisma } from '../lib/prisma.ts';
+import { sendTelegramMessage } from '../utils/telegram.ts';
 import { z } from 'zod';
-import { requireAdmin } from '../routes/admin.js';
-import { authMiddleware } from '../middleware/jwt.js';
-import { createLogger } from '../utils/logger.js';
+import { requireAdmin } from '../routes/admin.ts';
+import { authMiddleware } from '../middleware/jwt.ts';
+import { createLogger } from '../utils/logger.ts';
 
 const router = Router();
 const logger = createLogger('leads');

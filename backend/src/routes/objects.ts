@@ -1,15 +1,17 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../lib/prisma.js';
-import { createLogger } from '../utils/logger.js';
+import { prisma } from '../lib/prisma.ts';
+import { createLogger } from '../utils/logger.ts';
 
 const router = Router();
 const logger = createLogger('objects');
 
-const ITEMS_PER_PAGE = 20;
+const DEFAULT_ITEMS_PER_PAGE = 20;
+const MAX_ITEMS_PER_PAGE = 100;
 
 router.get('/', async (req: Request, res: Response) => {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(MAX_ITEMS_PER_PAGE, Math.max(1, parseInt(req.query.limit as string) || DEFAULT_ITEMS_PER_PAGE));
     const type = req.query.type as string | undefined;
     const minPrice = req.query.minPrice ? parseInt(req.query.minPrice as string) : undefined;
     const maxPrice = req.query.maxPrice ? parseInt(req.query.maxPrice as string) : undefined;
@@ -77,8 +79,8 @@ router.get('/', async (req: Request, res: Response) => {
       prisma.object.findMany({
         where,
         orderBy,
-        skip: (page - 1) * ITEMS_PER_PAGE,
-        take: ITEMS_PER_PAGE,
+        skip: (page - 1) * limit,
+        take: limit,
         include: {
           images: { orderBy: { sort: 'asc' } },
           tenants: true,
@@ -100,7 +102,7 @@ router.get('/', async (req: Request, res: Response) => {
       objects,
       total,
       page,
-      totalPages: Math.ceil(total / ITEMS_PER_PAGE),
+      totalPages: Math.ceil(total / limit),
       rotationTimestamp,
     });
   } catch (error) {
