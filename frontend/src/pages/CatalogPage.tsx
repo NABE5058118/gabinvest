@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Filter, X, Heart, MapPin, LayoutGrid, RefreshCw, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useFavorites } from '@context/FavoritesContext';
@@ -149,7 +149,7 @@ export default function CatalogPage() {
           )}
         </div>
         <div className={styles.headerActions}>
-          <button className={styles.refreshBtn} onClick={fetchObjectsWithRotation} title="Обновить ленту">
+          <button className={styles.refreshBtn} onClick={() => refetch()} title="Обновить ленту">
             <RefreshCw size={24} strokeWidth={2} />
           </button>
           <button className={styles.filterBtn} onClick={() => setShowFilters(true)}>

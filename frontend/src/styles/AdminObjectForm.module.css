@@ -77,6 +77,19 @@
   font-size: 14px;
 }
 
+.success {
+  padding: 12px;
+  background: #f0f9f0;
+  color: #060;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.fieldError {
+  color: #c00;
+  font-size: 13px;
+}
+
 .imagePreview {
   margin-top: 8px;
   display: flex;

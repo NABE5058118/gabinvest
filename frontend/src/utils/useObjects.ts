@@ -35,7 +35,7 @@ export type ObjectType = {
     endDate: string;
     monthlyRent: number;
     isFixed: boolean;
-    percentOfTurnover?: string;
+    percentOfTurnover?: number;
     indexationPercent?: number;
     tenant: { id: string; name: string };
   }>;
@@ -111,24 +111,17 @@ export function useObjects() {
       fetchObjects();
     };
     window.addEventListener('objects:refresh', handler);
-    return () => window.removeEventListener('objects:refresh', handler);
+    window.addEventListener('focus', handler);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') handler();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('objects:refresh', handler);
+      window.removeEventListener('focus', handler);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [fetchObjects]);
 
   return { objects, loading, error, refetch: fetchObjects };
-}
-
-export function useObjects() {
-  const [objects, setObjects] = useState<ObjectType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    api
-      .get<ObjectsResponse>('/api/objects')
-      .then((res) => setObjects(res.data.objects))
-      .catch(() => setError('Ошибка загрузки'))
-      .finally(() => setLoading(false));
-  }, []);
-
-  return { objects, loading, error };
 }

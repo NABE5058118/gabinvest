@@ -49,6 +49,8 @@ export default function AdminObjectForm() {
   const [placementPrice, setPlacementPrice] = useState('');
   const [isExclusive, setIsExclusive] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -74,7 +76,7 @@ export default function AdminObjectForm() {
             priceIndicator: data.priceIndicator || '',
             description: data.description || '',
           });
-          setExistingImages((data.images || []).map((img) => ({ id: img.id, url: img.url })));
+      setExistingImages((data.images || []).map((img: { id: string; url: string }) => ({ id: img.id, url: img.url })));
           if (data.moderation) setModerationStatus(data.moderation.status);
           if (data.placement) {
             setPlacementType(data.placement.type);
@@ -106,10 +108,28 @@ export default function AdminObjectForm() {
     await adminApi.delete(`/api/admin/objects/${objectId}/images/${imageId}`);
   };
 
+  const validate = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!form.title.trim()) errors.title = 'Укажите название';
+    if (!form.type) errors.type = 'Укажите тип';
+    if (form.price === '' || Number(form.price) <= 0) errors.price = 'Укажите корректную цену';
+    if (form.yieldPercent === '' || Number(form.yieldPercent) < 0) errors.yieldPercent = 'Укажите доходность';
+    if (!form.location.trim()) errors.location = 'Укажите локацию';
+    if (form.area === '' || Number(form.area) <= 0) errors.area = 'Укажите площадь';
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccess(null);
+
+    if (!validate()) {
+      setLoading(false);
+      return;
+    }
 
     const payload = {
       title: form.title,
@@ -156,8 +176,35 @@ export default function AdminObjectForm() {
         isExclusive,
       });
 
+      setSuccess('Сохранено');
+      setFieldErrors({});
+
+      setForm({
+        title: data.title,
+        type: data.type,
+        price: String(data.price),
+        yieldPercent: String(data.yieldPercent),
+        location: data.location,
+        city: data.city || '',
+        area: String(data.area),
+        monthlyRent: data.monthlyRent ? String(data.monthlyRent) : '',
+        annualRevenue: data.annualRevenue ? String(data.annualRevenue) : '',
+        leaseEndDate: data.leaseEndDate ? data.leaseEndDate.slice(0, 10) : '',
+        anchorTenantName: data.anchorTenantName || '',
+        priceIndicator: data.priceIndicator || '',
+        description: data.description || '',
+      });
+      setExistingImages((data.images || []).map((img: { id: string; url: string }) => ({ id: img.id, url: img.url })));
+      setImageFiles([]);
+      setImagePreviews([]);
+
       window.dispatchEvent(new Event('objects:refresh'));
-      navigate(`/admin/objects/${data.id}`);
+
+      if (id === 'new') {
+        setTimeout(() => {
+          navigate(`/admin/objects/${data.id}`);
+        }, 1200);
+      }
     } catch (err: unknown) {
       const backendMessage = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
       setError(backendMessage || 'Ошибка сохранения');
@@ -178,6 +225,7 @@ export default function AdminObjectForm() {
       </header>
 
       <form className={styles.form} onSubmit={handleSubmit}>
+        {success && <div className={styles.success}>{success}</div>}
         {error && <div className={styles.error}>{error}</div>}
 
         <div className={styles.field}>
@@ -188,6 +236,7 @@ export default function AdminObjectForm() {
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             required
           />
+          {fieldErrors.title && <div className={styles.fieldError}>{fieldErrors.title}</div>}
         </div>
 
         <div className={styles.field}>
@@ -202,6 +251,7 @@ export default function AdminObjectForm() {
             <option value="Торговое помещение">Торговое помещение</option>
             <option value="Другое">Другое</option>
           </select>
+          {fieldErrors.type && <div className={styles.fieldError}>{fieldErrors.type}</div>}
         </div>
 
         <div className={styles.field}>
@@ -214,6 +264,7 @@ export default function AdminObjectForm() {
             onChange={(e) => setForm({ ...form, price: e.target.value })}
             required
           />
+          {fieldErrors.price && <div className={styles.fieldError}>{fieldErrors.price}</div>}
         </div>
 
         <div className={styles.field}>
@@ -225,6 +276,7 @@ export default function AdminObjectForm() {
             onChange={(e) => setForm({ ...form, yieldPercent: e.target.value })}
             required
           />
+          {fieldErrors.yieldPercent && <div className={styles.fieldError}>{fieldErrors.yieldPercent}</div>}
         </div>
 
         <div className={styles.field}>
@@ -235,6 +287,7 @@ export default function AdminObjectForm() {
             onChange={(e) => setForm({ ...form, location: e.target.value })}
             required
           />
+          {fieldErrors.location && <div className={styles.fieldError}>{fieldErrors.location}</div>}
         </div>
 
         <div className={styles.field}>
@@ -260,6 +313,7 @@ export default function AdminObjectForm() {
             onChange={(e) => setForm({ ...form, area: e.target.value })}
             required
           />
+          {fieldErrors.area && <div className={styles.fieldError}>{fieldErrors.area}</div>}
         </div>
 
         <div className={styles.field}>
@@ -419,8 +473,8 @@ export default function AdminObjectForm() {
           </div>
         </div>
 
-        <button type="submit" className={styles.submitBtn} disabled={loading}>
-          {loading ? 'Сохранение...' : 'Сохранить'}
+        <button type="submit" className={styles.submitBtn} disabled={loading || !!success}>
+          {success ? 'Сохранено' : loading ? 'Сохранение...' : 'Сохранить'}
         </button>
       </form>
     </div>
