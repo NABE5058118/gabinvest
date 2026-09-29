@@ -1,2 +1,0 @@
-ALTER TABLE "User" DROP CONSTRAINT IF EXISTS "User_phone_key";
-ALTER TABLE "User" DROP CONSTRAINT IF EXISTS "User_email_key";
