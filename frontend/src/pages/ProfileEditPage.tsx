@@ -14,14 +14,17 @@ export default function ProfileEditPage() {
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
+    email: '',
+    phone: '',
   });
 
   useEffect(() => {
     if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
       });
     }
   }, [user]);
@@ -41,6 +44,8 @@ export default function ProfileEditPage() {
       const res = await api.put('/api/auth/profile', {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim() || undefined,
+        email: form.email.trim() || undefined,
+        phone: form.phone.trim() || undefined,
       });
       updateUser(res.data);
       setSuccess(true);
@@ -88,6 +93,30 @@ export default function ProfileEditPage() {
               value={form.lastName}
               onChange={(e) => setForm({ ...form, lastName: e.target.value })}
               placeholder="Фамилия"
+            />
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="email">Email</label>
+            <input
+              id="email"
+              className={styles.input}
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="email@example.com"
+            />
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="phone">Телефон</label>
+            <input
+              id="phone"
+              className={styles.input}
+              type="tel"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              placeholder="+7 999 999-99-99"
             />
           </div>
 
