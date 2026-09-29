@@ -45,19 +45,20 @@ export default function LoginPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)}>
+        <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Назад">
           <ArrowLeft size={24} strokeWidth={2} />
         </button>
         <h1 className={styles.title}>Вход</h1>
       </header>
 
       <div className={styles.form}>
-        {error && <div className={styles.error}>{error}</div>}
+        {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className={styles.field}>
-            <label className={styles.label}>Телефон или email</label>
+            <label className={styles.label} htmlFor="login">Телефон или email</label>
             <input
+              id="login"
               className={styles.input}
               value={login}
               onChange={(e) => setLogin(e.target.value)}
@@ -66,8 +67,9 @@ export default function LoginPage() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>Пароль</label>
+            <label className={styles.label} htmlFor="password">Пароль</label>
             <input
+              id="password"
               className={styles.input}
               type="password"
               value={password}

@@ -41,7 +41,7 @@ export default function FavoritesPage() {
   }
 
   return (
-    <div className={styles.page}>
+    <main className={styles.page}>
       <header className={styles.header}>
         <h1 className={styles.title}>Избранное</h1>
       </header>
@@ -61,7 +61,20 @@ export default function FavoritesPage() {
         ) : (
           <div className={styles.list}>
             {favorites.map((obj) => (
-              <div key={obj.id} className={styles.card} onClick={() => navigate(`/objects/${obj.id}`)}>
+              <div
+                key={obj.id}
+                className={styles.card}
+                onClick={() => navigate(`/objects/${obj.id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    if ((e.target as HTMLElement).closest('button')) return;
+                    e.preventDefault();
+                    navigate(`/objects/${obj.id}`);
+                  }
+                }}
+                tabIndex={0}
+                role="link"
+              >
                 <div className={styles.cardImage}>
                   {obj.images && obj.images.length > 0 ? (
                     <img
@@ -93,11 +106,13 @@ export default function FavoritesPage() {
                     </span>
                   )}
                   <button
+                    type="button"
                     className={styles.favoriteBtn}
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleFavorite(obj.id);
                     }}
+                    aria-label={favoriteIds.has(obj.id) ? 'Убрать из избранного' : 'Добавить в избранное'}
                   >
                     <Heart size={20} strokeWidth={2} fill={favoriteIds.has(obj.id) ? '#000' : 'none'} />
                   </button>
@@ -123,6 +138,6 @@ export default function FavoritesPage() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }

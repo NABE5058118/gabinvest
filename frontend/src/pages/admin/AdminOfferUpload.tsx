@@ -51,9 +51,9 @@ export default function AdminOfferUpload() {
   };
 
   return (
-    <div className={styles.page}>
+    <main className={styles.page}>
       <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate('/admin')}>
+        <button className={styles.backBtn} onClick={() => navigate('/admin')} aria-label="Назад">
           <ArrowLeft size={24} strokeWidth={2} />
         </button>
         <h1 className={styles.title}>Коммерческое предложение</h1>
@@ -73,9 +73,10 @@ export default function AdminOfferUpload() {
 
         <form onSubmit={handleSubmit}>
           <div className={styles.field}>
-            <label className={styles.label}>Файл PDF или PPTX</label>
+            <label className={styles.label} htmlFor="offer-file">Файл PDF или PPTX</label>
             <label className={styles.dropzone}>
               <input
+                id="offer-file"
                 type="file"
                 accept=".pdf,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation"
                 className={styles.fileInput}
@@ -96,7 +97,7 @@ export default function AdminOfferUpload() {
             </label>
           </div>
 
-          {error && <div className={styles.error}>{error}</div>}
+          {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}
 
           <button
             type="submit"
@@ -107,6 +108,6 @@ export default function AdminOfferUpload() {
           </button>
         </form>
       </div>
-    </div>
+    </main>
   );
 }

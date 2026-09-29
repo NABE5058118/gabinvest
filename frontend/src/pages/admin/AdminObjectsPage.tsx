@@ -85,7 +85,7 @@ export default function AdminObjectsPage() {
         {loading && <div className={styles.empty}>Загрузка...</div>}
         {error && <div className={styles.empty}>{error}</div>}
         {toast && (
-          <div className={toast.type === 'success' ? styles.toastSuccess : styles.toastError}>
+          <div className={toast.type === 'success' ? styles.toastSuccess : styles.toastError} role="status" aria-live="polite">
             {toast.message}
           </div>
         )}
@@ -137,6 +137,7 @@ export default function AdminObjectsPage() {
               <button
                 className={`${styles.actionBtn} ${styles.dangerAction}`}
                 onClick={() => requestDelete(item.id)}
+                aria-label="Удалить объект"
               >
                 <Trash2 size={16} strokeWidth={2} />
               </button>

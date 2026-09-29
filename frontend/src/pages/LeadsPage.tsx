@@ -58,7 +58,7 @@ export default function LeadsPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)}>
+        <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Назад">
           <ArrowLeft size={24} strokeWidth={2} />
         </button>
         <h1 className={styles.title}>Заявки</h1>

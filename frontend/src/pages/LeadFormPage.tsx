@@ -122,9 +122,9 @@ export default function LeadFormPage() {
   };
 
   return (
-    <div className={styles.page}>
+    <main className={styles.page}>
       <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)}>
+        <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Назад">
           <ArrowLeft size={24} strokeWidth={2} />
         </button>
         <div>
@@ -135,8 +135,9 @@ export default function LeadFormPage() {
 
       <form className={styles.form} onSubmit={handleSubmit}>
         <div className={styles.field}>
-          <label className={styles.label}>Ваше имя</label>
+          <label className={styles.label} htmlFor="name">Ваше имя</label>
           <input
+            id="name"
             className={styles.input}
             type="text"
             placeholder="Иван Иванов"
@@ -147,8 +148,9 @@ export default function LeadFormPage() {
         </div>
 
         <div className={styles.field}>
-          <label className={styles.label}>Телефон</label>
+          <label className={styles.label} htmlFor="lead-phone">Телефон</label>
           <input
+            id="lead-phone"
             ref={phoneInputRef}
             className={styles.input}
             type="tel"
@@ -160,8 +162,9 @@ export default function LeadFormPage() {
         </div>
 
         <div className={styles.field}>
-          <label className={styles.label}>Комментарий к заявке</label>
+          <label className={styles.label} htmlFor="comment">Комментарий к заявке</label>
           <textarea
+            id="comment"
             className={styles.textarea}
             placeholder="Интересует дополнительная информация"
             value={form.comment}
@@ -180,8 +183,8 @@ export default function LeadFormPage() {
           <span>Согласен на обработку персональных данных</span>
         </label>
 
-        {submitError && <div className={styles.error}>{submitError}</div>}
-        {submitted && <div className={styles.success}>Заявка отправлена!</div>}
+        {submitError && <div className={styles.error} role="status" aria-live="polite">{submitError}</div>}
+        {submitted && <div className={styles.success} role="status" aria-live="polite">Заявка отправлена!</div>}
 
         <button
           type="submit"
@@ -199,6 +202,6 @@ export default function LeadFormPage() {
           Отмена
         </button>
       </form>
-    </div>
+    </main>
   );
 }

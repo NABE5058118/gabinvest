@@ -41,19 +41,20 @@ export default function RegisterPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)}>
+        <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Назад">
           <ArrowLeft size={24} strokeWidth={2} />
         </button>
         <h1 className={styles.title}>Регистрация</h1>
       </header>
 
       <div className={styles.form}>
-        {error && <div className={styles.error}>{error}</div>}
+        {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className={styles.field}>
-            <label className={styles.label}>Телефон</label>
+            <label className={styles.label} htmlFor="phone">Телефон</label>
             <input
+              id="phone"
               className={styles.input}
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -62,8 +63,9 @@ export default function RegisterPage() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>Email</label>
+            <label className={styles.label} htmlFor="email">Email</label>
             <input
+              id="email"
               className={styles.input}
               type="email"
               value={form.email}
@@ -73,8 +75,9 @@ export default function RegisterPage() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>Пароль</label>
+            <label className={styles.label} htmlFor="password">Пароль</label>
             <input
+              id="password"
               className={styles.input}
               type="password"
               value={form.password}
@@ -84,8 +87,9 @@ export default function RegisterPage() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>Имя</label>
+            <label className={styles.label} htmlFor="firstName">Имя</label>
             <input
+              id="firstName"
               className={styles.input}
               value={form.firstName}
               onChange={(e) => setForm({ ...form, firstName: e.target.value })}
@@ -93,8 +97,9 @@ export default function RegisterPage() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>Фамилия</label>
+            <label className={styles.label} htmlFor="lastName">Фамилия</label>
             <input
+              id="lastName"
               className={styles.input}
               value={form.lastName}
               onChange={(e) => setForm({ ...form, lastName: e.target.value })}

@@ -6,12 +6,16 @@ import { API_URL } from '@utils/api';
 import { api } from '@utils/api';
 import styles from '@styles/OfferPage.module.css';
 
-function ExpandableSection({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
+  function ExpandableSection({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
     <div className={styles.section}>
-      <button className={styles.sectionHeader} onClick={() => setIsOpen(!isOpen)}>
+      <button
+        className={styles.sectionHeader}
+        onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+      >
         <span className={styles.sectionTitle}>{title}</span>
         <ChevronDown
           className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}
@@ -68,7 +72,7 @@ export default function OfferPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(`/objects/${id}`)}>
+        <button className={styles.backBtn} onClick={() => navigate(`/objects/${id}`)} aria-label="Назад">
           <ArrowLeft size={24} strokeWidth={2} />
         </button>
         <h1 className={styles.headerTitle}>Коммерческое предложение</h1>
@@ -89,7 +93,7 @@ export default function OfferPage() {
             Скачать КП ({object.offerFileName || 'PDF/PPTX'})
           </button>
         ) : (
-          <div className={styles.emptyState}>Коммерческое предложение ещё не загружено</div>
+      <div className={styles.emptyState} role="status">Коммерческое предложение ещё не загружено</div>
         )}
 
         {!object.offerFileUrl && Object.keys(offer).length > 0 && (

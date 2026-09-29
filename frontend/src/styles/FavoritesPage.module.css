@@ -121,11 +121,17 @@
   overflow: hidden;
   cursor: pointer;
   transition: box-shadow 0.2s, transform 0.2s;
+  text-align: left;
 }
 
 .card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   transform: translateY(-2px);
+}
+
+.card:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 2px;
 }
 
 .cardImage {

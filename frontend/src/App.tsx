@@ -14,6 +14,7 @@ import AdminObjectsPage from './pages/admin/AdminObjectsPage';
 import AdminObjectForm from './pages/admin/AdminObjectForm';
 import AdminOfferUpload from './pages/admin/AdminOfferUpload';
 import ModerationQueuePage from './pages/admin/ModerationQueuePage';
+import NotFoundPage from './pages/NotFoundPage';
 import Layout from './components/Layout';
 import AdminRoute from './components/AdminRoute';
 import { FavoritesProvider } from './context/FavoritesContext';
@@ -48,6 +49,7 @@ export default function App() {
               <Route path="objects/:id" element={<AdminObjectForm />} />
               <Route path="objects/:id/offer" element={<AdminOfferUpload />} />
             </Route>
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </BrowserRouter>
       </FavoritesProvider>

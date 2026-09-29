@@ -139,7 +139,7 @@ export default function CatalogPage() {
   };
 
   return (
-    <div className={styles.page}>
+    <main className={styles.page}>
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>GAB Invest</h1>
@@ -149,10 +149,10 @@ export default function CatalogPage() {
           )}
         </div>
         <div className={styles.headerActions}>
-          <button className={styles.refreshBtn} onClick={() => refetch()} title="Обновить ленту">
+          <button className={styles.refreshBtn} onClick={() => refetch()} aria-label="Обновить ленту">
             <RefreshCw size={24} strokeWidth={2} />
           </button>
-          <button className={styles.filterBtn} onClick={() => setShowFilters(true)}>
+          <button className={styles.filterBtn} onClick={() => setShowFilters(true)} aria-label="Фильтры">
             <Filter size={24} strokeWidth={2} />
           </button>
         </div>
@@ -176,6 +176,7 @@ export default function CatalogPage() {
         <button
           className={styles.sortOrderBtn}
           onClick={() => setFilters({ ...filters, sortOrder: filters.sortOrder === 'asc' ? 'desc' : 'asc' })}
+          aria-label={filters.sortOrder === 'asc' ? 'Порядок сортировки: по возрастанию' : 'Порядок сортировки: по убыванию'}
         >
           {filters.sortOrder === 'asc' ? '↑' : '↓'}
         </button>
@@ -234,7 +235,20 @@ export default function CatalogPage() {
           </div>
         ) : (
           sortedObjects.map((obj) => (
-            <div key={obj.id} className={styles.card} onClick={() => navigate(`/objects/${obj.id}`)}>
+            <div
+              key={obj.id}
+              className={styles.card}
+              onClick={() => navigate(`/objects/${obj.id}`)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  if ((e.target as HTMLElement).closest('button')) return;
+                  e.preventDefault();
+                  navigate(`/objects/${obj.id}`);
+                }
+              }}
+              tabIndex={0}
+              role="link"
+            >
               <div className={styles.cardImage}>
                 {obj.images && obj.images.length > 0 ? (
                   <img
@@ -270,11 +284,14 @@ export default function CatalogPage() {
                   </span>
                 )}
                 <button
+                  key={obj.id}
+                  type="button"
                   className={styles.favoriteBtn}
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleFavorite(obj.id);
                   }}
+                  aria-label={favoriteIds.has(obj.id) ? 'Убрать из избранного' : 'Добавить в избранное'}
                 >
                   <Heart
                     size={20}
@@ -304,12 +321,11 @@ export default function CatalogPage() {
         )}
       </div>
 
-      {showFilters && (
-        <div className={styles.filterOverlay}>
-          <div className={styles.filterModal}>
+      <div className={`${styles.filterOverlay} ${showFilters ? styles.open : ''}`}>
+        <div className={styles.filterModal}>
             <div className={styles.filterHeader}>
               <h2>Фильтры</h2>
-              <button className={styles.closeBtn} onClick={() => setShowFilters(false)}>
+              <button className={styles.closeBtn} onClick={() => setShowFilters(false)} aria-label="Закрыть фильтры">
                 <X size={24} strokeWidth={2} />
               </button>
             </div>
@@ -447,7 +463,6 @@ export default function CatalogPage() {
             </div>
           </div>
         </div>
-      )}
-    </div>
+    </main>
   );
 }

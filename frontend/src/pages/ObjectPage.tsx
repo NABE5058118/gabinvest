@@ -1,12 +1,28 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { ArrowLeft, Heart, MapPin, LayoutGrid, Users, Calendar, FileText, Wrench, Percent, TrendingUp, Landmark } from 'lucide-react';
 import { useFavorites } from '@context/FavoritesContext';
 import { ObjectType } from '@utils/types';
 import { api } from '@utils/api';
 import styles from '@styles/ObjectPage.module.css';
 
-export default function ObjectPage() {
+const formatDate = (dateStr?: string) => {
+  if (!dateStr) return null;
+  return new Date(dateStr).toLocaleDateString('ru-RU');
+};
+
+const formatCurrency = (amount?: number) => {
+  if (!amount) return null;
+  return `${amount.toLocaleString('ru-RU')} ₽`;
+};
+
+const PRICE_INDICATOR_LABELS: Record<string, string> = {
+  below_market: 'Ниже рынка',
+  market: 'По рынку',
+  above_market: 'Выше рынка',
+};
+
+const ObjectPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -54,31 +70,16 @@ export default function ObjectPage() {
   ];
   const mainImage = allImages[selectedImageIndex] || null;
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return null;
-    return new Date(dateStr).toLocaleDateString('ru-RU');
-  };
-
-  const formatCurrency = (amount?: number) => {
-    if (!amount) return null;
-    return `${amount.toLocaleString('ru-RU')} ₽`;
-  };
-
-  const priceIndicatorLabels: Record<string, string> = {
-    'below_market': 'Ниже рынка',
-    'market': 'По рынку',
-    'above_market': 'Выше рынка',
-  };
-
   return (
-    <div className={styles.page}>
+    <main className={styles.page}>
       <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)}>
+        <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Назад">
           <ArrowLeft size={24} strokeWidth={2} />
         </button>
         <button
           className={styles.favoriteBtn}
           onClick={() => toggleFavorite(object.id)}
+          aria-label={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
         >
           <Heart size={24} strokeWidth={2} fill={isFav ? '#000' : 'none'} />
         </button>
@@ -103,14 +104,15 @@ export default function ObjectPage() {
 
       {allImages.length > 1 && (
         <div className={styles.thumbnails}>
-          {allImages.map((url, idx) => (
-            <button
-              key={idx}
-              type="button"
-              className={`${styles.thumb} ${idx === selectedImageIndex ? styles.thumbActive : ''}`}
-              onClick={() => setSelectedImageIndex(idx)}
-            >
-              <img src={url} alt="" className={styles.thumbImg} />
+            {allImages.map((url, idx) => (
+              <button
+                key={idx}
+                type="button"
+                className={`${styles.thumb} ${idx === selectedImageIndex ? styles.thumbActive : ''}`}
+                onClick={() => setSelectedImageIndex(idx)}
+                aria-label={`Изображение ${idx + 1}`}
+              >
+                <img src={url} alt="" className={styles.thumbImg} />
             </button>
           ))}
         </div>
@@ -126,9 +128,9 @@ export default function ObjectPage() {
         <div className={styles.priceRow}>
           <div className={styles.price}>{object.price.toLocaleString('ru-RU')} ₽</div>
           <div className={styles.yield}>Доходность: {object.yieldPercent}%</div>
-          {object.priceIndicator && priceIndicatorLabels[object.priceIndicator] && (
+          {object.priceIndicator && PRICE_INDICATOR_LABELS[object.priceIndicator] && (
             <div className={`${styles.priceIndicator} ${styles[object.priceIndicator]}`}>
-              {priceIndicatorLabels[object.priceIndicator]}
+              {PRICE_INDICATOR_LABELS[object.priceIndicator]}
             </div>
           )}
         </div>
@@ -309,6 +311,8 @@ export default function ObjectPage() {
         </button>
       </div>
       </div>
-    </div>
+    </main>
   );
-}
+};
+
+export default memo(ObjectPage);

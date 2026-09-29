@@ -50,7 +50,7 @@ export default function TelegramAuthPage() {
       <div className={styles.page}>
         <div className={styles.success}>
           <CheckCircle size={48} strokeWidth={2} color="#16a34a" />
-          <p>Готово</p>
+          <h1>Готово</h1>
         </div>
       </div>
     );
@@ -59,21 +59,22 @@ export default function TelegramAuthPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)}>
+        <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Назад">
           <ArrowLeft size={24} strokeWidth={2} />
         </button>
         <h1 className={styles.title}>Телефон</h1>
       </header>
 
       <form className={styles.form} onSubmit={handleSubmit}>
-        {error && <div className={styles.error}>{error}</div>}
+        {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}
 
         <div className={styles.field}>
-          <label className={styles.label}>
+          <label className={styles.label} htmlFor="phone">
             <Smartphone size={16} strokeWidth={2} />
             Номер телефона
           </label>
           <input
+            id="phone"
             className={styles.input}
             type="tel"
             placeholder="+7 (999) 123-45-67"

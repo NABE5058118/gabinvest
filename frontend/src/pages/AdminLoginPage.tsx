@@ -31,18 +31,19 @@ export default function AdminLoginPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate('/')}>
+        <button className={styles.backBtn} onClick={() => navigate('/')} aria-label="Назад">
           <ArrowLeft size={24} strokeWidth={2} />
         </button>
         <h1 className={styles.title}>Вход в админ панель</h1>
       </header>
 
       <form className={styles.form} onSubmit={handleSubmit}>
-        {error && <div className={styles.error}>{error}</div>}
+        {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}
 
         <div className={styles.field}>
-          <label className={styles.label}>Логин</label>
+          <label className={styles.label} htmlFor="admin-login">Логин</label>
           <input
+            id="admin-login"
             className={styles.input}
             value={login}
             onChange={(e) => setLogin(e.target.value)}
@@ -51,8 +52,9 @@ export default function AdminLoginPage() {
         </div>
 
         <div className={styles.field}>
-          <label className={styles.label}>Пароль</label>
+          <label className={styles.label} htmlFor="admin-password">Пароль</label>
           <input
+            id="admin-password"
             className={styles.input}
             type="password"
             value={password}

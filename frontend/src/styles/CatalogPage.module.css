@@ -172,11 +172,19 @@
   overflow: hidden;
   cursor: pointer;
   transition: box-shadow 0.2s, transform 0.2s;
+  content-visibility: auto;
+  contain-intrinsic-size: 400px;
+  text-align: left;
 }
 
 .card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   transform: translateY(-2px);
+}
+
+.card:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 2px;
 }
 
 .cardImage {
@@ -337,6 +345,14 @@
   justify-content: center;
   align-items: flex-end;
   z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.filterOverlay.open {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .filterModal {
@@ -346,6 +362,12 @@
   border-radius: 20px 20px 0 0;
   display: flex;
   flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+
+.filterOverlay.open .filterModal {
+  transform: translateY(0);
 }
 
 .filterHeader {

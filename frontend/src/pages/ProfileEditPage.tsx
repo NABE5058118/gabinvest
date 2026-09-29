@@ -53,22 +53,23 @@ export default function ProfileEditPage() {
   };
 
   return (
-    <div className={styles.page}>
+    <main className={styles.page}>
       <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)}>
+        <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Назад">
           <ArrowLeft size={24} strokeWidth={2} />
         </button>
         <h1 className={styles.title}>Редактировать профиль</h1>
       </header>
 
       <div className={styles.content}>
-        {error && <div className={styles.error}>{error}</div>}
-        {success && <div className={styles.success}>Профиль обновлён</div>}
+        {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}
+        {success && <div className={styles.success} role="status" aria-live="polite">Профиль обновлён</div>}
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.field}>
-            <label className={styles.label}>Имя</label>
+            <label className={styles.label} htmlFor="firstName">Имя</label>
             <input
+              id="firstName"
               className={styles.input}
               type="text"
               value={form.firstName}
@@ -79,8 +80,9 @@ export default function ProfileEditPage() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>Фамилия</label>
+            <label className={styles.label} htmlFor="lastName">Фамилия</label>
             <input
+              id="lastName"
               className={styles.input}
               type="text"
               value={form.lastName}
@@ -98,6 +100,6 @@ export default function ProfileEditPage() {
           </button>
         </form>
       </div>
-    </div>
+    </main>
   );
 }
