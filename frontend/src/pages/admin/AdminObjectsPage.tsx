@@ -25,7 +25,7 @@ export default function AdminObjectsPage() {
   const [items, setItems] = useState<ObjectItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const navigate = useNavigate();
 
   const fetchItems = async () => {
@@ -50,10 +50,11 @@ export default function AdminObjectsPage() {
     try {
       await adminApi.delete(`/api/admin/objects/${id}`);
       setItems(items.filter((i) => i.id !== id));
-      setSuccess('Объект удалён');
+      setToast({ type: 'success', message: 'Объект удалён' });
       window.dispatchEvent(new Event('objects:refresh'));
     } catch {
       setError('Ошибка удаления');
+      setToast({ type: 'error', message: 'Ошибка удаления' });
     }
   };
 
@@ -71,7 +72,11 @@ export default function AdminObjectsPage() {
 
         {loading && <div className={styles.empty}>Загрузка...</div>}
         {error && <div className={styles.empty}>{error}</div>}
-        {success && <div className={styles.success}>{success}</div>}
+        {toast && (
+          <div className={toast.type === 'success' ? styles.toastSuccess : styles.toastError}>
+            {toast.message}
+          </div>
+        )}
         {!loading && !error && items.length === 0 && (
           <div className={styles.empty}>Нет объектов</div>
         )}

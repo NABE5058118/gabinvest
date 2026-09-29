@@ -51,10 +51,18 @@ export default function AdminObjectForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<Array<{ id: string; url: string }>>([]);
+
+  useEffect(() => {
+    setSuccess(null);
+    setError(null);
+    setFieldErrors({});
+    setToast(null);
+  }, [form.title, form.type, form.price, form.yieldPercent, form.location, form.area]);
 
   useEffect(() => {
     if (id && id !== 'new') {
@@ -120,11 +128,40 @@ export default function AdminObjectForm() {
     return Object.keys(errors).length === 0;
   };
 
+  const refreshForm = async (objectId: string): Promise<void> => {
+    const { data } = await adminApi.get<ObjectItem>(`/api/admin/objects/${objectId}`);
+    setForm({
+      title: data.title,
+      type: data.type,
+      price: String(data.price),
+      yieldPercent: String(data.yieldPercent),
+      location: data.location,
+      city: data.city || '',
+      area: String(data.area),
+      monthlyRent: data.monthlyRent ? String(data.monthlyRent) : '',
+      annualRevenue: data.annualRevenue ? String(data.annualRevenue) : '',
+      leaseEndDate: data.leaseEndDate ? data.leaseEndDate.slice(0, 10) : '',
+      anchorTenantName: data.anchorTenantName || '',
+      priceIndicator: data.priceIndicator || '',
+      description: data.description || '',
+    });
+    setExistingImages((data.images || []).map((img) => ({ id: img.id, url: img.url })));
+    setImageFiles([]);
+    setImagePreviews([]);
+    if (data.moderation) setModerationStatus(data.moderation.status);
+    if (data.placement) {
+      setPlacementType(data.placement.type);
+      setPlacementPrice(data.placement.price ? String(data.placement.price) : '');
+      setIsExclusive(data.placement.isExclusive);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setSuccess(null);
+    setToast(null);
 
     if (!validate()) {
       setLoading(false);
@@ -178,36 +215,19 @@ export default function AdminObjectForm() {
 
       setSuccess('Сохранено');
       setFieldErrors({});
-
-      setForm({
-        title: data.title,
-        type: data.type,
-        price: String(data.price),
-        yieldPercent: String(data.yieldPercent),
-        location: data.location,
-        city: data.city || '',
-        area: String(data.area),
-        monthlyRent: data.monthlyRent ? String(data.monthlyRent) : '',
-        annualRevenue: data.annualRevenue ? String(data.annualRevenue) : '',
-        leaseEndDate: data.leaseEndDate ? data.leaseEndDate.slice(0, 10) : '',
-        anchorTenantName: data.anchorTenantName || '',
-        priceIndicator: data.priceIndicator || '',
-        description: data.description || '',
-      });
-      setExistingImages((data.images || []).map((img: { id: string; url: string }) => ({ id: img.id, url: img.url })));
-      setImageFiles([]);
-      setImagePreviews([]);
-
       window.dispatchEvent(new Event('objects:refresh'));
+      setToast({ type: 'success', message: 'Сохранено' });
 
-      if (id === 'new') {
-        setTimeout(() => {
-          navigate(`/admin/objects/${data.id}`);
-        }, 1200);
-      }
+      await refreshForm(data.id);
+
+      setTimeout(() => {
+        navigate('/admin');
+      }, 1000);
     } catch (err: unknown) {
       const backendMessage = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
-      setError(backendMessage || 'Ошибка сохранения');
+      const message = backendMessage || 'Ошибка сохранения';
+      setError(message);
+      setToast({ type: 'error', message });
     } finally {
       setLoading(false);
     }
@@ -225,8 +245,13 @@ export default function AdminObjectForm() {
       </header>
 
       <form className={styles.form} onSubmit={handleSubmit}>
-        {success && <div className={styles.success}>{success}</div>}
         {error && <div className={styles.error}>{error}</div>}
+
+        {toast && (
+          <div className={toast.type === 'success' ? styles.toastSuccess : styles.toastError}>
+            {toast.message}
+          </div>
+        )}
 
         <div className={styles.field}>
           <label className={styles.label}>Название</label>
