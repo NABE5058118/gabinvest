@@ -459,5 +459,107 @@ describe('API Integration Tests', () => {
       const res = await request(app).get('/api/favorites');
       expect(res.status).toBe(401);
     });
+
+    it('should add and remove favorite', async () => {
+      const created = await request(app)
+        .post('/api/auth/telegram')
+        .send({ initData: 'query_id=test&user={"id":999201,"first_name":"Fav","username":"favuser"}' });
+
+      expect(created.status).toBe(200);
+      const token = created.body.token;
+
+      const objects = await prisma.object.findMany();
+      if (objects.length === 0) {
+        it.skip('no objects in database');
+        return;
+      }
+
+      const objectId = objects[0].id;
+
+      const addRes = await request(app)
+        .post(`/api/favorites/${objectId}`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(addRes.status).toBe(201);
+      expect(addRes.body).toHaveProperty('userId');
+      expect(addRes.body).toHaveProperty('objectId', objectId);
+
+      const getRes = await request(app)
+        .get('/api/favorites')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(getRes.status).toBe(200);
+      expect(Array.isArray(getRes.body)).toBe(true);
+      expect(getRes.body.some((f: any) => f.id === objectId)).toBe(true);
+
+      const delRes = await request(app)
+        .delete(`/api/favorites/${objectId}`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(delRes.status).toBe(204);
+    });
+
+    it('should return 404 when adding favorite to non-existent object', async () => {
+      const created = await request(app)
+        .post('/api/auth/telegram')
+        .send({ initData: 'query_id=test&user={"id":999202,"first_name":"Fav2","username":"favuser2"}' });
+
+      expect(created.status).toBe(200);
+      const token = created.body.token;
+
+      const res = await request(app)
+        .post('/api/favorites/nonexistent')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('PUT /api/auth/profile', () => {
+    it('should update email and phone', async () => {
+      const created = await request(app)
+        .post('/api/auth/telegram')
+        .send({ initData: 'query_id=test&user={"id":999101,"first_name":"Profile","username":"profileuser"}' });
+
+      expect(created.status).toBe(200);
+      const token = created.body.token;
+
+      const res = await request(app)
+        .put('/api/auth/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ firstName: 'Profile', lastName: 'User', email: 'profile@test.com', phone: '+79000000001' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.email).toBe('profile@test.com');
+      expect(res.body.phone).toBe('+79000000001');
+    });
+
+    it('should clear email and phone when empty string is sent', async () => {
+      const created = await request(app)
+        .post('/api/auth/telegram')
+        .send({ initData: 'query_id=test&user={"id":999102,"first_name":"Clear","username":"clearuser"}' });
+
+      expect(created.status).toBe(200);
+      const token = created.body.token;
+
+      await request(app)
+        .put('/api/auth/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ firstName: 'Clear', email: 'set@test.com', phone: '+79000000002' });
+
+      const res = await request(app)
+        .put('/api/auth/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ firstName: 'Clear', email: '', phone: '' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.email).toBeNull();
+      expect(res.body.phone).toBeNull();
+    });
+
+    it('should require auth', async () => {
+      const res = await request(app).put('/api/auth/profile').send({ firstName: 'NoAuth' });
+      expect(res.status).toBe(401);
+    });
   });
 });

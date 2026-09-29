@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { ObjectType } from '@utils/types';
 import { api } from '@utils/api';
 import { getLeadClientId } from '@utils/types';
+import { useAuth } from '@context/AuthContext';
 import styles from '@styles/LeadFormPage.module.css';
 
 const formatPhone = (value: string) => {
@@ -29,6 +30,7 @@ const formatPhone = (value: string) => {
 export default function LeadFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const phoneCursorRef = useRef<number | null>(null);
   const [object, setObject] = useState<ObjectType | null>(null);
@@ -42,6 +44,17 @@ export default function LeadFormPage() {
   const [agreed, setAgreed] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+      setForm((prev) => ({
+        ...prev,
+        name: fullName || prev.name,
+        phone: user.phone ? formatPhone(user.phone) : prev.phone,
+      }));
+    }
+  }, [user]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target;
