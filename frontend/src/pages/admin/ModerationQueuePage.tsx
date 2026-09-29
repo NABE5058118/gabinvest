@@ -57,6 +57,7 @@ export default function ModerationQueuePage() {
     try {
       await adminApi.patch(`/api/admin/objects/${objectId}/moderation`, { status: newStatus });
       setItems(items.filter((i) => i.objectId !== objectId));
+      window.dispatchEvent(new Event('objects:refresh'));
     } catch {
       // ignore
     }

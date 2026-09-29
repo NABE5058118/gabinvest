@@ -27,23 +27,18 @@ export default function CatalogPage() {
     leaseEndBefore: '',
     leaseEndAfter: '',
   });
-  const [rotationKey, setRotationKey] = useState(0);
   const [lastRotation, setLastRotation] = useState<string | null>(null);
-  const { objects, loading, error } = useObjects();
-
-  const fetchObjectsWithRotation = useCallback(() => {
-    setRotationKey((k) => k + 1);
-  }, []);
+  const { objects, loading, error, refetch } = useObjects();
 
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchObjectsWithRotation();
+      refetch();
       setLastRotation(new Date().toLocaleTimeString('ru-RU'));
     }, 10 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [fetchObjectsWithRotation]);
+  }, [refetch]);
 
-  if (loading && rotationKey === 0) {
+  if (loading) {
     return (
       <div className={styles.page}>
         <div className={styles.error}>Загрузка...</div>
@@ -51,7 +46,7 @@ export default function CatalogPage() {
     );
   }
 
-  if (error && rotationKey === 0) {
+  if (error) {
     return (
       <div className={styles.page}>
         <div className={styles.error}>{error}</div>

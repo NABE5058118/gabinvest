@@ -48,6 +48,7 @@ export default function AdminObjectsPage() {
     if (!confirm('Удалить объект?')) return;
     await adminApi.delete(`/api/admin/objects/${id}`);
     setItems(items.filter((i) => i.id !== id));
+    window.dispatchEvent(new Event('objects:refresh'));
   };
 
   return (

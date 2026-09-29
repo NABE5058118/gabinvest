@@ -156,6 +156,7 @@ export default function AdminObjectForm() {
         isExclusive,
       });
 
+      window.dispatchEvent(new Event('objects:refresh'));
       navigate(`/admin/objects/${data.id}`);
     } catch (err: unknown) {
       const backendMessage = (err as { response?: { data?: { error?: string } } }).response?.data?.error;

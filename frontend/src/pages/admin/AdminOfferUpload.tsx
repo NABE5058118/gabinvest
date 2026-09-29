@@ -41,6 +41,7 @@ export default function AdminOfferUpload() {
       const { data } = await adminApi.post(`/api/admin/objects/${id}/offer`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      window.dispatchEvent(new Event('objects:refresh'));
       navigate(`/admin/objects/${data.id}`);
     } catch {
       setError('Ошибка загрузки файла');

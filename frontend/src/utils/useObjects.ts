@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from './api';
 
 export type ObjectType = {
@@ -35,7 +35,7 @@ export type ObjectType = {
     endDate: string;
     monthlyRent: number;
     isFixed: boolean;
-    percentOfTurnover?: number;
+    percentOfTurnover?: string;
     indexationPercent?: number;
     tenant: { id: string; name: string };
   }>;
@@ -82,6 +82,39 @@ interface ObjectsResponse {
   page: number;
   totalPages: number;
   rotationTimestamp?: string;
+}
+
+export function useObjects() {
+  const [objects, setObjects] = useState<ObjectType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchObjects = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get<ObjectsResponse>('/api/objects');
+      setObjects(res.data.objects);
+    } catch {
+      setError('Ошибка загрузки');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchObjects();
+  }, [fetchObjects]);
+
+  useEffect(() => {
+    const handler = () => {
+      fetchObjects();
+    };
+    window.addEventListener('objects:refresh', handler);
+    return () => window.removeEventListener('objects:refresh', handler);
+  }, [fetchObjects]);
+
+  return { objects, loading, error, refetch: fetchObjects };
 }
 
 export function useObjects() {
