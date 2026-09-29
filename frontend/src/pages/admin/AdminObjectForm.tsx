@@ -21,6 +21,7 @@ type ObjectItem = {
   priceIndicator?: string;
   description?: string;
   image?: string;
+  images?: Array<{ id: string; url: string; sort: number }>;
   moderation?: { status: string };
   placement?: { type: string; price?: number; isExclusive: boolean };
 };
@@ -49,9 +50,9 @@ export default function AdminObjectForm() {
   const [isExclusive, setIsExclusive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [existingImage, setExistingImage] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<Array<{ id: string; url: string }>>([]);
 
   useEffect(() => {
     if (id && id !== 'new') {
@@ -73,7 +74,7 @@ export default function AdminObjectForm() {
             priceIndicator: data.priceIndicator || '',
             description: data.description || '',
           });
-          setExistingImage(data.image || null);
+          setExistingImages((data.images || []).map((img) => ({ id: img.id, url: img.url })));
           if (data.moderation) setModerationStatus(data.moderation.status);
           if (data.placement) {
             setPlacementType(data.placement.type);
@@ -86,23 +87,23 @@ export default function AdminObjectForm() {
   }, [id]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setImageFiles((prev) => [...prev, ...files]);
+    setImagePreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))]);
   };
 
-  const uploadImage = async (objectId: string): Promise<void> => {
-    if (!imageFile) return;
+  const uploadImages = async (objectId: string): Promise<void> => {
+    if (!imageFiles.length) return;
     const formData = new FormData();
-    formData.append('image', imageFile);
-    await adminApi.post(`/api/admin/objects/${objectId}/image`, formData, {
+    imageFiles.forEach((file) => formData.append('images', file));
+    await adminApi.post(`/api/admin/objects/${objectId}/images/bulk`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   };
 
-  const deleteImage = async (objectId: string): Promise<void> => {
-    await adminApi.delete(`/api/admin/objects/${objectId}/image`);
+  const deleteImage = async (objectId: string, imageId: string): Promise<void> => {
+    await adminApi.delete(`/api/admin/objects/${objectId}/images/${imageId}`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -124,7 +125,7 @@ export default function AdminObjectForm() {
       anchorTenantName: form.anchorTenantName || null,
       priceIndicator: form.priceIndicator || null,
       description: form.description || null,
-      image: existingImage || null,
+      image: existingImages[0]?.url || null,
     };
 
     try {
@@ -132,14 +133,14 @@ export default function AdminObjectForm() {
       if (id && id !== 'new') {
         const res = await adminApi.put(`/api/admin/objects/${id}`, payload);
         data = res.data;
-        if (imageFile) {
-          await uploadImage(data.id);
+        if (imageFiles.length) {
+          await uploadImages(data.id);
         }
       } else {
         const res = await adminApi.post('/api/admin/objects', payload);
         data = res.data;
-        if (imageFile) {
-          await uploadImage(data.id);
+        if (imageFiles.length) {
+          await uploadImages(data.id);
         }
       }
 
@@ -378,31 +379,43 @@ export default function AdminObjectForm() {
             className={styles.input}
             type="file"
             accept="image/jpeg,image/png,image/webp,image/jpg"
+            multiple
             onChange={handleImageChange}
           />
-          {(imagePreview || existingImage) && (
-            <div className={styles.imagePreview}>
-              <img
-                src={imagePreview || existingImage || ''}
-                alt="Preview"
-                className={styles.previewImg}
-              />
-              <button
-                type="button"
-                className={styles.removeImageBtn}
-                onClick={async () => {
-                  if (existingImage && id && id !== 'new') {
-                    await deleteImage(id);
-                  }
-                  setImageFile(null);
-                  setImagePreview(null);
-                  setExistingImage(null);
-                }}
-              >
-                Удалить фото
-              </button>
-            </div>
-          )}
+          <div className={styles.imagePreviewGrid}>
+            {existingImages.map((img) => (
+              <div key={img.id} className={styles.imagePreviewItem}>
+                <img src={img.url} alt="" className={styles.previewImg} />
+                <button
+                  type="button"
+                  className={styles.removeImageBtn}
+                  onClick={async () => {
+                    if (id && id !== 'new') {
+                      await deleteImage(id, img.id);
+                    }
+                    setExistingImages((prev) => prev.filter((i) => i.id !== img.id));
+                  }}
+                >
+                  Удалить
+                </button>
+              </div>
+            ))}
+            {imagePreviews.map((url, idx) => (
+              <div key={idx} className={styles.imagePreviewItem}>
+                <img src={url} alt="" className={styles.previewImg} />
+                <button
+                  type="button"
+                  className={styles.removeImageBtn}
+                  onClick={() => {
+                    setImageFiles((prev) => prev.filter((_, i) => i !== idx));
+                    setImagePreviews((prev) => prev.filter((_, i) => i !== idx));
+                  }}
+                >
+                  Удалить
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
 
         <button type="submit" className={styles.submitBtn} disabled={loading}>

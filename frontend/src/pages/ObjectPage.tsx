@@ -40,7 +40,12 @@ export default function ObjectPage() {
   }
 
   const isFav = favoriteIds.has(object.id);
-  const mainImage = object.images && object.images.length > 0 ? object.images[0].url : object.image;
+  const allImages = [
+    ...(object.images || []).map((img) => img.url),
+    ...(object.image && !object.images?.length ? [object.image] : []),
+  ];
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const mainImage = allImages[selectedImageIndex] || null;
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return null;
@@ -88,6 +93,21 @@ export default function ObjectPage() {
           </div>
         )}
       </div>
+
+      {allImages.length > 1 && (
+        <div className={styles.thumbnails}>
+          {allImages.map((url, idx) => (
+            <button
+              key={idx}
+              type="button"
+              className={`${styles.thumb} ${idx === selectedImageIndex ? styles.thumbActive : ''}`}
+              onClick={() => setSelectedImageIndex(idx)}
+            >
+              <img src={url} alt="" className={styles.thumbImg} />
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className={styles.content}>
         <h1 className={styles.title}>{object.title}</h1>

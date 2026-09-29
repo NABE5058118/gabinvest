@@ -168,6 +168,19 @@ const imageUpload = multer({
   },
 });
 
+const bulkImageUpload = multer({
+  storage: imageStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type'));
+    }
+  },
+});
+
 router.get('/objects', requireAdmin, async (req: Request, res: Response) => {
   try {
     const objects = await prisma.object.findMany({
@@ -537,6 +550,49 @@ router.post('/objects/:id/images', requireAdmin, imageUpload.single('image'), as
   } catch (error: any) {
     logger.error('Error uploading image:', error);
     res.status(500).json({ error: 'Failed to upload image' });
+  }
+});
+
+router.post('/objects/:id/images/bulk', requireAdmin, bulkImageUpload.array('images', 10), async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const files = req.files as Express.Multer.File[] | undefined;
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: 'Files are required' });
+    }
+
+    for (const file of files) {
+      const isValid = await verifyFileType(file.path, file.mimetype);
+      if (!isValid) {
+        for (const f of files) {
+          try {
+            fs.unlinkSync(f.path);
+          } catch (fileError: any) {
+            if (fileError?.code !== 'EACCES') {
+              throw fileError;
+            }
+          }
+        }
+        return res.status(400).json({ error: 'Invalid image content' });
+      }
+    }
+
+    const created = await prisma.$transaction(
+      files.map((file) =>
+        prisma.objectImage.create({
+          data: {
+            objectId: id,
+            url: `/uploads/${file.filename}`,
+          },
+        })
+      )
+    );
+
+    res.status(201).json(created);
+  } catch (error: any) {
+    logger.error('Error uploading images in bulk:', error);
+    res.status(500).json({ error: 'Failed to upload images' });
   }
 });
 

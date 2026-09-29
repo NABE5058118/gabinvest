@@ -18,6 +18,7 @@ type ObjectItem = {
   offerFileUrl?: string;
   offerFileName?: string;
   image?: string;
+  images?: Array<{ id: string; url: string; sort: number }>;
 };
 
 export default function AdminObjectsPage() {
@@ -81,18 +82,19 @@ export default function AdminObjectsPage() {
         {item.offerFileName && (
           <div className={styles.itemMeta}>КП: {item.offerFileName}</div>
         )}
-        {item.image && (
-          <div className={styles.itemMeta}>
+        <div className={styles.itemMeta}>
+          {(item.images && item.images.length > 0 ? item.images : (item.image ? [{ id: 'legacy', url: item.image }] : [])).map((img) => (
             <img
-              src={item.image}
+              key={img.id}
+              src={img.url}
               alt={item.title}
               className={styles.thumb}
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = 'none';
               }}
             />
-          </div>
-        )}
+          ))}
+        </div>
             <div className={styles.itemActions}>
               <button
                 className={styles.actionBtn}
