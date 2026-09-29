@@ -143,15 +143,45 @@ router.post('/telegram', async (req: Request, res: Response) => {
 
     const telegramId = String(user.id);
 
-    const updateData: any = {
-      firstName: user.first_name || undefined,
-      lastName: user.last_name || undefined,
-      username: user.username || undefined,
-    };
-    if (user.photo_url !== undefined) updateData.telegramPhotoUrl = user.photo_url;
-    if (user.language_code !== undefined) updateData.telegramLang = user.language_code;
-    if (user.is_premium !== undefined) updateData.telegramPremium = user.is_premium;
-    if (user.allows_write_to_pm !== undefined) updateData.telegramAllowsPm = user.allows_write_to_pm;
+    const dbUser = await prisma.user.findUnique({
+      where: { telegramId },
+      select: {
+        id: true,
+        phone: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        username: true,
+        telegramId: true,
+        telegramPhotoUrl: true,
+        telegramLang: true,
+        telegramPremium: true,
+        telegramAllowsPm: true,
+        role: true,
+      },
+    });
+
+    if (dbUser) {
+      logger.info('Telegram auth: user already exists, skipping profile overwrite', { telegramId: dbUser.telegramId, userId: dbUser.id });
+      const token = signToken(dbUser.telegramId || dbUser.id);
+      return res.json({
+        user: {
+          id: dbUser.id,
+          phone: dbUser.phone,
+          email: dbUser.email,
+          firstName: dbUser.firstName,
+          lastName: dbUser.lastName,
+          username: dbUser.username,
+          telegramId: dbUser.telegramId,
+          telegramPhotoUrl: dbUser.telegramPhotoUrl,
+          telegramLang: dbUser.telegramLang,
+          telegramPremium: dbUser.telegramPremium,
+          telegramAllowsPm: dbUser.telegramAllowsPm,
+          role: dbUser.role || 'user',
+        },
+        token,
+      });
+    }
 
     const createData: any = {
       telegramId,
@@ -164,30 +194,28 @@ router.post('/telegram', async (req: Request, res: Response) => {
       telegramAllowsPm: user.allows_write_to_pm || undefined,
     };
 
-    const dbUser = await prisma.user.upsert({
-      where: { telegramId },
-      update: updateData,
-      create: createData,
+    const newUser = await prisma.user.create({
+      data: createData,
     });
 
-    logger.info('Telegram auth success', { telegramId: dbUser.telegramId, userId: dbUser.id });
+    logger.info('Telegram auth success', { telegramId: newUser.telegramId, userId: newUser.id });
 
-    const token = signToken(dbUser.telegramId || dbUser.id);
+    const token = signToken(newUser.telegramId || newUser.id);
 
     res.json({
       user: {
-        id: dbUser.id,
-        phone: dbUser.phone,
-        email: dbUser.email,
-        firstName: dbUser.firstName,
-        lastName: dbUser.lastName,
-        username: dbUser.username,
-        telegramId: dbUser.telegramId,
-        telegramPhotoUrl: dbUser.telegramPhotoUrl,
-        telegramLang: dbUser.telegramLang,
-        telegramPremium: dbUser.telegramPremium,
-        telegramAllowsPm: dbUser.telegramAllowsPm,
-        role: dbUser.role || 'user',
+        id: newUser.id,
+        phone: newUser.phone,
+        email: newUser.email,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        username: newUser.username,
+        telegramId: newUser.telegramId,
+        telegramPhotoUrl: newUser.telegramPhotoUrl,
+        telegramLang: newUser.telegramLang,
+        telegramPremium: newUser.telegramPremium,
+        telegramAllowsPm: newUser.telegramAllowsPm,
+        role: newUser.role || 'user',
       },
       token,
     });
@@ -287,6 +315,30 @@ router.put('/profile', authMiddleware, async (req: Request, res: Response) => {
     }
 
     const { firstName, lastName, username, phone, email } = req.body;
+
+    if (phone) {
+      const phoneOwner = await prisma.user.findFirst({
+        where: {
+          phone,
+          NOT: { id: userId },
+        },
+      });
+      if (phoneOwner) {
+        return res.status(400).json({ error: 'Телефон уже используется другим пользователем' });
+      }
+    }
+
+    if (email) {
+      const emailOwner = await prisma.user.findFirst({
+        where: {
+          email,
+          NOT: { id: userId },
+        },
+      });
+      if (emailOwner) {
+        return res.status(400).json({ error: 'Email уже используется другим пользователем' });
+      }
+    }
 
     const dbUser = await prisma.user.update({
       where: { id: userId },

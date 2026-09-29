@@ -224,8 +224,8 @@ model User {
   telegramLang     String?
   telegramPremium  Boolean?   @default(false)
   telegramAllowsPm Boolean?   @default(false)
-  phone            String?    @unique
-  email            String?    @unique
+  phone            String?
+  email            String?
   passwordHash     String?
   role             String?    @default("user")
   @@index([role])
