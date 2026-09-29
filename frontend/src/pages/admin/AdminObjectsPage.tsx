@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Upload } from 'lucide-react';
 import { adminApi } from '@utils/adminApi';
+import ConfirmModal from '@components/ConfirmModal';
 import styles from '@styles/AdminObjects.module.css';
 
 type ObjectItem = {
@@ -26,6 +27,8 @@ export default function AdminObjectsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const navigate = useNavigate();
 
   const fetchItems = async () => {
@@ -45,16 +48,25 @@ export default function AdminObjectsPage() {
     fetchItems();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Удалить объект?')) return;
+  const requestDelete = (id: string) => {
+    setDeleteTarget(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget;
+    setDeleteTarget(null);
+    setDeleteLoading(true);
     try {
       await adminApi.delete(`/api/admin/objects/${id}`);
-      setItems(items.filter((i) => i.id !== id));
+      setItems((prev) => prev.filter((i) => i.id !== id));
       setToast({ type: 'success', message: 'Объект удалён' });
       window.dispatchEvent(new Event('objects:refresh'));
     } catch {
       setError('Ошибка удаления');
       setToast({ type: 'error', message: 'Ошибка удаления' });
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -124,7 +136,7 @@ export default function AdminObjectsPage() {
               </button>
               <button
                 className={`${styles.actionBtn} ${styles.dangerAction}`}
-                onClick={() => handleDelete(item.id)}
+                onClick={() => requestDelete(item.id)}
               >
                 <Trash2 size={16} strokeWidth={2} />
               </button>
@@ -132,6 +144,15 @@ export default function AdminObjectsPage() {
           </div>
         ))}
       </div>
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        message="Вы действительно хотите удалить объект? Это действие нельзя отменить."
+        confirmLabel="Удалить"
+        loading={deleteLoading}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
