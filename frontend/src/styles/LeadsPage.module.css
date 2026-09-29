@@ -1,6 +1,8 @@
 .page {
   min-height: 100vh;
-  padding-top: 60px;
+  padding: 70px 12px 80px;
+  margin: 0 auto;
+  max-width: 1500px;
 }
 
 .header {
@@ -25,20 +27,56 @@
 }
 
 .title {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .content {
-  padding: 12px;
+  padding: 0 12px;
+}
+
+@media (min-width: 768px) {
+  .content {
+    padding: 0;
+  }
+}
+
+.list {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .list {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
 }
 
 .item {
   border: 1px solid #e5e5e5;
   border-radius: 12px;
   padding: 16px;
-  margin-bottom: 12px;
   background: #fff;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
 }
 
 .itemHeader {

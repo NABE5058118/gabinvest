@@ -79,6 +79,27 @@ export default function CatalogPage() {
     return true;
   });
 
+  const sortedObjects = [...filteredObjects].sort((a, b) => {
+    const field = filters.sortBy;
+    const mult = filters.sortOrder === 'asc' ? 1 : -1;
+
+    if (field === 'createdAt') {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return (aTime - bTime) * mult;
+    }
+
+    if (field === 'leaseEndDate') {
+      const aTime = a.leaseEndDate ? new Date(a.leaseEndDate).getTime() : (mult === 1 ? Infinity : -Infinity);
+      const bTime = b.leaseEndDate ? new Date(b.leaseEndDate).getTime() : (mult === 1 ? Infinity : -Infinity);
+      return (aTime - bTime) * mult;
+    }
+
+    const aNum = Number(a[field as 'price' | 'area' | 'yieldPercent']) || 0;
+    const bNum = Number(b[field as 'price' | 'area' | 'yieldPercent']) || 0;
+    return (aNum - bNum) * mult;
+  });
+
   const resetFilters = () => {
     setFilters({
       type: 'all',
@@ -206,7 +227,7 @@ export default function CatalogPage() {
       </div>
 
       <div className={styles.list}>
-        {filteredObjects.length === 0 ? (
+        {sortedObjects.length === 0 ? (
           <div className={styles.empty}>
             <div className={styles.emptyIcon}>
               <LayoutGrid size={64} strokeWidth={1} color="#ccc" />
@@ -217,7 +238,7 @@ export default function CatalogPage() {
             </button>
           </div>
         ) : (
-          filteredObjects.map((obj) => (
+          sortedObjects.map((obj) => (
             <div key={obj.id} className={styles.card} onClick={() => navigate(`/objects/${obj.id}`)}>
               <div className={styles.cardImage}>
                 {obj.images && obj.images.length > 0 ? (
@@ -376,7 +397,7 @@ export default function CatalogPage() {
               </div>
 
               <div className={styles.filterSection}>
-                <h3 className={styles.filterSectionTitle}>Срок окончания договора</h3>
+                <h3 className={styles.filterSectionTitle}>Сроки договора</h3>
                 <div className={styles.filterRow}>
                   <input
                     className={styles.filterInput}

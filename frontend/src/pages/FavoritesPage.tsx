@@ -1,13 +1,26 @@
 import { useNavigate } from 'react-router-dom';
-import { Heart } from 'lucide-react';
+import { Heart, MapPin, LayoutGrid } from 'lucide-react';
 import { useFavorites } from '@context/FavoritesContext';
 import { useObjects } from '@utils/useObjects';
 import { ObjectType } from '@utils/types';
 import styles from '@styles/FavoritesPage.module.css';
 
+const typeLabels: Record<string, string> = {
+  'Офис': 'Офис',
+  'Склад': 'Склад',
+  'Торговое помещение': 'Торговое помещение',
+  'Другое': 'Другое',
+};
+
+const priceIndicatorLabels: Record<string, { label: string }> = {
+  'above_market': { label: 'Выше рынка' },
+  'market': { label: 'По рынку' },
+  'below_market': { label: 'Ниже рынка' },
+};
+
 export default function FavoritesPage() {
   const navigate = useNavigate();
-  const { favoriteIds } = useFavorites();
+  const { favoriteIds, toggleFavorite } = useFavorites();
   const { objects, loading, error } = useObjects();
   const favorites = objects.filter((obj): obj is ObjectType => favoriteIds.has(obj.id));
 
@@ -50,17 +63,60 @@ export default function FavoritesPage() {
             {favorites.map((obj) => (
               <div key={obj.id} className={styles.card} onClick={() => navigate(`/objects/${obj.id}`)}>
                 <div className={styles.cardImage}>
-                  <div className={styles.placeholder}>
-                    <Heart size={48} strokeWidth={1} color="#ccc" />
-                  </div>
+                  {obj.images && obj.images.length > 0 ? (
+                    <img
+                      src={obj.images[0].url}
+                      alt={obj.title}
+                      className={styles.cardImg}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : obj.image ? (
+                    <img
+                      src={obj.image}
+                      alt={obj.title}
+                      className={styles.cardImg}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className={styles.placeholder}>
+                      <LayoutGrid size={48} strokeWidth={1} color="#ccc" />
+                    </div>
+                  )}
+                  <span className={styles.typeBadge}>{typeLabels[obj.type] || obj.type}</span>
+                  {obj.priceIndicator && priceIndicatorLabels[obj.priceIndicator] && (
+                    <span className={`${styles.priceIndicatorBadge} ${styles[obj.priceIndicator]}`}>
+                      {priceIndicatorLabels[obj.priceIndicator].label}
+                    </span>
+                  )}
+                  <button
+                    className={styles.favoriteBtn}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleFavorite(obj.id);
+                    }}
+                  >
+                    <Heart size={20} strokeWidth={2} fill={favoriteIds.has(obj.id) ? '#000' : 'none'} />
+                  </button>
                 </div>
                 <div className={styles.cardBody}>
                   <h3 className={styles.cardTitle}>{obj.title}</h3>
-                  <p className={styles.cardLocation}>{obj.location}</p>
+                  <p className={styles.cardLocation}>
+                    <MapPin size={12} strokeWidth={2} />
+                    {obj.location}
+                  </p>
                   <div className={styles.cardFooter}>
                     <span className={styles.price}>{obj.price.toLocaleString('ru-RU')} ₽</span>
                     <span className={styles.yield}>Доходность: {obj.yieldPercent}%</span>
                   </div>
+                  {obj.anchorTenantName && (
+                    <div className={styles.anchorTenant}>
+                      Якорный арендатор: {obj.anchorTenantName}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

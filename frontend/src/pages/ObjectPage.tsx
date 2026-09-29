@@ -9,13 +9,21 @@ import styles from '@styles/ObjectPage.module.css';
 export default function ObjectPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [object, setObject] = useState<ObjectType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
   const { favoriteIds, toggleFavorite } = useFavorites();
 
   useEffect(() => {
     if (!id) return;
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+    setError(null);
+
     api
       .get<ObjectType>(`/api/objects/${id}`)
       .then((res) => setObject(res.data))
@@ -44,7 +52,6 @@ export default function ObjectPage() {
     ...(object.images || []).map((img) => img.url),
     ...(object.image && !object.images?.length ? [object.image] : []),
   ];
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const mainImage = allImages[selectedImageIndex] || null;
 
   const formatDate = (dateStr?: string) => {
@@ -288,17 +295,19 @@ export default function ObjectPage() {
           </div>
         )}
 
-        <div className={styles.actions}>
+      <div className={styles.actions}>
+        <div className={styles.actionRow}>
           <button className={styles.primaryBtn} onClick={() => navigate(`/objects/${id}/offer`)}>
             Коммерческое предложение
           </button>
           <button className={styles.secondaryBtn} onClick={() => navigate(`/objects/${id}/lead`)}>
             Оставить заявку
           </button>
-          <button className={styles.managerLink} onClick={() => navigate(`/objects/${id}/lead`)}>
-            Связаться с менеджером
-          </button>
         </div>
+        <button className={styles.managerLink} onClick={() => navigate(`/objects/${id}/lead`)}>
+          Связаться с менеджером
+        </button>
+      </div>
       </div>
     </div>
   );

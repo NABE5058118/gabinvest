@@ -70,32 +70,34 @@ export default function LeadsPage() {
         {!loading && !error && leads.length === 0 && (
           <div className={styles.empty}>Нет заявок</div>
         )}
-        {leads.map((lead) => (
-          <div key={lead.id} className={styles.item}>
-            <div className={styles.itemHeader}>
-              <div className={styles.itemTitle}>
-                {lead.object?.title || `Объект ${lead.objectId}`}
+        <div className={styles.list}>
+          {leads.map((lead) => (
+            <div key={lead.id} className={styles.item}>
+              <div className={styles.itemHeader}>
+                <div className={styles.itemTitle}>
+                  {lead.object?.title || `Объект ${lead.objectId}`}
+                </div>
+                <div className={styles.itemStatus}>
+                  <select
+                    className={styles.statusSelect}
+                    value={lead.status}
+                    onChange={(e) => handleStatusChange(lead.id, e.target.value)}
+                  >
+                    {STATUS_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div className={styles.itemStatus}>
-                <select
-                  className={styles.statusSelect}
-                  value={lead.status}
-                  onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                >
-                  {STATUS_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+              <div className={styles.itemMeta}>
+                <div><strong>Клиент:</strong> {lead.name}</div>
+                <div><strong>Телефон:</strong> {lead.phone}</div>
+                {lead.comment && <div><strong>Комментарий:</strong> {lead.comment}</div>}
+                <div><strong>Дата:</strong> {formatDate(lead.createdAt)}</div>
               </div>
             </div>
-            <div className={styles.itemMeta}>
-              <div><strong>Клиент:</strong> {lead.name}</div>
-              <div><strong>Телефон:</strong> {lead.phone}</div>
-              {lead.comment && <div><strong>Комментарий:</strong> {lead.comment}</div>}
-              <div><strong>Дата:</strong> {formatDate(lead.createdAt)}</div>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
