@@ -1,4 +1,4 @@
-import { User, ChevronRight, Settings, Mail, Phone, LogOut, FileText } from 'lucide-react';
+import { User, ChevronRight, Settings, LogOut, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@context/AuthContext';
 import styles from '@styles/ProfilePage.module.css';
@@ -47,24 +47,6 @@ export default function ProfilePage() {
             </div>
             <ChevronRight size={20} strokeWidth={2} className={styles.menuItemRight} />
           </button>
-          <div className={styles.menuItem}>
-            <div className={styles.menuItemLeft}>
-              <Mail size={20} strokeWidth={2} />
-              <span>Почта</span>
-            </div>
-            <span className={user?.email ? styles.value : styles.disabled}>
-              {user?.email || 'Не подключено'}
-            </span>
-          </div>
-          <div className={styles.menuItem}>
-            <div className={styles.menuItemLeft}>
-              <Phone size={20} strokeWidth={2} />
-              <span>Телефон</span>
-            </div>
-            <span className={user?.phone ? styles.value : styles.disabled}>
-              {user?.phone || 'Не подключено'}
-            </span>
-          </div>
           <button className={styles.menuItem} onClick={handleLogout}>
             <div className={styles.menuItemLeft}>
               <LogOut size={20} strokeWidth={2} />

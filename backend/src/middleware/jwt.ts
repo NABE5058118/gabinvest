@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
 import { createLogger } from '../utils/logger.js';
+import { validateTelegramInitData, parseInitData } from '../utils/telegram.js';
 
 const logger = createLogger('jwt');
 
@@ -28,44 +29,75 @@ export function signToken(telegramIdOrUser: string | null, userId?: string): str
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) {
+  if (header?.startsWith('Bearer ')) {
+    const token = header.slice(7);
+    try {
+      const payload = jwt.verify(token, JWT_SECRET) as { telegramId?: string; userId?: string };
+      const telegramId = payload.telegramId;
+      const userId = payload.userId;
+
+      if (!telegramId && !userId) {
+        return res.status(401).json({ error: 'Invalid token' });
+      }
+
+      let user;
+      if (telegramId) {
+        user = await prisma.user.findUnique({
+          where: { telegramId },
+          select: { id: true },
+        });
+      }
+
+      if (!user && userId) {
+        user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true },
+        });
+      }
+
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+
+      req.userId = user.id;
+      return next();
+    } catch {
+      // fallback to telegram init data below
+    }
+  }
+
+  const initData = req.headers['x-telegram-init-data'] as string | undefined;
+  if (!initData) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const token = header.slice(7);
-  try {
-    const payload = jwt.verify(token, JWT_SECRET) as { telegramId?: string; userId?: string };
-    const telegramId = payload.telegramId;
-    const userId = payload.userId;
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  if (!botToken) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
-    if (!telegramId && !userId) {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-
-    let user;
-    if (telegramId) {
-      user = await prisma.user.findUnique({
-        where: { telegramId },
-        select: { id: true },
-      });
-    }
-
-    if (!user && userId) {
-      user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true },
-      });
-    }
-
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-
-    req.userId = user.id;
-    next();
-  } catch {
+  const isValid = validateTelegramInitData(initData, botToken);
+  if (!isValid) {
     return res.status(401).json({ error: 'Invalid token' });
   }
+
+  const tgUser = parseInitData(initData);
+  if (!tgUser) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+
+  const telegramId = String(tgUser.id);
+  const user = await prisma.user.findUnique({
+    where: { telegramId },
+    select: { id: true },
+  });
+
+  if (!user) {
+    return res.status(401).json({ error: 'User not found' });
+  }
+
+  req.userId = user.id;
+  next();
 }
 
 export function optionalAuth(req: Request, res: Response, next: NextFunction) {
