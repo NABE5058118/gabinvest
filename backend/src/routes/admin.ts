@@ -39,7 +39,7 @@ const createObjectSchema = z.object({
   anchorTenantName: z.string().max(200).nullable().optional(),
   priceIndicator: z.enum(priceIndicatorEnum).nullable().optional(),
   description: z.string().max(5000).nullable().optional(),
-  image: z.string().url().nullable().optional(),
+  image: z.string().nullable().optional(),
 });
 
 const updateObjectSchema = createObjectSchema.partial();
