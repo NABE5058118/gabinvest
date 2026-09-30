@@ -1,4 +1,5 @@
 import express from 'express';
+import compression from 'compression';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -13,7 +14,7 @@ import favoritesRouter from './routes/favorites.js';
 import adminRouter from './routes/admin.js';
 import adminAuthRouter from './routes/admin-auth.js';
 import authRouter from './routes/auth.js';
-import { getLogger, createLogger } from './utils/logger.js';
+import { createLogger } from './utils/logger.js';
 
 dotenv.config();
 
@@ -109,6 +110,7 @@ app.use(cors({ origin: (origin, callback) => {
     callback(new Error('Not allowed by CORS') as any, false as any);
   }
 }}));
+app.use(compression());
 app.use(express.json({ limit: '100kb' }));
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: 'Too many requests' });

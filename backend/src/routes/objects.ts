@@ -84,13 +84,6 @@ router.get('/', async (req: Request, res: Response) => {
         include: {
           images: { orderBy: { sort: 'asc' } },
           tenants: true,
-          expenses: true,
-          legalConstraints: true,
-          engineeringSpec: true,
-          vatRate: true,
-          moderation: true,
-          placement: true,
-          leases: { include: { tenant: true } },
         },
       }),
       prisma.object.count({ where }),
@@ -98,6 +91,7 @@ router.get('/', async (req: Request, res: Response) => {
 
     const rotationTimestamp = new Date().toISOString();
 
+    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=30');
     res.json({
       objects,
       total,
@@ -120,6 +114,7 @@ router.get('/cities', async (req: Request, res: Response) => {
       distinct: ['city'],
     });
 
+    res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
     res.json(cities.map((c) => c.city).filter((city): city is string => city !== null));
   } catch (error) {
     logger.error('Error fetching cities:', error);
@@ -132,10 +127,11 @@ router.get('/anchor-tenants', async (req: Request, res: Response) => {
     const tenants = await prisma.tenant.findMany({
       where: { isAnchor: true },
       select: { name: true },
-      distinct: ['name'],
       orderBy: { name: 'asc' },
+      distinct: ['name'],
     });
 
+    res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
     res.json(tenants.map((t) => t.name));
   } catch (error) {
     logger.error('Error fetching anchor tenants:', error);
@@ -165,6 +161,7 @@ router.get('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Object not found' });
     }
 
+    res.set('Cache-Control', 'public, max-age=120, stale-while-revalidate=30');
     res.json(object);
   } catch (error) {
     logger.error('Error fetching object:', error);
