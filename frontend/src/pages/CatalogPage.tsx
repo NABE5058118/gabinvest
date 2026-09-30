@@ -234,7 +234,7 @@ export default function CatalogPage() {
             </button>
           </div>
         ) : (
-          sortedObjects.map((obj) => (
+          sortedObjects.map((obj, idx) => (
             <div
               key={obj.id}
               className={styles.card}
@@ -255,7 +255,7 @@ export default function CatalogPage() {
                     src={obj.images[0].url}
                     alt={obj.title}
                     className={styles.cardImg}
-                    loading="lazy"
+                    {...(idx === 0 ? { fetchPriority: 'high' } : { loading: 'lazy' })}
                     decoding="async"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
@@ -266,7 +266,7 @@ export default function CatalogPage() {
                     src={obj.image}
                     alt={obj.title}
                     className={styles.cardImg}
-                    loading="lazy"
+                    {...(idx === 0 ? { fetchPriority: 'high' } : { loading: 'lazy' })}
                     decoding="async"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
