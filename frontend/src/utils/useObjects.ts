@@ -112,14 +112,12 @@ export function useObjects() {
       fetchObjects();
     };
     window.addEventListener('objects:refresh', handler);
-    window.addEventListener('focus', handler);
     const onVisibility = () => {
       if (document.visibilityState === 'visible') handler();
     };
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
       window.removeEventListener('objects:refresh', handler);
-      window.removeEventListener('focus', handler);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [fetchObjects]);

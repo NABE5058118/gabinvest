@@ -27,7 +27,21 @@ export default function FavoritesPage() {
   if (loading) {
     return (
       <div className={styles.page}>
-        <div className={styles.error}>Загрузка...</div>
+        <header className={styles.header}>
+          <h1 className={styles.title}>Избранное</h1>
+        </header>
+        <div className={styles.list}>
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <div key={idx} className={styles.skeletonCard}>
+              <div className={styles.skeletonImage} />
+              <div className={styles.skeletonBody}>
+                <div className={`${styles.skeletonLine} ${styles.skeletonLineShort}`} />
+                <div className={styles.skeletonLine} />
+                <div className={`${styles.skeletonLine} ${styles.skeletonLineShort}`} />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

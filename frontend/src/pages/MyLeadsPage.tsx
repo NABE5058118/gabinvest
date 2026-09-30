@@ -59,7 +59,18 @@ export default function MyLeadsPage() {
       </header>
 
       <div className={styles.content}>
-        {loading && <div className={styles.empty}>Загрузка...</div>}
+        {loading && (
+          <div className={styles.skeletonList}>
+            {Array.from({ length: 4 }).map((_, idx) => (
+              <div key={idx} className={styles.skeletonCard}>
+                <div className={`${styles.skeletonRow} ${styles.skeletonRowMedium}`} />
+                <div className={styles.skeletonRow} />
+                <div className={`${styles.skeletonRow} ${styles.skeletonRowShort}`} />
+                <div className={styles.skeletonBtn} />
+              </div>
+            ))}
+          </div>
+        )}
         {error && <div className={styles.empty}>{error}</div>}
         {!loading && !error && leads.length === 0 && (
           <div className={styles.empty}>У вас пока нет заявок</div>

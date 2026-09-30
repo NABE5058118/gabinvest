@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Filter, X, Heart, MapPin, LayoutGrid, RefreshCw, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Heart, MapPin, LayoutGrid, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useFavorites } from '@context/FavoritesContext';
 import { useObjects } from '@utils/useObjects';
-import { CITIES, OBJECT_TYPES } from '../data/cities';
+import CatalogHeader from '@components/CatalogHeader';
+import CatalogFilters, { type Filters } from '@components/CatalogFilters';
 import styles from '@styles/CatalogPage.module.css';
 
 type SortOption = 'createdAt' | 'price' | 'area' | 'yieldPercent' | 'leaseEndDate';
@@ -12,7 +13,7 @@ export default function CatalogPage() {
   const navigate = useNavigate();
   const { favoriteIds, toggleFavorite } = useFavorites();
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<Filters>({
     type: 'all',
     minPrice: '',
     maxPrice: '',
@@ -40,9 +41,27 @@ export default function CatalogPage() {
 
   if (loading) {
     return (
-      <div className={styles.page}>
-        <div className={styles.error}>Загрузка...</div>
-      </div>
+      <main className={styles.page}>
+        <CatalogHeader
+          styles={styles}
+          refetch={refetch}
+          setShowFilters={setShowFilters}
+          lastRotation={lastRotation}
+          loading={loading}
+        />
+        <div className={styles.list}>
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <div key={idx} className={styles.skeletonCard}>
+              <div className={styles.skeletonImage} />
+              <div className={styles.skeletonBody}>
+                <div className={`${styles.skeletonLine} ${styles.skeletonLineShort}`} />
+                <div className={styles.skeletonLine} />
+                <div className={`${styles.skeletonLine} ${styles.skeletonLineShort}`} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
     );
   }
 
@@ -140,87 +159,24 @@ export default function CatalogPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <img className={styles.title} src="/logo.svg" alt="GAB Invest" />
-          {/*<p className={styles.subtitle}>Маркетплейс недвижимости с арендным доходом</p>*/}
-          {lastRotation && (
-            <p className={styles.rotationInfo}>Лента обновлена: {lastRotation}</p>
-          )}
-        </div>
-        <div className={styles.headerActions}>
-          <button className={styles.refreshBtn} onClick={() => refetch()} aria-label="Обновить ленту">
-            <RefreshCw size={24} strokeWidth={2} />
-          </button>
-          <button className={styles.filterBtn} onClick={() => setShowFilters(true)} aria-label="Фильтры">
-            <Filter size={24} strokeWidth={2} />
-          </button>
-        </div>
-      </header>
+      <CatalogHeader
+        styles={styles}
+        refetch={refetch}
+        setShowFilters={setShowFilters}
+        lastRotation={lastRotation}
+        loading={loading}
+      />
 
-      <div className={styles.sortBar}>
-        <select
-          className={styles.sortSelect}
-          value={`${filters.sortBy}-${filters.sortOrder}`}
-          onChange={(e) => {
-            const [sortBy, sortOrder] = e.target.value.split('-');
-            setFilters({ ...filters, sortBy: sortBy as SortOption, sortOrder: sortOrder as 'asc' | 'desc' });
-          }}
-        >
-          {Object.entries(sortLabels).map(([value, label]) => (
-            <option key={value} value={`${value}-${filters.sortOrder === 'asc' ? 'asc' : 'desc'}`}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <button
-          className={styles.sortOrderBtn}
-          onClick={() => setFilters({ ...filters, sortOrder: filters.sortOrder === 'asc' ? 'desc' : 'asc' })}
-          aria-label={filters.sortOrder === 'asc' ? 'Порядок сортировки: по возрастанию' : 'Порядок сортировки: по убыванию'}
-        >
-          {filters.sortOrder === 'asc' ? '↑' : '↓'}
-        </button>
-      </div>
-
-      <div className={styles.filterChips}>
-        <select
-          className={styles.chip}
-          value={filters.type}
-          onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-        >
-          <option value="all">Тип</option>
-          {OBJECT_TYPES.map((type) => (
-            <option key={type} value={type}>{type}</option>
-          ))}
-        </select>
-        <input
-          className={styles.chip}
-          placeholder="Цена от"
-          type="number"
-          value={filters.minPrice}
-          onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-        />
-        <input
-          className={styles.chip}
-          placeholder="Площадь от"
-          type="number"
-          value={filters.minArea}
-          onChange={(e) => setFilters({ ...filters, minArea: e.target.value })}
-        />
-        <select
-          className={styles.chip}
-          value={filters.city}
-          onChange={(e) => setFilters({ ...filters, city: e.target.value })}
-        >
-          <option value="">Город</option>
-          {CITIES.map((city) => (
-            <option key={city} value={city}>{city}</option>
-          ))}
-        </select>
-        <button className={styles.resetBtn} onClick={resetFilters}>
-          Сбросить
-        </button>
-      </div>
+      <CatalogFilters
+        styles={styles}
+        filters={filters}
+        setFilters={setFilters}
+        showFilters={showFilters}
+        setShowFilters={setShowFilters}
+        resetFilters={resetFilters}
+        applyFilters={applyFilters}
+        sortLabels={sortLabels}
+      />
 
       <div className={styles.list}>
         {sortedObjects.length === 0 ? (
@@ -255,7 +211,7 @@ export default function CatalogPage() {
                     src={obj.images[0].url}
                     alt={obj.title}
                     className={styles.cardImg}
-                    {...(idx === 0 ? { fetchPriority: 'high' } : { loading: 'lazy' })}
+                    {...(idx === 0 ? { fetchpriority: 'high' } : { loading: 'lazy' })}
                     decoding="async"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
@@ -266,7 +222,7 @@ export default function CatalogPage() {
                     src={obj.image}
                     alt={obj.title}
                     className={styles.cardImg}
-                    {...(idx === 0 ? { fetchPriority: 'high' } : { loading: 'lazy' })}
+                    {...(idx === 0 ? { fetchpriority: 'high' } : { loading: 'lazy' })}
                     decoding="async"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
@@ -324,149 +280,6 @@ export default function CatalogPage() {
           ))
         )}
       </div>
-
-      <div className={`${styles.filterOverlay} ${showFilters ? styles.open : ''}`}>
-        <div className={styles.filterModal}>
-            <div className={styles.filterHeader}>
-              <h2>Фильтры</h2>
-              <button className={styles.closeBtn} onClick={() => setShowFilters(false)} aria-label="Закрыть фильтры">
-                <X size={24} strokeWidth={2} />
-              </button>
-            </div>
-
-            <div className={styles.filterBody}>
-              <div className={styles.filterSection}>
-                <h3 className={styles.filterSectionTitle}>Тип объекта</h3>
-                {OBJECT_TYPES.map((type) => (
-                  <label key={type} className={styles.checkbox}>
-                    <input
-                      type="checkbox"
-                      checked={filters.type === type}
-                      onChange={(e) => setFilters({ ...filters, type: e.target.checked ? type : 'all' })}
-                    />
-                    <span>{type}</span>
-                  </label>
-                ))}
-              </div>
-
-              <div className={styles.filterSection}>
-                <h3 className={styles.filterSectionTitle}>Цена, ₽</h3>
-                <div className={styles.filterRow}>
-                  <input
-                    className={styles.filterInput}
-                    placeholder="От, ₽"
-                    type="number"
-                    value={filters.minPrice}
-                    onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-                  />
-                  <input
-                    className={styles.filterInput}
-                    placeholder="До, ₽"
-                    type="number"
-                    value={filters.maxPrice}
-                    onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.filterSection}>
-                <h3 className={styles.filterSectionTitle}>Доходность, %</h3>
-                <div className={styles.filterRow}>
-                  <input
-                    className={styles.filterInput}
-                    placeholder="От, %"
-                    type="number"
-                    step="0.1"
-                    value={filters.minYield}
-                    onChange={(e) => setFilters({ ...filters, minYield: e.target.value })}
-                  />
-                  <input
-                    className={styles.filterInput}
-                    placeholder="До, %"
-                    type="number"
-                    step="0.1"
-                    value={filters.maxYield}
-                    onChange={(e) => setFilters({ ...filters, maxYield: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.filterSection}>
-                <h3 className={styles.filterSectionTitle}>Площадь, м²</h3>
-                <div className={styles.filterRow}>
-                  <input
-                    className={styles.filterInput}
-                    placeholder="От, м²"
-                    type="number"
-                    value={filters.minArea}
-                    onChange={(e) => setFilters({ ...filters, minArea: e.target.value })}
-                  />
-                  <input
-                    className={styles.filterInput}
-                    placeholder="До, м²"
-                    type="number"
-                    value={filters.maxArea}
-                    onChange={(e) => setFilters({ ...filters, maxArea: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.filterSection}>
-                <h3 className={styles.filterSectionTitle}>Сроки договора</h3>
-                <div className={styles.filterRow}>
-                  <input
-                    className={styles.filterInput}
-                    placeholder="От даты"
-                    type="date"
-                    value={filters.leaseEndAfter}
-                    onChange={(e) => setFilters({ ...filters, leaseEndAfter: e.target.value })}
-                  />
-                  <input
-                    className={styles.filterInput}
-                    placeholder="До даты"
-                    type="date"
-                    value={filters.leaseEndBefore}
-                    onChange={(e) => setFilters({ ...filters, leaseEndBefore: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.filterSection}>
-                <h3 className={styles.filterSectionTitle}>Якорный арендатор</h3>
-                <input
-                  className={styles.filterInput}
-                  placeholder="Например, Пятёрочка"
-                  type="text"
-                  value={filters.anchorTenant}
-                  onChange={(e) => setFilters({ ...filters, anchorTenant: e.target.value })}
-                />
-              </div>
-
-              <div className={styles.filterSection}>
-                <h3 className={styles.filterSectionTitle}>Город</h3>
-                <select
-                  className={styles.filterSelect}
-                  value={filters.city}
-                  onChange={(e) => setFilters({ ...filters, city: e.target.value })}
-                >
-                  <option value="">Выберите город</option>
-                  {CITIES.map((city) => (
-                    <option key={city} value={city}>{city}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className={styles.filterFooter}>
-              <button className={styles.resetFilterBtn} onClick={resetFilters}>
-                Сбросить
-              </button>
-              <button className={styles.applyFilterBtn} onClick={applyFilters}>
-                Применить
-              </button>
-            </div>
-          </div>
-        </div>
     </main>
   );
 }
