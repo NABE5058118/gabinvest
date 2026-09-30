@@ -112,7 +112,7 @@ const ObjectPage = () => {
                 onClick={() => setSelectedImageIndex(idx)}
                 aria-label={`Изображение ${idx + 1}`}
               >
-                <img src={url} alt="" className={styles.thumbImg} />
+                <img src={url} alt="" className={styles.thumbImg} loading="lazy" decoding="async" />
             </button>
           ))}
         </div>

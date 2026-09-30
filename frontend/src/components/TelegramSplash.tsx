@@ -7,7 +7,6 @@ export default function TelegramSplash({ children }: { children: React.ReactNode
 
   useEffect(() => {
     if (typeof window === 'undefined') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStatus('ready');
       return;
     }
@@ -25,19 +24,13 @@ export default function TelegramSplash({ children }: { children: React.ReactNode
       return;
     }
 
-    const timeout = setTimeout(() => {
-      setStatus('ready');
-    }, 1500);
-
     const onReady = () => {
-      clearTimeout(timeout);
       setStatus('ready');
     };
 
     webApp.onEvent('ready', onReady);
 
     return () => {
-      clearTimeout(timeout);
       webApp.offEvent('ready', onReady);
     };
   }, []);

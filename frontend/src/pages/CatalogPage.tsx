@@ -255,6 +255,8 @@ export default function CatalogPage() {
                     src={obj.images[0].url}
                     alt={obj.title}
                     className={styles.cardImg}
+                    loading="lazy"
+                    decoding="async"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
                     }}
@@ -264,6 +266,8 @@ export default function CatalogPage() {
                     src={obj.image}
                     alt={obj.title}
                     className={styles.cardImg}
+                    loading="lazy"
+                    decoding="async"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
                     }}
