@@ -2,7 +2,7 @@ FROM node:24-slim AS builder
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends openssl libvips && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
 RUN npm ci
@@ -15,7 +15,7 @@ FROM node:24-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends curl openssl ca-certificates libvips && rm -rf /var/lib/apt/lists/*
 RUN useradd -m -u 1001 appuser && mkdir -p /app/uploads && chown -R appuser:appuser /app && chmod 755 /app/uploads
 
 USER appuser

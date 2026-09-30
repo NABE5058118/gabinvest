@@ -1,4 +1,4 @@
-import AdminLoginPage from '@pages/AdminLoginPage';
+import { Navigate } from 'react-router-dom';
 
 function getAdminUser() {
   try {
@@ -13,7 +13,7 @@ export default function AdminRoute({ children }: { children: React.ReactNode }) 
   const adminUser = getAdminUser();
 
   if (!adminUser || adminUser.role !== 'admin') {
-    return <AdminLoginPage />;
+    return <Navigate to="/admin-login" replace />;
   }
 
   return children;

@@ -9,6 +9,7 @@ import crypto from 'crypto';
 import { fileTypeFromFile } from 'file-type';
 import { z } from 'zod';
 import { createLogger } from '../utils/logger.js';
+import { processImage } from '../utils/imageProcessor.js';
 
 const router = Router();
 const logger = createLogger('admin');
@@ -145,13 +146,8 @@ const imageStorage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const allowedExts = ['.jpg', '.jpeg', '.png', '.webp'];
-    if (!allowedExts.includes(ext)) {
-      return cb(new Error('Invalid file extension'), '');
-    }
     const unique = crypto.randomUUID();
-    cb(null, unique + ext);
+    cb(null, unique + '.webp');
   },
 });
 
@@ -463,7 +459,8 @@ router.post('/objects/:id/image', requireAdmin, imageUpload.single('image'), asy
         return res.status(400).json({ error: 'Invalid image content' });
       }
 
-      const imageUrl = `/uploads/${file.filename}`;
+      const processedPath = await processImage(file.path);
+      const imageUrl = `/uploads/${path.basename(processedPath)}`;
 
       const obj = await prisma.object.update({
         where: { id },
@@ -525,28 +522,29 @@ router.post('/objects/:id/images', requireAdmin, imageUpload.single('image'), as
       return res.status(400).json({ error: 'File is required' });
     }
 
-    const isValid = await verifyFileType(file.path, file.mimetype);
-    if (!isValid) {
-      try {
-        fs.unlinkSync(file.path);
-      } catch (fileError: any) {
-        if (fileError?.code !== 'EACCES') {
-          throw fileError;
+      const isValid = await verifyFileType(file.path, file.mimetype);
+      if (!isValid) {
+        try {
+          fs.unlinkSync(file.path);
+        } catch (fileError: any) {
+          if (fileError?.code !== 'EACCES') {
+            throw fileError;
+          }
         }
+        return res.status(400).json({ error: 'Invalid image content' });
       }
-      return res.status(400).json({ error: 'Invalid image content' });
-    }
 
-    const imageUrl = `/uploads/${file.filename}`;
+      const processedPath = await processImage(file.path);
+      const imageUrl = `/uploads/${path.basename(processedPath)}`;
 
-    const img = await prisma.objectImage.create({
-      data: {
-        objectId: id,
-        url: imageUrl,
-      },
-    });
+      const img = await prisma.objectImage.create({
+        data: {
+          objectId: id,
+          url: imageUrl,
+        },
+      });
 
-    res.status(201).json(img);
+      res.status(201).json(img);
   } catch (error: any) {
     logger.error('Error uploading image:', error);
     res.status(500).json({ error: 'Failed to upload image' });
@@ -578,12 +576,14 @@ router.post('/objects/:id/images/bulk', requireAdmin, bulkImageUpload.array('ima
       }
     }
 
+    const processed = await Promise.all(files.map((file) => processImage(file.path)));
+
     const created = await prisma.$transaction(
-      files.map((file) =>
+      processed.map((processedPath) =>
         prisma.objectImage.create({
           data: {
             objectId: id,
-            url: `/uploads/${file.filename}`,
+            url: `/uploads/${path.basename(processedPath)}`,
           },
         })
       )
