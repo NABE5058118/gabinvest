@@ -142,8 +142,8 @@ export default function CatalogPage() {
     <main className={styles.page}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>GAB Invest</h1>
-          <p className={styles.subtitle}>Маркетплейс недвижимости с арендным доходом</p>
+          <img className={styles.title} src="/logo.svg" alt="GAB Invest" />
+          {/*<p className={styles.subtitle}>Маркетплейс недвижимости с арендным доходом</p>*/}
           {lastRotation && (
             <p className={styles.rotationInfo}>Лента обновлена: {lastRotation}</p>
           )}
