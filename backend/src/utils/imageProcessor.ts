@@ -7,6 +7,10 @@ const MAX_HEIGHT = 1200;
 const QUALITY = 80;
 
 export async function processImage(inputPath: string): Promise<string> {
+  if (inputPath.toLowerCase().endsWith('.webp')) {
+    return inputPath;
+  }
+
   const outputPath = inputPath.replace(/\.\w+$/, '.webp');
 
   await sharp(inputPath)
@@ -18,7 +22,7 @@ export async function processImage(inputPath: string): Promise<string> {
     .webp({ quality: QUALITY })
     .toFile(outputPath);
 
-  if (outputPath !== inputPath && fs.existsSync(inputPath)) {
+  if (fs.existsSync(inputPath)) {
     try {
       fs.unlinkSync(inputPath);
     } catch {
