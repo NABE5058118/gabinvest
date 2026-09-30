@@ -147,7 +147,8 @@ const imageStorage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const unique = crypto.randomUUID();
-    cb(null, unique + '.webp');
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, unique + ext);
   },
 });
 
