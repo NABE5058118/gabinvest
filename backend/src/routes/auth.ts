@@ -143,6 +143,13 @@ router.post('/telegram', async (req: Request, res: Response) => {
 
     const telegramId = String(user.id);
 
+    logger.info('Telegram auth: incoming user data', {
+      telegramId,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      username: user.username,
+    });
+
     const dbUser = await prisma.user.findUnique({
       where: { telegramId },
       select: {
@@ -162,7 +169,13 @@ router.post('/telegram', async (req: Request, res: Response) => {
     });
 
     if (dbUser) {
-      logger.info('Telegram auth: user already exists, skipping profile overwrite', { telegramId: dbUser.telegramId, userId: dbUser.id });
+      logger.info('Telegram auth: user already exists, skipping profile overwrite', {
+        telegramId: dbUser.telegramId,
+        userId: dbUser.id,
+        firstName: dbUser.firstName,
+        lastName: dbUser.lastName,
+        username: dbUser.username,
+      });
       const token = signToken(dbUser.telegramId || dbUser.id);
       return res.json({
         user: {
@@ -198,7 +211,13 @@ router.post('/telegram', async (req: Request, res: Response) => {
       data: createData,
     });
 
-    logger.info('Telegram auth success', { telegramId: newUser.telegramId, userId: newUser.id });
+    logger.info('Telegram auth success: user created', {
+      telegramId: newUser.telegramId,
+      userId: newUser.id,
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      username: newUser.username,
+    });
 
     const token = signToken(newUser.telegramId || newUser.id);
 
@@ -233,9 +252,26 @@ router.post('/telegram/bot-sync', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'telegramId is required' });
     }
 
+    logger.info('Telegram bot-sync: incoming payload', {
+      telegramId,
+      firstName,
+      lastName,
+      username,
+      languageCode,
+      isPremium,
+      allowsWriteToPm,
+    });
+
     const existing = await prisma.user.findUnique({
       where: { telegramId: String(telegramId) },
       select: { id: true, firstName: true, lastName: true },
+    });
+
+    logger.info('Telegram bot-sync: existing user', {
+      telegramId,
+      exists: !!existing,
+      existingFirstName: existing?.firstName ?? null,
+      existingLastName: existing?.lastName ?? null,
     });
 
     const updateData: any = {};
@@ -266,6 +302,15 @@ router.post('/telegram/bot-sync', async (req: Request, res: Response) => {
       where: { telegramId: String(telegramId) },
       update: Object.keys(updateData).length > 0 ? updateData : {},
       create: createData,
+    });
+
+    logger.info('Telegram bot-sync: result', {
+      telegramId: dbUser.telegramId,
+      userId: dbUser.id,
+      firstName: dbUser.firstName,
+      lastName: dbUser.lastName,
+      username: dbUser.username,
+      updated: Object.keys(updateData).length > 0,
     });
 
     res.json({
@@ -309,6 +354,14 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    logger.info('Telegram auth: /me returned user', {
+      userId: dbUser.id,
+      telegramId: dbUser.telegramId,
+      firstName: dbUser.firstName,
+      lastName: dbUser.lastName,
+      username: dbUser.username,
+    });
+
     res.json(dbUser);
   } catch (error) {
     logger.error('Error fetching profile:', error);
@@ -324,6 +377,15 @@ router.put('/profile', authMiddleware, async (req: Request, res: Response) => {
     }
 
     const { firstName, lastName, username, phone, email } = req.body;
+
+    logger.info('Telegram auth: profile update request', {
+      userId,
+      firstName,
+      lastName,
+      username,
+      phone,
+      email,
+    });
 
     if (phone) {
       const phoneOwner = await prisma.user.findFirst({
@@ -360,7 +422,12 @@ router.put('/profile', authMiddleware, async (req: Request, res: Response) => {
       },
     });
 
-    logger.info('Profile updated', { userId: dbUser.id });
+    logger.info('Profile updated', {
+      userId: dbUser.id,
+      firstName: dbUser.firstName,
+      lastName: dbUser.lastName,
+      username: dbUser.username,
+    });
     res.json({
       id: dbUser.id,
       phone: dbUser.phone,

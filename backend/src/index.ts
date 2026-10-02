@@ -88,6 +88,10 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (req.originalUrl === '/health' || req.originalUrl.startsWith('/health')) {
+    return next();
+  }
+
   const start = Date.now();
   requestLogger.info(`${req.method} ${req.originalUrl}`, {
     ip: req.ip,
