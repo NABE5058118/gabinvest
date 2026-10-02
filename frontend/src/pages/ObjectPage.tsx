@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect, memo } from 'react';
-import { ArrowLeft, Heart, MapPin, LayoutGrid, Users, Calendar, FileText, Wrench, Percent, TrendingUp, Landmark } from 'lucide-react';
+import { useState, useEffect, memo, useRef, useMemo, useCallback } from 'react';
+import { ArrowLeft, Heart, MapPin, LayoutGrid, Users, Calendar, FileText, Wrench, Percent, TrendingUp, Landmark, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useFavorites } from '@context/FavoritesContext';
 import { ObjectType } from '@utils/types';
 import { api } from '@utils/api';
@@ -30,8 +30,63 @@ const ObjectPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
 
   const { favoriteIds, toggleFavorite } = useFavorites();
+
+  useEffect(() => {
+    setSelectedImageIndex(0);
+  }, [id]);
+
+  const allImages = useMemo(() => {
+    if (!object) return [];
+    return [
+      ...(object.images || []).map((img) => img.url),
+      ...(object.image && !object.images?.length ? [object.image] : []),
+    ];
+  }, [object]);
+
+  const goTo = useCallback((index: number) => {
+    setSelectedImageIndex((prev) => {
+      const next = (prev + index + allImages.length) % allImages.length;
+      return next;
+    });
+  }, [allImages.length]);
+
+  const prev = useCallback(() => goTo(-1), [goTo]);
+  const next = useCallback(() => goTo(1), [goTo]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') prev();
+      if (e.key === 'ArrowRight') next();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [prev, next]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    const diff = touchStartX.current - touchEndX.current;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        next();
+      } else {
+        prev();
+      }
+    }
+    touchStartX.current = 0;
+    touchEndX.current = 0;
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -64,10 +119,6 @@ const ObjectPage = () => {
   }
 
   const isFav = favoriteIds.has(object.id);
-  const allImages = [
-    ...(object.images || []).map((img) => img.url),
-    ...(object.image && !object.images?.length ? [object.image] : []),
-  ];
   const mainImage = allImages[selectedImageIndex] || null;
 
   return (
@@ -85,20 +136,52 @@ const ObjectPage = () => {
         </button>
       </header>
 
-      <div className={styles.image}>
-        {mainImage ? (
-          <img
-            src={mainImage}
-            alt={object.title}
-            className={styles.objectImg}
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
-          />
-        ) : (
-          <div className={styles.placeholder}>
-            <LayoutGrid size={64} strokeWidth={1} color="#ccc" />
-          </div>
+      <div
+        className={styles.sliderContainer}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div className={styles.image}>
+          {mainImage ? (
+            <img
+              key={selectedImageIndex}
+              src={mainImage}
+              alt={object.title}
+              className={styles.objectImg}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          ) : (
+            <div className={styles.placeholder}>
+              <LayoutGrid size={64} strokeWidth={1} color="#ccc" />
+            </div>
+          )}
+        </div>
+
+        {allImages.length > 1 && (
+          <>
+            <button
+              type="button"
+              className={`${styles.sliderArrow} ${styles.arrowLeft}`}
+              onClick={prev}
+              aria-label="Предыдущее фото"
+            >
+              <ChevronLeft size={28} strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              className={`${styles.sliderArrow} ${styles.arrowRight}`}
+              onClick={next}
+              aria-label="Следующее фото"
+            >
+              <ChevronRight size={28} strokeWidth={2} />
+            </button>
+            <div className={styles.sliderCounter}>
+              {selectedImageIndex + 1} / {allImages.length}
+            </div>
+          </>
         )}
       </div>
 
