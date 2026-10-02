@@ -275,11 +275,11 @@ router.post('/telegram/bot-sync', async (req: Request, res: Response) => {
     });
 
     const updateData: any = {};
-    if (existing?.firstName && firstName !== undefined && firstName !== '') {
-      updateData.firstName = firstName || undefined;
+    if (!existing?.firstName && firstName !== undefined && firstName !== '') {
+      updateData.firstName = firstName.trim();
     }
-    if (existing?.lastName && lastName !== undefined && lastName !== '') {
-      updateData.lastName = lastName || undefined;
+    if (!existing?.lastName && lastName !== undefined && lastName !== '') {
+      updateData.lastName = lastName.trim();
     }
     if (username !== undefined) updateData.username = username || undefined;
     if (photoUrl !== undefined) updateData.telegramPhotoUrl = photoUrl || undefined;
@@ -289,8 +289,8 @@ router.post('/telegram/bot-sync', async (req: Request, res: Response) => {
 
     const createData: any = {
       telegramId: String(telegramId),
-      firstName: (firstName && firstName.trim()) ? firstName.trim() : (username ? username.trim() : undefined),
-      lastName: (lastName && lastName.trim()) ? lastName.trim() : undefined,
+      firstName: (firstName && firstName.trim()) || (username ? username.trim() : undefined),
+      lastName: (lastName && lastName.trim()) || undefined,
       username: username || undefined,
       telegramPhotoUrl: photoUrl || undefined,
       telegramLang: languageCode || undefined,

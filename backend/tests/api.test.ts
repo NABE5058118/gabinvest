@@ -107,14 +107,16 @@ describe('API Integration Tests', () => {
         .post('/api/auth/telegram/bot-sync')
         .send({
           telegramId: 123460,
-          firstName: '',
-          lastName: '',
-          username: 'realuser',
+          firstName: 'Changed',
+          lastName: 'User',
+          username: 'updateduser',
+          languageCode: 'ru',
         });
 
       expect(sync.status).toBe(200);
       expect(sync.body.firstName).toBe('RealName');
-      expect(sync.body.lastName).toBeNull();
+      expect(sync.body.lastName).toBe('User');
+      expect(sync.body.username).toBe('updateduser');
     });
 
     it('should update existing user and preserve phone', async () => {
