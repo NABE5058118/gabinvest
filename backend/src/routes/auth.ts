@@ -185,7 +185,7 @@ router.post('/telegram', async (req: Request, res: Response) => {
 
     const createData: any = {
       telegramId,
-      firstName: user.first_name || undefined,
+      firstName: user.first_name || user.username || undefined,
       lastName: user.last_name || undefined,
       username: user.username || undefined,
       telegramPhotoUrl: user.photo_url || undefined,
@@ -233,9 +233,18 @@ router.post('/telegram/bot-sync', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'telegramId is required' });
     }
 
+    const existing = await prisma.user.findUnique({
+      where: { telegramId: String(telegramId) },
+      select: { id: true, firstName: true, lastName: true },
+    });
+
     const updateData: any = {};
-    if (firstName !== undefined) updateData.firstName = firstName || undefined;
-    if (lastName !== undefined) updateData.lastName = lastName || undefined;
+    if (existing?.firstName && firstName !== undefined && firstName !== '') {
+      updateData.firstName = firstName || undefined;
+    }
+    if (existing?.lastName && lastName !== undefined && lastName !== '') {
+      updateData.lastName = lastName || undefined;
+    }
     if (username !== undefined) updateData.username = username || undefined;
     if (photoUrl !== undefined) updateData.telegramPhotoUrl = photoUrl || undefined;
     if (languageCode !== undefined) updateData.telegramLang = languageCode || undefined;
@@ -244,8 +253,8 @@ router.post('/telegram/bot-sync', async (req: Request, res: Response) => {
 
     const createData: any = {
       telegramId: String(telegramId),
-      firstName: firstName || undefined,
-      lastName: lastName || undefined,
+      firstName: (firstName && firstName.trim()) ? firstName.trim() : (username ? username.trim() : undefined),
+      lastName: (lastName && lastName.trim()) ? lastName.trim() : undefined,
       username: username || undefined,
       telegramPhotoUrl: photoUrl || undefined,
       telegramLang: languageCode || undefined,
@@ -255,7 +264,7 @@ router.post('/telegram/bot-sync', async (req: Request, res: Response) => {
 
     const dbUser = await prisma.user.upsert({
       where: { telegramId: String(telegramId) },
-      update: updateData,
+      update: Object.keys(updateData).length > 0 ? updateData : {},
       create: createData,
     });
 

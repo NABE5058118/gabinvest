@@ -85,6 +85,38 @@ describe('API Integration Tests', () => {
       expect(res.body.user.telegramAllowsPm).toBe(true);
     });
 
+    it('should use username as firstName when first_name is empty', async () => {
+      const res = await request(app)
+        .post('/api/auth/telegram')
+        .send({ initData: 'query_id=test&user={"id":123459,"username":"onlyuser"}' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.user.firstName).toBe('onlyuser');
+      expect(res.body.user.username).toBe('onlyuser');
+    });
+
+    it('should not overwrite existing firstName with empty value on bot-sync', async () => {
+      const created = await request(app)
+        .post('/api/auth/telegram')
+        .send({ initData: 'query_id=test&user={"id":123460,"first_name":"RealName","username":"realuser"}' });
+
+      expect(created.status).toBe(200);
+      expect(created.body.user.firstName).toBe('RealName');
+
+      const sync = await request(app)
+        .post('/api/auth/telegram/bot-sync')
+        .send({
+          telegramId: 123460,
+          firstName: '',
+          lastName: '',
+          username: 'realuser',
+        });
+
+      expect(sync.status).toBe(200);
+      expect(sync.body.firstName).toBe('RealName');
+      expect(sync.body.lastName).toBeNull();
+    });
+
     it('should update existing user and preserve phone', async () => {
       const first = await request(app)
         .post('/api/auth/telegram')
