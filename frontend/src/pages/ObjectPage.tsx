@@ -145,7 +145,6 @@ const ObjectPage = () => {
         <div className={styles.image}>
           {mainImage ? (
             <img
-              key={selectedImageIndex}
               src={mainImage}
               alt={object.title}
               className={styles.objectImg}
@@ -184,22 +183,6 @@ const ObjectPage = () => {
           </>
         )}
       </div>
-
-      {allImages.length > 1 && (
-        <div className={styles.thumbnails}>
-            {allImages.map((url, idx) => (
-              <button
-                key={idx}
-                type="button"
-                className={`${styles.thumb} ${idx === selectedImageIndex ? styles.thumbActive : ''}`}
-                onClick={() => setSelectedImageIndex(idx)}
-                aria-label={`Изображение ${idx + 1}`}
-              >
-                <img src={url} alt="" className={styles.thumbImg} loading="lazy" decoding="async" />
-            </button>
-          ))}
-        </div>
-      )}
 
       <div className={styles.content}>
         <h1 className={styles.title}>{object.title}</h1>
