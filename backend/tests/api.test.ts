@@ -598,14 +598,35 @@ describe('API Integration Tests', () => {
   });
 
   describe('Public offer download', () => {
+    let targetObjectId: string;
+
+    beforeAll(async () => {
+      const objects = await prisma.object.findMany({ take: 1 });
+      if (objects.length > 0) {
+        targetObjectId = objects[0].id;
+      }
+    });
+
+    afterAll(async () => {
+      if (!targetObjectId) return;
+      await prisma.object.updateMany({
+        where: { id: targetObjectId, offerFileUrl: { not: null } },
+        data: { offerFileUrl: null, offerFileName: null, offerFileType: null },
+      });
+    });
+
     it('should return 404 for object without offer', async () => {
-      const objects = await prisma.object.findMany();
-      if (objects.length === 0) {
+      if (!targetObjectId) {
         it.skip('no objects in database');
         return;
       }
 
-      const res = await request(app).get(`/api/objects/${objects[0].id}/offer/download`);
+      await prisma.object.update({
+        where: { id: targetObjectId },
+        data: { offerFileUrl: null, offerFileName: null, offerFileType: null },
+      });
+
+      const res = await request(app).get(`/api/objects/${targetObjectId}/offer/download`);
       expect(res.status).toBe(404);
     });
 
@@ -615,13 +636,11 @@ describe('API Integration Tests', () => {
     });
 
     it('should download offer file for public', async () => {
-      const objects = await prisma.object.findMany();
-      if (objects.length === 0) {
+      if (!targetObjectId) {
         it.skip('no objects in database');
         return;
       }
 
-      const obj = objects[0];
       const fs = await import('fs');
       const path = await import('path');
       const { fileURLToPath } = await import('url');
@@ -638,7 +657,7 @@ describe('API Integration Tests', () => {
       fs.writeFileSync(testFilePath, 'test pdf content');
 
       await prisma.object.update({
-        where: { id: obj.id },
+        where: { id: targetObjectId },
         data: {
           offerFileUrl: `/uploads/${testFileName}`,
           offerFileName: 'test-offer.pdf',
@@ -646,11 +665,51 @@ describe('API Integration Tests', () => {
         },
       });
 
-      const res = await request(app).get(`/api/objects/${obj.id}/offer/download`);
+      const res = await request(app).get(`/api/objects/${targetObjectId}/offer/download`);
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toBe('application/pdf');
       expect(res.headers['content-disposition']).toContain('attachment');
       expect(res.headers['content-disposition']).toContain('filename*=');
+
+      fs.unlinkSync(testFilePath);
+    });
+
+    it('should normalize broken UTF-8 filename from latin1 mojibake', async () => {
+      if (!targetObjectId) {
+        it.skip('no objects in database');
+        return;
+      }
+
+      const fs = await import('fs');
+      const path = await import('path');
+      const { fileURLToPath } = await import('url');
+
+      const __dirname = path.dirname(fileURLToPath(import.meta.url));
+      const uploadsDir = path.join(__dirname, '..', 'uploads');
+
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      const testFileName = `test-offer-broken-${Date.now()}.pdf`;
+      const testFilePath = path.join(uploadsDir, testFileName);
+      fs.writeFileSync(testFilePath, 'test pdf content');
+
+      const brokenName = 'Ð\x90Ð\x9F Ð§ÐµÑ…Ð¾Ð² Ð\x9FÑ\x8FÑ\x82ÐµÑ\x80Ð¾Ñ\x87ÐºÐ°.pdf';
+
+      await prisma.object.update({
+        where: { id: targetObjectId },
+        data: {
+          offerFileUrl: `/uploads/${testFileName}`,
+          offerFileName: brokenName,
+          offerFileType: 'application/pdf',
+        },
+      });
+
+      const res = await request(app).get(`/api/objects/${targetObjectId}/offer/download`);
+      expect(res.status).toBe(200);
+      expect(res.headers['content-disposition']).toContain('filename*=');
+      expect(res.headers['content-disposition']).not.toContain('Ð');
 
       fs.unlinkSync(testFilePath);
     });

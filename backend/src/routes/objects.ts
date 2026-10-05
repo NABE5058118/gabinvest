@@ -202,12 +202,18 @@ router.get('/:id/offer/download', async (req: Request, res: Response) => {
     const filePath = path.join(uploadsDir, basename);
 
     const rawName = obj.offerFileName || 'offer.pdf';
-    const decodedName = rawName
-      .replace(/&/g, '&amp;')
-      .replace(/"/g, '&quot;')
-      .slice(0, 200) || 'offer.pdf';
 
-    const encodedName = encodeURIComponent(decodedName)
+    const normalizedName = (() => {
+      const decoded = rawName.includes('Ð')
+        ? Buffer.from(rawName, 'latin1').toString('utf-8')
+        : rawName;
+      return decoded
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .slice(0, 200) || 'offer.pdf';
+    })();
+
+    const encodedName = encodeURIComponent(normalizedName)
       .replace(/[!'()*~]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
 
     res.setHeader(
