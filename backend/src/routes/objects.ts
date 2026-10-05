@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { createLogger } from '../utils/logger.js';
+import { normalizeOfferFileName } from '../utils/filename.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -170,6 +171,10 @@ router.get('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Object not found' });
     }
 
+    if (object.offerFileName) {
+      object.offerFileName = normalizeOfferFileName(object.offerFileName);
+    }
+
     res.set('Cache-Control', 'public, max-age=120, stale-while-revalidate=30');
     res.json(object);
   } catch (error) {
@@ -203,15 +208,7 @@ router.get('/:id/offer/download', async (req: Request, res: Response) => {
 
     const rawName = obj.offerFileName || 'offer.pdf';
 
-    const normalizedName = (() => {
-      const decoded = rawName.includes('Ð')
-        ? Buffer.from(rawName, 'latin1').toString('utf-8')
-        : rawName;
-      return decoded
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .slice(0, 200) || 'offer.pdf';
-    })();
+    const normalizedName = normalizeOfferFileName(rawName);
 
     const encodedName = encodeURIComponent(normalizedName)
       .replace(/[!'()*~]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);

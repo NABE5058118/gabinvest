@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Upload } from 'lucide-react';
 import { adminApi } from '@utils/adminApi';
+import { normalizeOfferFileName } from '@utils/filename';
 import styles from '@styles/AdminOfferUpload.module.css';
 
 type ObjectItem = {
@@ -65,7 +66,7 @@ export default function AdminOfferUpload() {
             <strong>{object.title}</strong>
             {object.offerFileName && (
               <div className={styles.currentFile}>
-                Текущий файл: {object.offerFileName}
+                Текущий файл: {normalizeOfferFileName(object.offerFileName)}
               </div>
             )}
           </div>

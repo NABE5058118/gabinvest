@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, ChevronDown, Download } from 'lucide-react';
 import { ObjectType } from '@utils/types';
 import { api } from '@utils/api';
+import { normalizeOfferFileName } from '@utils/filename';
 import styles from '@styles/OfferPage.module.css';
 
   function ExpandableSection({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
@@ -90,7 +91,7 @@ export default function OfferPage() {
         {object.offerFileUrl ? (
           <button className={styles.primaryBtn} onClick={handleDownload}>
             <Download size={18} strokeWidth={2} style={{ marginRight: 8 }} />
-            Скачать КП ({object.offerFileName || 'PDF/PPTX'})
+            Скачать КП ({normalizeOfferFileName(object.offerFileName || '') || 'PDF/PPTX'})
           </button>
         ) : (
       <div className={styles.emptyState} role="status">Коммерческое предложение ещё не загружено</div>

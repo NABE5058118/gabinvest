@@ -10,6 +10,7 @@ import { fileTypeFromFile } from 'file-type';
 import { z } from 'zod';
 import { createLogger } from '../utils/logger.js';
 import { processImage } from '../utils/imageProcessor.js';
+import { normalizeOfferFileName } from '../utils/filename.js';
 
 const router = Router();
 const logger = createLogger('admin');
@@ -373,7 +374,7 @@ router.post(
         where: { id },
         data: {
           offerFileUrl: fileUrl,
-          offerFileName: file.originalname,
+          offerFileName: normalizeOfferFileName(file.originalname),
           offerFileType: file.mimetype,
         },
       });
@@ -439,15 +440,7 @@ router.get('/objects/:id/offer/download', requireAdmin, async (req: Request, res
 
     const rawName = obj.offerFileName || 'offer.pdf';
 
-    const normalizedName = (() => {
-      const decoded = rawName.includes('Ð')
-        ? Buffer.from(rawName, 'latin1').toString('utf-8')
-        : rawName;
-      return decoded
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .slice(0, 200) || 'offer.pdf';
-    })();
+    const normalizedName = normalizeOfferFileName(rawName);
 
     const encodedName = encodeURIComponent(normalizedName)
       .replace(/[!'()*~]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);

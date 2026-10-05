@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Upload } from 'lucide-react';
 import { adminApi } from '@utils/adminApi';
+import { normalizeOfferFileName } from '@utils/filename';
 import ConfirmModal from '@components/ConfirmModal';
 import styles from '@styles/AdminObjects.module.css';
 
@@ -105,7 +106,7 @@ export default function AdminObjectsPage() {
               Площадь: {item.area} м² • Доходность: {item.yieldPercent}%
             </div>
         {item.offerFileName && (
-          <div className={styles.itemMeta}>КП: {item.offerFileName}</div>
+          <div className={styles.itemMeta}>КП: {normalizeOfferFileName(item.offerFileName)}</div>
         )}
         <div className={styles.itemMeta}>
           {(item.images && item.images.length > 0 ? item.images : (item.image ? [{ id: 'legacy', url: item.image }] : [])).map((img) => (
