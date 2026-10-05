@@ -62,21 +62,11 @@ export default function OfferPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const offer = (object.commercialOffer?.content || {}) as any;
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     if (!object.offerFileUrl || !id) return;
-    try {
-      const { data } = await api.get(`/api/objects/${id}/offer/download`, { responseType: 'blob' });
-      const url = URL.createObjectURL(data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = object.offerFileName || 'offer.pdf';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch {
-      alert('Ошибка скачивания');
-    }
+    const a = document.createElement('a');
+    a.href = `/api/objects/${id}/offer/download`;
+    a.click();
   };
 
   return (
