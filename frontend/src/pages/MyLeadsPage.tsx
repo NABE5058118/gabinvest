@@ -1,15 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Trash2 } from 'lucide-react';
 import { api } from '@utils/api';
 import { getLeadClientId } from '@utils/types';
 import { Lead } from '@utils/types';
 import styles from '@styles/MyLeadsPage.module.css';
 
+const SORT_OPTIONS = [
+  { value: 'createdAt_desc', label: 'Дата создания (сначала новые)' },
+  { value: 'createdAt_asc', label: 'Дата создания (сначала старые)' },
+  { value: 'status_asc', label: 'Статус (А-Я)' },
+  { value: 'object_asc', label: 'Объект (А-Я)' },
+];
+
 export default function MyLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sort, setSort] = useState('createdAt_desc');
   const navigate = useNavigate();
 
   const fetchLeads = async () => {
@@ -30,6 +38,30 @@ export default function MyLeadsPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchLeads();
   }, []);
+
+  const handleDelete = async (leadId: string) => {
+    if (!confirm('Удалить заявку?')) return;
+    try {
+      await api.delete(`/api/leads/my/${leadId}`);
+      setLeads((prev) => prev.filter((l) => l.id !== leadId));
+    } catch {
+      // ignore
+    }
+  };
+
+  const sortedLeads = [...leads].sort((a, b) => {
+    switch (sort) {
+      case 'createdAt_asc':
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      case 'status_asc':
+        return (a.status || '').localeCompare(b.status || '');
+      case 'object_asc':
+        return (a.object?.title || '').localeCompare(b.object?.title || '');
+      case 'createdAt_desc':
+      default:
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+  });
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -56,6 +88,15 @@ export default function MyLeadsPage() {
           <ArrowLeft size={24} strokeWidth={2} />
         </button>
         <h1 className={styles.title}>Мои заявки</h1>
+        <select
+          className={styles.sortSelect}
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+        >
+          {SORT_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
       </header>
 
       <div className={styles.content}>
@@ -75,26 +116,37 @@ export default function MyLeadsPage() {
         {!loading && !error && leads.length === 0 && (
           <div className={styles.empty}>У вас пока нет заявок</div>
         )}
-        {leads.map((lead) => (
-          <div key={lead.id} className={styles.item}>
-            <div className={styles.itemHeader}>
-              <div className={styles.itemTitle}>
-                {lead.object?.title || `Объект ${lead.objectId}`}
+        <div className={styles.list}>
+          {sortedLeads.map((lead) => (
+            <div key={lead.id} className={styles.item}>
+              <div className={styles.itemHeader}>
+                <div className={styles.itemTitle}>
+                  {lead.object?.title || `Объект ${lead.objectId}`}
+                </div>
+                <div className={styles.itemActions}>
+                  <div className={styles.itemStatus}>{statusLabels[lead.status] || lead.status}</div>
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={() => handleDelete(lead.id)}
+                    aria-label="Удалить заявку"
+                  >
+                    <Trash2 size={18} strokeWidth={2} />
+                  </button>
+                </div>
               </div>
-              <div className={styles.itemStatus}>{statusLabels[lead.status] || lead.status}</div>
+              <div className={styles.itemMeta}>
+                <div><strong>Телефон:</strong> {lead.phone}</div>
+                {lead.comment && <div><strong>Комментарий:</strong> {lead.comment}</div>}
+                <div><strong>Дата:</strong> {formatDate(lead.createdAt)}</div>
+              </div>
+              {lead.object && (
+                <button className={styles.objectBtn} onClick={() => navigate(`/objects/${lead.objectId}`)}>
+                  Перейти к объекту
+                </button>
+              )}
             </div>
-            <div className={styles.itemMeta}>
-              <div><strong>Телефон:</strong> {lead.phone}</div>
-              {lead.comment && <div><strong>Комментарий:</strong> {lead.comment}</div>}
-              <div><strong>Дата:</strong> {formatDate(lead.createdAt)}</div>
-            </div>
-            {lead.object && (
-              <button className={styles.objectBtn} onClick={() => navigate(`/objects/${lead.objectId}`)}>
-                Перейти к объекту
-              </button>
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -29,6 +29,17 @@
 .title {
   font-size: 20px;
   font-weight: 700;
+  flex: 1;
+}
+
+.sortSelect {
+  font-size: 12px;
+  padding: 6px 8px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background: #fff;
+  color: #000;
+  margin-left: auto;
 }
 
 .content {
@@ -47,6 +58,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 12px;
   margin-bottom: 8px;
 }
 
@@ -55,6 +67,13 @@
   font-weight: 600;
   flex: 1;
   margin-right: 12px;
+}
+
+.itemActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .itemStatus {
@@ -66,10 +85,49 @@
   text-transform: uppercase;
 }
 
+.deleteBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background: #fff;
+  color: #000;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.deleteBtn:hover {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
 .itemMeta {
   font-size: 13px;
   color: #666;
   line-height: 1.6;
+}
+
+.list {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .list {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
 }
 
 .objectBtn {

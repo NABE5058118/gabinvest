@@ -190,4 +190,29 @@ router.delete('/:id', requireAdmin, async (req: Request, res: Response) => {
   }
 });
 
+router.delete('/my/:id', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const lead = await prisma.lead.findUnique({ where: { id } });
+    if (!lead) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+    if (lead.userId && lead.userId !== userId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    await prisma.lead.delete({ where: { id } });
+    logger.info('Lead deleted by owner', { leadId: id, userId });
+    res.status(204).send();
+  } catch (error) {
+    logger.error('Error deleting lead by owner:', error);
+    res.status(500).json({ error: 'Failed to delete lead' });
+  }
+});
+
 export default router;
