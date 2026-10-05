@@ -21,6 +21,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      console.warn('[api] 401 on', error?.config?.method?.toUpperCase(), error?.config?.url, {
+        hasToken: !!localStorage.getItem('token'),
+        hasInitData: !!(error?.config?.headers?.['x-telegram-init-data'] || error?.config?.headers?.['X-Telegram-Init-Data']),
+      });
+    }
+    return Promise.reject(error);
+  }
+);
+
 export type ObjectType = {
   id: string;
   title: string;

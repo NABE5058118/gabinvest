@@ -57,8 +57,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(res.data);
             localStorage.setItem('user', JSON.stringify(res.data));
           })
-          .catch(() => {
-            logout();
+          .catch(async () => {
+            const tgUser = getTelegramUser();
+            const initData = getInitData();
+            if (tgUser?.id && initData) {
+              try {
+                const res = await api.post('/api/auth/telegram', { initData });
+                login(res.data.user, res.data.token);
+              } catch {
+                logout();
+              }
+            } else {
+              logout();
+            }
           })
           .finally(() => {
             setLoading(false);
