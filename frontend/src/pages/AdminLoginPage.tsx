@@ -20,7 +20,7 @@ export default function AdminLoginPage() {
       const { data } = await adminApi.post('/api/admin/auth/login', { login, password });
       localStorage.setItem('adminToken', data.token);
       localStorage.setItem('adminUser', JSON.stringify(data.user));
-      window.location.reload();
+      navigate('/admin', { replace: true });
     } catch (err: unknown) {
       setError((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Ошибка входа');
     } finally {
