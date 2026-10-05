@@ -190,11 +190,11 @@ router.delete('/:id', requireAdmin, async (req: Request, res: Response) => {
   }
 });
 
-router.delete('/my/:id', authMiddleware, async (req: Request, res: Response) => {
+router.delete('/my/:id', async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
-    const userId = req.userId;
-    if (!userId) {
+    const clientId = req.headers['x-client-id'] || req.query.clientId;
+    if (!clientId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -202,15 +202,15 @@ router.delete('/my/:id', authMiddleware, async (req: Request, res: Response) => 
     if (!lead) {
       return res.status(404).json({ error: 'Lead not found' });
     }
-    if (lead.userId && lead.userId !== userId) {
+    if (lead.clientId !== String(clientId)) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
     await prisma.lead.delete({ where: { id } });
-    logger.info('Lead deleted by owner', { leadId: id, userId });
+    logger.info('Lead deleted by client', { leadId: id, clientId });
     res.status(204).send();
   } catch (error) {
-    logger.error('Error deleting lead by owner:', error);
+    logger.error('Error deleting lead by client:', error);
     res.status(500).json({ error: 'Failed to delete lead' });
   }
 });
