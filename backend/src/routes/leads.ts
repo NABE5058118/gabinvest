@@ -178,4 +178,16 @@ router.patch('/:id/status', requireAdmin, async (req: Request, res: Response) =>
   }
 });
 
+router.delete('/:id', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    await prisma.lead.delete({ where: { id } });
+    logger.info('Lead deleted', { leadId: id });
+    res.status(204).send();
+  } catch (error) {
+    logger.error('Error deleting lead:', error);
+    res.status(500).json({ error: 'Failed to delete lead' });
+  }
+});
+
 export default router;
