@@ -200,8 +200,26 @@ router.get('/:id/offer/download', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid filename' });
     }
     const filePath = path.join(uploadsDir, basename);
-    const safeName = path.basename(obj.offerFileName || 'offer.pdf').replace(/[^\w\-\.А-Яа-яЁё ]+/g, '').slice(0, 200) || 'offer.pdf';
-    res.download(filePath, safeName);
+
+    const rawName = obj.offerFileName || 'offer.pdf';
+    const decodedName = rawName
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .slice(0, 200) || 'offer.pdf';
+
+    const encodedName = encodeURIComponent(decodedName)
+      .replace(/[!'()*~]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="fallback.pdf"; filename*=UTF-8''${encodedName}`
+    );
+
+    if (obj.offerFileType) {
+      res.setHeader('Content-Type', obj.offerFileType);
+    }
+
+    res.sendFile(filePath);
   } catch (error) {
     logger.error('Error downloading offer:', error);
     res.status(500).json({ error: 'Failed to download offer' });

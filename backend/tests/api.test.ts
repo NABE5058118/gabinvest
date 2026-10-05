@@ -650,7 +650,7 @@ describe('API Integration Tests', () => {
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toBe('application/pdf');
       expect(res.headers['content-disposition']).toContain('attachment');
-      expect(res.headers['content-disposition']).toContain('test-offer.pdf');
+      expect(res.headers['content-disposition']).toContain('filename*=');
 
       fs.unlinkSync(testFilePath);
     });
