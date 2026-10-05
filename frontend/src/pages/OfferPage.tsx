@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, ChevronDown, Download } from 'lucide-react';
 import { ObjectType } from '@utils/types';
 import { api } from '@utils/api';
-import { adminApi } from '@utils/adminApi';
 import styles from '@styles/OfferPage.module.css';
 
   function ExpandableSection({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
@@ -66,7 +65,7 @@ export default function OfferPage() {
   const handleDownload = async () => {
     if (!object.offerFileUrl || !id) return;
     try {
-      const { data } = await adminApi.get(`/api/admin/objects/${id}/offer/download`, { responseType: 'blob' });
+      const { data } = await api.get(`/api/objects/${id}/offer/download`, { responseType: 'blob' });
       const url = URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;

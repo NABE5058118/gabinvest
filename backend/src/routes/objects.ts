@@ -1,12 +1,21 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { createLogger } from '../utils/logger.js';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 
 const router = Router();
 const logger = createLogger('objects');
 
 const DEFAULT_ITEMS_PER_PAGE = 20;
 const MAX_ITEMS_PER_PAGE = 100;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 router.get('/', async (req: Request, res: Response) => {
   try {
@@ -166,6 +175,36 @@ router.get('/:id', async (req: Request, res: Response) => {
   } catch (error) {
     logger.error('Error fetching object:', error);
     res.status(500).json({ error: 'Failed to fetch object' });
+  }
+});
+
+router.get('/:id/offer/download', async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const obj = await prisma.object.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        offerFileUrl: true,
+        offerFileName: true,
+        offerFileType: true,
+      },
+    });
+
+    if (!obj || !obj.offerFileUrl) {
+      return res.status(404).json({ error: 'Offer not found' });
+    }
+
+    const basename = path.basename(obj.offerFileUrl);
+    if (!/^[a-zA-Z0-9_\-\.]+$/.test(basename)) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+    const filePath = path.join(uploadsDir, basename);
+    const safeName = path.basename(obj.offerFileName || 'offer.pdf').replace(/[^\w\-\.А-Яа-яЁё ]+/g, '').slice(0, 200) || 'offer.pdf';
+    res.download(filePath, safeName);
+  } catch (error) {
+    logger.error('Error downloading offer:', error);
+    res.status(500).json({ error: 'Failed to download offer' });
   }
 });
 

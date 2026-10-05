@@ -596,4 +596,63 @@ describe('API Integration Tests', () => {
       expect(res.status).toBe(401);
     });
   });
+
+  describe('Public offer download', () => {
+    it('should return 404 for object without offer', async () => {
+      const objects = await prisma.object.findMany();
+      if (objects.length === 0) {
+        it.skip('no objects in database');
+        return;
+      }
+
+      const res = await request(app).get(`/api/objects/${objects[0].id}/offer/download`);
+      expect(res.status).toBe(404);
+    });
+
+    it('should return 404 for non-existent object', async () => {
+      const res = await request(app).get('/api/objects/nonexistent/offer/download');
+      expect(res.status).toBe(404);
+    });
+
+    it('should download offer file for public', async () => {
+      const objects = await prisma.object.findMany();
+      if (objects.length === 0) {
+        it.skip('no objects in database');
+        return;
+      }
+
+      const obj = objects[0];
+      const fs = await import('fs');
+      const path = await import('path');
+      const { fileURLToPath } = await import('url');
+
+      const __dirname = path.dirname(fileURLToPath(import.meta.url));
+      const uploadsDir = path.join(__dirname, '..', 'uploads');
+
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      const testFileName = `test-offer-${Date.now()}.pdf`;
+      const testFilePath = path.join(uploadsDir, testFileName);
+      fs.writeFileSync(testFilePath, 'test pdf content');
+
+      await prisma.object.update({
+        where: { id: obj.id },
+        data: {
+          offerFileUrl: `/uploads/${testFileName}`,
+          offerFileName: 'test-offer.pdf',
+          offerFileType: 'application/pdf',
+        },
+      });
+
+      const res = await request(app).get(`/api/objects/${obj.id}/offer/download`);
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toBe('application/pdf');
+      expect(res.headers['content-disposition']).toContain('attachment');
+      expect(res.headers['content-disposition']).toContain('test-offer.pdf');
+
+      fs.unlinkSync(testFilePath);
+    });
+  });
 });
