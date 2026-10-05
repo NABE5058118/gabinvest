@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, ChevronDown, Download } from 'lucide-react';
 import { ObjectType } from '@utils/types';
-import { API_URL } from '@utils/api';
 import { api } from '@utils/api';
+import { adminApi } from '@utils/adminApi';
 import styles from '@styles/OfferPage.module.css';
 
   function ExpandableSection({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
@@ -63,9 +63,20 @@ export default function OfferPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const offer = (object.commercialOffer?.content || {}) as any;
 
-  const handleDownload = () => {
-    if (object.offerFileUrl) {
-      window.open(`${API_URL}/api/admin/objects/${id}/offer/download`, '_blank');
+  const handleDownload = async () => {
+    if (!object.offerFileUrl || !id) return;
+    try {
+      const { data } = await adminApi.get(`/api/admin/objects/${id}/offer/download`, { responseType: 'blob' });
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = object.offerFileName || 'offer.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Ошибка скачивания');
     }
   };
 
