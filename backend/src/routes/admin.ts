@@ -364,7 +364,12 @@ router.post(
 
       const fileUrl = `/uploads/${file.filename}`;
 
-      const obj = await prisma.object.update({
+      const obj = await prisma.object.findUnique({ where: { id } });
+      if (!obj) {
+        return res.status(404).json({ error: 'Object not found' });
+      }
+
+      const updated = await prisma.object.update({
         where: { id },
         data: {
           offerFileUrl: fileUrl,
@@ -373,7 +378,7 @@ router.post(
         },
       });
 
-      res.json(obj);
+      res.json(updated);
     } catch (error) {
       logger.error('Error uploading offer:', error);
       res.status(500).json({ error: 'Failed to upload offer' });
