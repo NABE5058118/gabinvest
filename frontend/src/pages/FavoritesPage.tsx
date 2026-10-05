@@ -128,7 +128,7 @@ export default function FavoritesPage() {
                     }}
                     aria-label={favoriteIds.has(obj.id) ? 'Убрать из избранного' : 'Добавить в избранное'}
                   >
-                    <Heart size={20} strokeWidth={2} fill={favoriteIds.has(obj.id) ? '#000' : 'none'} />
+                    <Heart size={20} strokeWidth={2} fill={favoriteIds.has(obj.id) ? '#ff0000' : 'none'} />
                   </button>
                 </div>
                 <div className={styles.cardBody}>

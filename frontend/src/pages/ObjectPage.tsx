@@ -132,7 +132,7 @@ const ObjectPage = () => {
           onClick={() => toggleFavorite(object.id)}
           aria-label={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
         >
-          <Heart size={24} strokeWidth={2} fill={isFav ? '#000' : 'none'} />
+          <Heart size={24} strokeWidth={2} fill={isFav ? '#ff0000' : 'none'} />
         </button>
       </header>
 

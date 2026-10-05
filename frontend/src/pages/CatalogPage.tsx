@@ -256,7 +256,7 @@ export default function CatalogPage() {
                   <Heart
                     size={20}
                     strokeWidth={2}
-                    fill={favoriteIds.has(obj.id) ? '#000' : 'none'}
+                    fill={favoriteIds.has(obj.id) ? '#ff0000' : 'none'}
                   />
                 </button>
               </div>
