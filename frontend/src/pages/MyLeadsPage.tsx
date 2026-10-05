@@ -23,8 +23,9 @@ export default function MyLeadsPage() {
   const fetchLeads = async () => {
     try {
       setLoading(true);
+      const clientId = getLeadClientId();
       const { data } = await api.get('/api/leads/my', {
-        headers: { 'x-client-id': getLeadClientId() },
+        headers: { 'x-client-id': clientId },
       });
       setLeads(data);
     } catch {
@@ -39,10 +40,14 @@ export default function MyLeadsPage() {
     fetchLeads();
   }, []);
 
+  const clientId = getLeadClientId();
+
   const handleDelete = async (leadId: string) => {
     if (!confirm('Удалить заявку?')) return;
     try {
-      await api.delete(`/api/leads/my/${leadId}`);
+      await api.delete(`/api/leads/my/${leadId}`, {
+        headers: { 'x-client-id': clientId },
+      });
       setLeads((prev) => prev.filter((l) => l.id !== leadId));
     } catch {
       // ignore
