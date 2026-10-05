@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@context/AuthContext';
 import { api } from '@utils/api';
+import { formatPhone } from '@utils/formatPhone';
 import styles from '@styles/ProfileEditPage.module.css';
 
 export default function ProfileEditPage() {
@@ -24,7 +25,7 @@ export default function ProfileEditPage() {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
-        phone: user.phone || '',
+        phone: user.phone ? formatPhone(user.phone) : '',
       });
     }
   }, [user]);
@@ -115,8 +116,8 @@ export default function ProfileEditPage() {
               className={styles.input}
               type="tel"
               value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              placeholder="+7 999 999-99-99"
+              onChange={(e) => setForm({ ...form, phone: formatPhone(e.target.value) })}
+              placeholder="+7 (999) 999-99-99"
             />
           </div>
 

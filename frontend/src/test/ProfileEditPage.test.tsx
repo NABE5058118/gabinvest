@@ -47,7 +47,7 @@ describe('ProfileEditPage', () => {
     });
 
     expect((screen.getByLabelText(/email/i) as HTMLInputElement).value).toBe('ivan@test.com');
-    expect((screen.getByLabelText(/телефон/i) as HTMLInputElement).value).toBe('+79000000001');
+    expect((screen.getByLabelText(/телефон/i) as HTMLInputElement).value).toBe('+7 (900) 000-00-01');
   });
 
   it('should submit email and phone on save', async () => {
@@ -89,7 +89,7 @@ describe('ProfileEditPage', () => {
       firstName: 'Ivan',
       lastName: 'Ivanov',
       email: 'new@test.com',
-      phone: '+79000000002',
+      phone: '+7 (790) 000-00-00',
     });
   });
 });

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, MessageCircle } from 'lucide-react';
 import { api } from '@utils/api';
 import { useAuth } from '@context/AuthContext';
+import { formatPhone } from '@utils/formatPhone';
 import styles from '@styles/Auth.module.css';
 
 export default function RegisterPage() {
@@ -56,8 +57,9 @@ export default function RegisterPage() {
             <input
               id="phone"
               className={styles.input}
+              type="tel"
               value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              onChange={(e) => setForm({ ...form, phone: formatPhone(e.target.value) })}
               required
             />
           </div>

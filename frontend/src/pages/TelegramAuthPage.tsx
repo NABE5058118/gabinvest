@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Smartphone, CheckCircle } from 'lucide-react';
 import { api } from '@utils/api';
 import { useAuth } from '@context/AuthContext';
+import { formatPhone } from '@utils/formatPhone';
 import styles from '@styles/Auth.module.css';
 
 export default function TelegramAuthPage() {
@@ -79,7 +80,7 @@ export default function TelegramAuthPage() {
             type="tel"
             placeholder="+7 (999) 123-45-67"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => setPhone(formatPhone(e.target.value))}
             required
             autoFocus
           />
