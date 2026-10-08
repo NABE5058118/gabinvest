@@ -43,10 +43,6 @@ export default function Layout() {
               <Heart size={24} strokeWidth={2} />
               <span>Избранное</span>
             </NavLink>
-            <NavLink to="/profile/leads" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
-              <FileText size={24} strokeWidth={2} />
-              <span>Заявки</span>
-            </NavLink>
             {user ? (
               <NavLink to="/profile" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
                 <User size={24} strokeWidth={2} />
