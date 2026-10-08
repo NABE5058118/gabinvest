@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { api } from '@utils/api';
 import { useAuth } from '@context/AuthContext';
-import { isTelegramWebApp } from '@utils/telegram';
 import styles from '@styles/Auth.module.css';
 
 export default function LoginPage() {
@@ -13,12 +12,6 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { login: authLogin } = useAuth();
-
-  useEffect(() => {
-    if (isTelegramWebApp()) {
-      navigate('/', { replace: true });
-    }
-  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
