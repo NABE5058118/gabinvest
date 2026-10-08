@@ -1,12 +1,14 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { LayoutGrid, Heart, FileText, User, LogOut } from 'lucide-react';
 import { useAuth } from '@context/AuthContext';
+import { isTelegramWebApp } from '@utils/telegram';
 import styles from '@styles/Layout.module.css';
 
 export default function Layout() {
   const { user } = useAuth();
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
+  const web = !isTelegramWebApp();
 
   const handleAdminLogout = () => {
     localStorage.removeItem('adminToken');
@@ -47,6 +49,11 @@ export default function Layout() {
               <NavLink to="/profile" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
                 <User size={24} strokeWidth={2} />
                 <span>Профиль</span>
+              </NavLink>
+            ) : web ? (
+              <NavLink to="/login" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
+                <User size={24} strokeWidth={2} />
+                <span>Вход</span>
               </NavLink>
             ) : null}
           </>
