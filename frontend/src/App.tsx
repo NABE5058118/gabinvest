@@ -4,6 +4,8 @@ import CatalogPage from './pages/CatalogPage';
 import FavoritesPage from './pages/FavoritesPage';
 import ProfilePage from './pages/ProfilePage';
 import MyLeadsPage from './pages/MyLeadsPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import Layout from './components/Layout';
 import AdminRoute from './components/AdminRoute';
@@ -45,6 +47,8 @@ export default function App() {
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="profile/edit" element={<ProfileEditPage />} />
               </Route>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
               <Route path="/admin-login" element={<AdminLoginPage />} />
               <Route path="/admin" element={<AdminRoute><Layout /></AdminRoute>}>
                 <Route index element={<AdminObjectsPage />} />
