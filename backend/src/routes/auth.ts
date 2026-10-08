@@ -53,7 +53,7 @@ router.post('/register', async (req: Request, res: Response) => {
       },
     });
 
-    const token = signToken(user.id);
+    const token = signToken(null, user.id);
     logger.info('User registered', { userId: user.id });
     res.status(201).json({
       user: {
@@ -96,7 +96,7 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Неверный логин или пароль' });
     }
 
-    const token = signToken(user.id);
+    const token = signToken(null, user.id);
     logger.info('User logged in', { userId: user.id });
     res.json({
       user: {
