@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, MessageCircle } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { api } from '@utils/api';
 import { useAuth } from '@context/AuthContext';
 import { formatPhone } from '@utils/formatPhone';
+import { isTelegramWebApp } from '@utils/telegram';
 import styles from '@styles/Auth.module.css';
 
 export default function RegisterPage() {
@@ -19,6 +20,12 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const { login: authLogin } = useAuth();
 
+  useEffect(() => {
+    if (isTelegramWebApp()) {
+      navigate('/', { replace: true });
+    }
+  }, [navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -33,10 +40,6 @@ export default function RegisterPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleTelegramAuth = () => {
-    navigate('/telegram-auth');
   };
 
   return (
@@ -112,11 +115,6 @@ export default function RegisterPage() {
             {loading ? 'Регистрация...' : 'Зарегистрироваться'}
           </button>
         </form>
-
-        <button className={styles.telegramBtn} onClick={handleTelegramAuth}>
-          <MessageCircle size={20} strokeWidth={2} />
-          Зарегистрироваться через Telegram
-        </button>
 
         <p className={styles.footer}>
           Уже есть аккаунт? <Link to="/login">Войти</Link>

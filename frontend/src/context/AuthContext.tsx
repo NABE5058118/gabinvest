@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { api } from '@utils/api';
-import { getInitData, getTelegramUser } from '@utils/telegram';
+import { getInitData, getTelegramUser, isTelegramWebApp } from '@utils/telegram';
 
 type User = {
   id: string;
@@ -44,58 +44,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const stored = localStorage.getItem('user');
-    if (token && stored) {
+    const run = async () => {
       try {
-        const parsed = JSON.parse(stored);
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setUser(parsed as User);
-        api
-          .get<User>('/api/auth/me')
-          .then((res) => {
+        if (isTelegramWebApp()) {
+          const tgUser = getTelegramUser();
+          const initData = getInitData();
+
+          if (tgUser?.id && initData) {
+            const res = await api.post('/api/auth/telegram', { initData });
+            login(res.data.user, res.data.token);
+          } else {
+            logout();
+          }
+          setLoading(false);
+          return;
+        }
+
+        const token = localStorage.getItem('token');
+        const stored = localStorage.getItem('user');
+        if (token && stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            setUser(parsed as User);
+            const res = await api.get<User>('/api/auth/me');
             setUser(res.data);
             localStorage.setItem('user', JSON.stringify(res.data));
-          })
-          .catch(async () => {
-            const tgUser = getTelegramUser();
-            const initData = getInitData();
-            if (tgUser?.id && initData) {
-              try {
-                const res = await api.post('/api/auth/telegram', { initData });
-                login(res.data.user, res.data.token);
-              } catch {
-                logout();
-              }
-            } else {
-              logout();
-            }
-          })
-          .finally(() => {
-            setLoading(false);
-          });
-        return;
-      } catch {
-        logout();
+          } catch {
+            logout();
+          }
+        }
+      } finally {
+        setLoading(false);
       }
-    }
+    };
 
-    const tgUser = getTelegramUser();
-    const initData = getInitData();
-    if (tgUser?.id && initData) {
-      setLoading(true);
-      api
-        .post('/api/auth/telegram', { initData })
-        .then((res) => {
-          login(res.data.user, res.data.token);
-        })
-        .catch(() => {
-          setLoading(false);
-        });
-      return;
-    }
-
-    setLoading(false);
+    run();
   }, []);
 
   return (

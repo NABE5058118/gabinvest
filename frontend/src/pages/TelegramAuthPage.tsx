@@ -4,6 +4,7 @@ import { ArrowLeft, Smartphone, CheckCircle } from 'lucide-react';
 import { api } from '@utils/api';
 import { useAuth } from '@context/AuthContext';
 import { formatPhone } from '@utils/formatPhone';
+import { isTelegramWebApp } from '@utils/telegram';
 import styles from '@styles/Auth.module.css';
 
 export default function TelegramAuthPage() {
@@ -15,6 +16,11 @@ export default function TelegramAuthPage() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
+    if (!isTelegramWebApp()) {
+      navigate('/login', { replace: true });
+      return;
+    }
+
     const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
     if (!tgUser?.id) {
       navigate('/login', { replace: true });

@@ -14,6 +14,10 @@ export function initTelegram() {
   }
 }
 
+export function isTelegramWebApp(): boolean {
+  return typeof window !== 'undefined' && !!window.Telegram?.WebApp;
+}
+
 export function getInitData(): string {
   return window.Telegram?.WebApp?.initData || '';
 }
