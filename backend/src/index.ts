@@ -14,6 +14,10 @@ import favoritesRouter from './routes/favorites.js';
 import adminRouter from './routes/admin.js';
 import adminAuthRouter from './routes/admin-auth.js';
 import authRouter from './routes/auth.js';
+import attributionRouter from './routes/attribution.js';
+import dealsRouter from './routes/deals.js';
+import auditRouter from './routes/audit.js';
+import commissionsRouter from './routes/commissions.js';
 import { createLogger } from './utils/logger.js';
 
 dotenv.config();
@@ -50,7 +54,7 @@ async function validateSchema() {
     `;
     const tableNames = tables.map((t: { tablename: string }) => t.tablename);
 
-    const requiredTables = ['User', 'Object', 'Favorite', 'Lead', 'CommercialOffer', 'Consent', 'Tenant', 'Lease', 'Expense', 'LegalConstraint', 'EngineeringSpec', 'VatRate', 'Moderation', 'Placement', 'Payment'];
+    const requiredTables = ['User', 'Object', 'Favorite', 'Lead', 'CommercialOffer', 'Consent', 'Tenant', 'Lease', 'Expense', 'LegalConstraint', 'EngineeringSpec', 'VatRate', 'Moderation', 'Placement', 'Payment', 'Attribution', 'Deal', 'DealStageLog', 'Commission', 'AuditEvent', 'Chat', 'ChatMessage', 'PhoneVerification', 'Referral', 'AntiBypassRule', 'PaymentProvider', 'Payout'];
     const missingTables = requiredTables.filter((t) => !tableNames.includes(t));
     if (missingTables.length > 0) {
       logger.fatal(`Missing tables: ${missingTables.join(', ')}. Run: npx prisma migrate deploy`);
@@ -129,11 +133,15 @@ app.use('/api/admin/auth/login', authLimiter);
 app.use('/api/leads', leadsLimiter);
 
 app.use('/api/objects', objectsRouter);
-app.use('/api/leads', leadsRouter);
-app.use('/api/favorites', favoritesRouter);
-app.use('/api/admin', adminRouter);
-app.use('/api/admin/auth', adminAuthRouter);
-app.use('/api/auth', authRouter);
+  app.use('/api/leads', leadsRouter);
+  app.use('/api/favorites', favoritesRouter);
+  app.use('/api/admin', adminRouter);
+  app.use('/api/admin/auth', adminAuthRouter);
+  app.use('/api/auth', authRouter);
+  app.use('/api/attribution', attributionRouter);
+  app.use('/api/deals', dealsRouter);
+  app.use('/api/audit', auditRouter);
+  app.use('/api/commissions', commissionsRouter);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });

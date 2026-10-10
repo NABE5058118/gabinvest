@@ -26,6 +26,66 @@ enum PriceIndicator {
   above_market
 }
 
+enum DealStage {
+  offer
+  counter_offer
+  deposit
+  verification
+  contract
+  registration
+  closed
+  cancelled
+}
+
+enum DealStatus {
+  active
+  completed
+  cancelled
+  disputed
+}
+
+enum CommissionStatus {
+  pending
+  reserved
+  released
+  refunded
+}
+
+enum AuditEventType {
+  user_registered
+  user_verified
+  deal_created
+  deal_stage_changed
+  offer_sent
+  counter_offer_sent
+  deposit_paid
+  contract_signed
+  registration_completed
+  deal_closed
+  payment_received
+  commission_reserved
+  commission_released
+  contact_disclosed
+  chat_message_sent
+  anti_bypass_violation
+  deal_alert_created
+}
+
+enum TouchSource {
+  direct
+  deep_link
+  referral
+  utm
+  qr
+  invite
+}
+
+enum VerificationMethod {
+  telegram
+  sms
+  email
+}
+
 model Object {
   id              String    @id @default(cuid())
   title           String
@@ -66,6 +126,7 @@ model Object {
   commercialOffer CommercialOffer?
   leads           Lead[]
   favorites       Favorite[]
+  deals           Deal[]
 }
 
 model ObjectImage {
@@ -237,6 +298,13 @@ model User {
   favorites        Favorite[]
   consents         Consent[]
   leads            Lead[]
+  dealsAsBuyer     Deal[]  @relation("dealBuyer")
+  dealsAsSeller    Deal[]  @relation("dealSeller")
+  dealsAsAgent     Deal[]  @relation("dealAgent")
+  referralsAsReferrer Referral[] @relation("referralReferrer")
+  referralsAsReferee  Referral[] @relation("referralReferee")
+  auditEvents      AuditEvent[] @relation("auditUser")
+  phoneVerifications PhoneVerification[] @relation("phoneVerificationUser")
 }
 
 model Favorite {
@@ -271,15 +339,223 @@ model Consent {
 
 model Payment {
   id          String   @id @default(cuid())
+  dealId      String?
   objectId    String
   amount      Int
-  currency    String   @default("RUB")
+  currency    String @default("RUB")
   method      String?
-  status      String   @default("pending")
+  status      String @default("pending")
   paidAt      DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  deal        Deal?    @relation(fields: [dealId], references: [id])
 
   @@index([objectId])
+  @@index([status])
+  @@index([dealId])
+}
+
+model Attribution {
+  id                  String         @id @default(cuid())
+  userId              String         @unique
+  telegramId          String?        @unique
+  phone               String?        @unique
+  email               String?
+  firstTouchSource    TouchSource    @default(direct)
+  firstTouchCampaign  String?
+  firstTouchReferrer  String?
+  firstSeenAt         DateTime       @default(now())
+  lastSeenAt          DateTime       @default(now())
+  lastIp              String?
+  deviceFingerprint   String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@index([firstTouchSource])
+  @@index([firstSeenAt])
+  @@index([phone])
+  @@index([telegramId])
+}
+
+model Deal {
+  id            String       @id @default(cuid())
+  objectId      String
+  buyerId       String
+  sellerId      String?
+  agentId       String?
+  price         Int
+  currency      String        @default("RUB")
+  stage         DealStage     @default(offer)
+  status        DealStatus    @default(active)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  closedAt      DateTime?
+  buyer         User         @relation("dealBuyer", fields: [buyerId], references: [id])
+  seller        User?        @relation("dealSeller", fields: [sellerId], references: [id])
+  agent         User?        @relation("dealAgent", fields: [agentId], references: [id])
+  object        Object       @relation(fields: [objectId], references: [id], onDelete: Cascade)
+  stages        DealStageLog[]
+  payments      Payment[]
+  commissions   Commission[]
+  events        AuditEvent[]
+  chats         Chat[]
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([stage])
+  @@index([status])
+  @@index([objectId])
+  @@index([createdAt])
+}
+
+model DealStageLog {
+  id        String     @id @default(cuid())
+  dealId    String
+  fromStage String?
+  toStage   String
+  changedBy String
+  note      String?
+  createdAt DateTime   @default(now())
+  deal      Deal       @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([dealId])
+  @@index([createdAt])
+}
+
+model Commission {
+  id              String            @id @default(cuid())
+  dealId          String
+  amount          Int
+  rate            Int               @default(20)
+  status          CommissionStatus  @default(pending)
+  reservedAt      DateTime?
+  releasedAt      DateTime?
+  releasedTo      String?
+  paymentMethod   String?
+  providerRef     String?
+  bankStatementUrl String?
+  confirmedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  deal            Deal              @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  payouts         Payout[]
+
+  @@index([dealId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AuditEvent {
+  id            String          @id @default(cuid())
+  eventType     AuditEventType
+  userId        String?
+  dealId        String?
+  objectId      String?
+  metadata      Json?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime        @default(now())
+  user          User?           @relation("auditUser", fields: [userId], references: [id])
+  deal          Deal?           @relation(fields: [dealId], references: [id])
+
+  @@index([eventType])
+  @@index([userId])
+  @@index([dealId])
+  @@index([objectId])
+  @@index([createdAt])
+}
+
+model Chat {
+  id           String         @id @default(cuid())
+  dealId       String
+  participant1 String
+  participant2 String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  deal         Deal           @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  messages     ChatMessage[]
+
+  @@index([dealId])
+  @@index([participant1])
+}
+
+model ChatMessage {
+  id          String   @id @default(cuid())
+  chatId      String
+  senderId    String
+  body        String
+  filtered    Boolean  @default(false)
+  filterReason String?
+  createdAt   DateTime @default(now())
+  chat        Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId])
+  @@index([createdAt])
+}
+
+model PhoneVerification {
+  id            String            @id @default(cuid())
+  userId        String?
+  phone         String
+  codeHash      String
+  method        VerificationMethod
+  attempts      Int               @default(0)
+  maxAttempts   Int               @default(5)
+  verified      Boolean           @default(false)
+  expiresAt     DateTime
+  verifiedAt    DateTime?
+  createdAt     DateTime          @default(now())
+  user          User?             @relation("phoneVerificationUser", fields: [userId], references: [id])
+
+  @@index([phone])
+  @@index([expiresAt])
+  @@index([verified])
+}
+
+model Referral {
+  id            String   @id @default(cuid())
+  referrerId   String
+  refereeId    String
+  source       String
+  createdAt    DateTime @default(now())
+  referrer     User     @relation("referralReferrer", fields: [referrerId], references: [id])
+  referee      User     @relation("referralReferee", fields: [refereeId], references: [id])
+
+  @@unique([referrerId, refereeId])
+  @@index([referrerId])
+  @@index([refereeId])
+}
+
+model AntiBypassRule {
+  id          String   @id @default(cuid())
+  name        String
+  pattern     String
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PaymentProvider {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  enabled     Boolean  @default(true)
+  config      Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Payout {
+  id            String   @id @default(cuid())
+  commissionId  String
+  amount        Int
+  toUserId      String?
+  toAccount     String
+  status        String  @default("pending")
+  processedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  commission    Commission @relation(fields: [commissionId], references: [id], onDelete: Cascade)
+
+  @@index([commissionId])
   @@index([status])
 }
