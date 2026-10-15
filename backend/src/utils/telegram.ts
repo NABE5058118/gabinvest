@@ -21,7 +21,13 @@ export function validateTelegramInitData(initData: string, botToken: string): bo
     url.hash = initData;
     const params = new URLSearchParams(url.hash.slice(1));
     const hash = params.get('hash');
-    if (!hash) return false;
+    const authDateValue = params.get('auth_date');
+    if (!hash || !authDateValue || !/^\d+$/.test(authDateValue)) return false;
+
+    const authDate = Number(authDateValue);
+    const now = Math.floor(Date.now() / 1000);
+    // Accept only recently issued Telegram WebApp data (at most 24 hours old or in the future).
+    if (!Number.isSafeInteger(authDate) || Math.abs(now - authDate) > 24 * 60 * 60) return false;
 
     const secretKey = crypto
       .createHmac('sha256', 'WebAppData')
@@ -39,7 +45,10 @@ export function validateTelegramInitData(initData: string, botToken: string): bo
       .update(dataCheckString)
       .digest('hex');
 
-    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(hash));
+    const expected = Buffer.from(signature, 'hex');
+    const supplied = Buffer.from(hash, 'hex');
+    if (expected.length !== supplied.length) return false;
+    return crypto.timingSafeEqual(expected, supplied);
   } catch {
     return false;
   }
@@ -50,14 +59,24 @@ export async function sendTelegramMessage(
   chatId: string,
   text: string
 ): Promise<void> {
-  try {
-    await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      chat_id: chatId,
-      text,
-      parse_mode: 'HTML',
-    });
-  } catch (error) {
-    logger.error('Failed to send Telegram message:', error);
+  const delays = [0, 400, 1200];
+  for (let attempt = 0; attempt < delays.length; attempt += 1) {
+    if (delays[attempt]) await new Promise((resolve) => setTimeout(resolve, delays[attempt]));
+    try {
+      const response = await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        chat_id: chatId,
+        text,
+        parse_mode: 'HTML',
+      }, { timeout: 8000 });
+      if (response.data?.ok === false) throw new Error('Telegram API returned ok=false');
+      return;
+    } catch (error) {
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      logger.warn('Telegram sendMessage attempt failed', { attempt: attempt + 1, status });
+      if (attempt === delays.length - 1) {
+        logger.error('Telegram notification failed after retries', { attempts: delays.length, status });
+      }
+    }
   }
 }
 

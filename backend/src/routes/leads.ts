@@ -1,46 +1,82 @@
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
 import { sendTelegramMessage } from '../utils/telegram.js';
 import { z } from 'zod';
 import { requireAdmin } from '../routes/admin.js';
-import { authMiddleware } from '../middleware/jwt.js';
+import { authMiddleware, optionalAuth } from '../middleware/jwt.js';
 import { createLogger } from '../utils/logger.js';
 
 const router = Router();
 const logger = createLogger('leads');
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'test' ? 'test-jwt-secret' : '');
+const PAGE_LIMIT = 50;
 
 const escapeHtml = (s: string) =>
-  s.replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+  s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
 const leadSchema = z.object({
-  objectId: z.string().min(1, 'Объект не указан'),
-  name: z.string().min(2, 'Имя слишком короткое'),
-  phone: z.string().min(10, 'Некорректный номер телефона'),
-  comment: z.string().optional(),
+  objectId: z.string().min(1).max(100),
+  name: z.string().trim().min(2, 'Имя слишком короткое').max(200),
+  phone: z.string().trim().min(10, 'Некорректный номер телефона').max(40),
+  comment: z.string().max(2000).optional(),
   consent: z.boolean().refine((v) => v === true, {
     message: 'Необходимо согласие на обработку персональных данных',
   }),
-  clientId: z.string().optional(),
+  clientId: z.string().max(4096).optional(),
 });
 
 const statusSchema = z.object({
   status: z.enum(['new', 'in_progress', 'done', 'cancelled']),
 });
 
-const clientIdSchema = z.object({
-  clientId: z.string().min(1, 'clientId required'),
-});
-
 const MANAGER_CHAT_ID = process.env.MANAGER_CHAT_ID || '';
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
+function issueGuestLeadToken(clientId: string): string {
+  return jwt.sign({ scope: 'guest-leads', clientId }, JWT_SECRET, { expiresIn: '365d', algorithm: 'HS256' });
+}
+
+function readGuestLeadToken(token: unknown): string | null {
+  if (typeof token !== 'string' || !JWT_SECRET) return null;
+  try {
+    const payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as { scope?: string; clientId?: string };
+    if (payload.scope !== 'guest-leads' || !payload.clientId || payload.clientId.length > 100) return null;
+    return payload.clientId;
+  } catch {
+    return null;
+  }
+}
+
+async function mergeGuestLeads(clientToken: unknown, userId: string): Promise<void> {
+  const guestClientId = readGuestLeadToken(clientToken);
+  if (!guestClientId) return;
+  await prisma.lead.updateMany({
+    where: { clientId: guestClientId, userId: null },
+    data: { userId, clientId: null },
+  });
+}
+
+function pagination(req: Request) {
+  const pageRaw = Number.parseInt(String(req.query.page || '1'), 10);
+  const limitRaw = Number.parseInt(String(req.query.limit || PAGE_LIMIT), 10);
+  return {
+    page: Number.isSafeInteger(pageRaw) && pageRaw > 0 ? Math.min(pageRaw, 1_000_000) : 1,
+    limit: Number.isSafeInteger(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, PAGE_LIMIT) : PAGE_LIMIT,
+  };
+}
+
 router.get('/', requireAdmin, async (req: Request, res: Response) => {
   try {
+    const { page, limit } = pagination(req);
     const leads = await prisma.lead.findMany({
-      include: { object: true },
+      skip: (page - 1) * limit,
+      take: limit,
+      include: { object: { select: { id: true, title: true, location: true, price: true } } },
       orderBy: { createdAt: 'desc' },
     });
-    logger.info('Fetched leads', { count: leads.length });
+    logger.info('Fetched admin leads page', { count: leads.length, page });
     res.json(leads);
   } catch (error) {
     logger.error('Error fetching leads:', error);
@@ -51,16 +87,17 @@ router.get('/', requireAdmin, async (req: Request, res: Response) => {
 router.get('/me', authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    await mergeGuestLeads(req.headers['x-client-id'], userId);
+    const { page, limit } = pagination(req);
     const leads = await prisma.lead.findMany({
       where: { userId },
+      skip: (page - 1) * limit,
+      take: limit,
       include: { object: { select: { id: true, title: true, location: true, price: true } } },
       orderBy: { createdAt: 'desc' },
     });
-    logger.info('Fetched user leads', { userId, count: leads.length });
+    logger.info('Fetched authenticated user leads', { userId, count: leads.length, page });
     res.json(leads);
   } catch (error) {
     logger.error('Error fetching user leads:', error);
@@ -68,30 +105,33 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', optionalAuth, async (req: Request, res: Response) => {
   try {
     const parsed = leadSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: parsed.error.errors[0].message });
-    }
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0].message });
 
-    const { objectId, name, phone, comment, consent, clientId } = parsed.data;
+    const { objectId, name, phone, comment, clientId: guestToken } = parsed.data;
     const userId = req.userId || undefined;
+    if (userId) await mergeGuestLeads(guestToken, userId);
 
-    const obj = await prisma.object.findUnique({
-      where: { id: objectId },
-      include: { commercialOffer: true },
+    const obj = await prisma.object.findFirst({
+      where: { id: objectId, moderation: { is: { status: 'approved' } } },
+      select: { id: true, title: true, location: true, price: true },
     });
+    if (!obj) return res.status(404).json({ error: 'Object not found' });
 
-    if (!obj) {
-      return res.status(404).json({ error: 'Object not found' });
+    let actualGuestClientId: string | undefined;
+    let nextGuestToken: string | undefined;
+    if (!userId) {
+      actualGuestClientId = readGuestLeadToken(guestToken) || crypto.randomUUID();
+      nextGuestToken = issueGuestLeadToken(actualGuestClientId);
     }
 
     const lead = await prisma.lead.create({
       data: {
         objectId,
         userId,
-        clientId: clientId || undefined,
+        clientId: actualGuestClientId,
         name,
         phone,
         comment,
@@ -104,6 +144,10 @@ router.post('/', async (req: Request, res: Response) => {
             userId,
           },
         },
+      },
+      select: {
+        id: true, objectId: true, userId: true, clientId: true,
+        name: true, phone: true, comment: true, status: true, createdAt: true,
       },
     });
 
@@ -123,36 +167,45 @@ ${comment ? `<b>Комментарий:</b> ${escapeHtml(comment)}` : ''}
 
 <a href="https://gab-invest.ru/objects/${obj.id}">Ссылка на объект</a>
       `.trim();
-
-      sendTelegramMessage(BOT_TOKEN, MANAGER_CHAT_ID, message);
-      logger.info('Telegram notification sent', { leadId: lead.id, chatId: MANAGER_CHAT_ID });
+      await sendTelegramMessage(BOT_TOKEN, MANAGER_CHAT_ID, message);
+      logger.info('Telegram notification attempt finished', { leadId: lead.id });
     }
 
-    res.status(201).json({ success: true, lead });
+    res.status(201).json({ success: true, lead, ...(nextGuestToken ? { guestToken: nextGuestToken } : {}) });
   } catch (error) {
     logger.error('Error creating lead:', error);
     res.status(500).json({ error: 'Failed to create lead' });
   }
 });
 
-router.get('/my', async (req: Request, res: Response) => {
+// Backward-compatible guest page. A raw localStorage ID is never accepted as proof of ownership.
+router.get('/my', optionalAuth, async (req: Request, res: Response) => {
   try {
-    const parsed = clientIdSchema.safeParse({
-      clientId: req.headers['x-client-id'] || req.query.clientId,
-    });
-    if (!parsed.success) {
-      return res.status(400).json({ error: parsed.error.errors[0].message });
+    const { page, limit } = pagination(req);
+    if (req.userId) {
+      await mergeGuestLeads(req.headers['x-client-id'] || req.query.clientId, req.userId);
+      const leads = await prisma.lead.findMany({
+        where: { userId: req.userId },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { object: { select: { id: true, title: true, location: true, price: true } } },
+        orderBy: { createdAt: 'desc' },
+      });
+      return res.json(leads);
     }
 
+    const clientId = readGuestLeadToken(req.headers['x-client-id'] || req.query.clientId);
+    if (!clientId) return res.json([]);
     const leads = await prisma.lead.findMany({
-      where: { clientId: parsed.data.clientId },
+      where: { clientId, userId: null },
+      skip: (page - 1) * limit,
+      take: limit,
       include: { object: { select: { id: true, title: true, location: true, price: true } } },
       orderBy: { createdAt: 'desc' },
     });
-    logger.info('Fetched client leads', { clientId: parsed.data.clientId, count: leads.length });
     res.json(leads);
   } catch (error) {
-    logger.error('Error fetching client leads:', error);
+    logger.error('Error fetching guest leads:', error);
     res.status(500).json({ error: 'Failed to fetch leads' });
   }
 });
@@ -161,15 +214,8 @@ router.patch('/:id/status', requireAdmin, async (req: Request, res: Response) =>
   try {
     const id = String(req.params.id);
     const parsed = statusSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: parsed.error.errors[0].message });
-    }
-
-    const lead = await prisma.lead.update({
-      where: { id },
-      data: { status: parsed.data.status },
-    });
-
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0].message });
+    const lead = await prisma.lead.update({ where: { id }, data: { status: parsed.data.status } });
     logger.info('Lead status updated', { leadId: id, status: parsed.data.status });
     res.json(lead);
   } catch (error) {
@@ -190,27 +236,22 @@ router.delete('/:id', requireAdmin, async (req: Request, res: Response) => {
   }
 });
 
-router.delete('/my/:id', async (req: Request, res: Response) => {
+router.delete('/my/:id', optionalAuth, async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
-    const clientId = req.headers['x-client-id'] || req.query.clientId;
-    if (!clientId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    if (req.userId) {
+      const result = await prisma.lead.deleteMany({ where: { id, userId: req.userId } });
+      if (result.count === 0) return res.status(404).json({ error: 'Lead not found' });
+      return res.status(204).send();
     }
 
-    const lead = await prisma.lead.findUnique({ where: { id } });
-    if (!lead) {
-      return res.status(404).json({ error: 'Lead not found' });
-    }
-    if (lead.clientId !== String(clientId)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
-    await prisma.lead.delete({ where: { id } });
-    logger.info('Lead deleted by client', { leadId: id, clientId });
-    res.status(204).send();
+    const clientId = readGuestLeadToken(req.headers['x-client-id'] || req.query.clientId);
+    if (!clientId) return res.status(401).json({ error: 'Unauthorized' });
+    const result = await prisma.lead.deleteMany({ where: { id, clientId, userId: null } });
+    if (result.count === 0) return res.status(404).json({ error: 'Lead not found' });
+    return res.status(204).send();
   } catch (error) {
-    logger.error('Error deleting lead by client:', error);
+    logger.error('Error deleting lead by owner:', error);
     res.status(500).json({ error: 'Failed to delete lead' });
   }
 });

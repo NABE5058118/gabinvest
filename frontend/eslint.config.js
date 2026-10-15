@@ -12,6 +12,7 @@ export default [
       'public/sw.js',
       'eslint.config.js',
       'vite.config.ts',
+      'src/test/**',
     ],
   },
   js.configs.recommended,

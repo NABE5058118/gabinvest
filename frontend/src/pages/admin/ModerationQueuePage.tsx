@@ -32,10 +32,13 @@ export default function ModerationQueuePage() {
     const load = async () => {
       try {
         setLoading(true);
-        const { data } = await adminApi.get(`/api/admin/moderation/queue?status=${statusFilter}`);
-        if (!cancelled) {
-          setItems(data);
+        const all: ModerationItem[] = [];
+        for (let page = 1; page <= 10000; page += 1) {
+          const { data } = await adminApi.get('/api/admin/moderation/queue', { params: { status: statusFilter, page, limit: 50 } });
+          all.push(...data);
+          if (data.length < 50) break;
         }
+        if (!cancelled) setItems(all);
       } catch {
         if (!cancelled) {
           setError('Ошибка загрузки');

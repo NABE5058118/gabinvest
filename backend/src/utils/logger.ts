@@ -23,6 +23,21 @@ const SENSITIVE_KEYS = [
   'adminJwtSecret',
   'apiKey',
   'webhookUrl',
+  'firstname',
+  'lastname',
+  'fullname',
+  'phone',
+  'email',
+  'ipaddress',
+  'clientid',
+  'telegramid',
+  'username',
+  'photo_url',
+  'photourl',
+  'comment',
+  'login',
+  'identifier',
+  'ip',
 ];
 
 function redact(obj: unknown): unknown {

@@ -31,8 +31,13 @@ export default function LeadsPage() {
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      const { data } = await adminApi.get('/api/leads');
-      setLeads(data);
+      const all: Lead[] = [];
+      for (let page = 1; page <= 10000; page += 1) {
+        const { data } = await adminApi.get('/api/leads', { params: { page, limit: 50 } });
+        all.push(...data);
+        if (data.length < 50) break;
+      }
+      setLeads(all);
     } catch {
       setError('Ошибка загрузки');
     } finally {

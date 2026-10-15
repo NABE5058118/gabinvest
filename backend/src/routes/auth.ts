@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
 import { prisma } from '../lib/prisma.js';
 import { validateTelegramInitData, parseInitData } from '../utils/telegram.js';
 import bcrypt from 'bcrypt';
@@ -8,6 +9,26 @@ import { createLogger } from '../utils/logger.js';
 
 const router = Router();
 const logger = createLogger('auth');
+
+function safeSecretEquals(expected: string, actual: string): boolean {
+  const a = Buffer.from(expected);
+  const b = Buffer.from(actual);
+  const size = Math.max(a.length, b.length, 1);
+  const aa = Buffer.alloc(size);
+  const bb = Buffer.alloc(size);
+  a.copy(aa);
+  b.copy(bb);
+  return requireTimingSafeEqual(aa, bb) && a.length === b.length;
+}
+
+function requireTimingSafeEqual(a: Buffer, b: Buffer): boolean {
+  // crypto is imported as a module below for this constant-time check.
+  return crypto.timingSafeEqual(a, b);
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && (error as { code?: string }).code === 'P2002';
+}
 
 const registerSchema = z.object({
   phone: z.string().min(10, 'Некорректный номер телефона'),
@@ -67,6 +88,9 @@ router.post('/register', async (req: Request, res: Response) => {
       token,
     });
   } catch (error) {
+    if (isUniqueViolation(error)) {
+      return res.status(409).json({ error: 'Пользователь уже существует' });
+    }
     logger.error('Error registering user:', error);
     res.status(500).json({ error: 'Failed to register' });
   }
@@ -169,6 +193,7 @@ router.post('/telegram', async (req: Request, res: Response) => {
     });
 
     if (dbUser) {
+      await prisma.attribution.updateMany({ where: { telegramId, userId: null }, data: { userId: dbUser.id } });
       logger.info('Telegram auth: user already exists, skipping profile overwrite', {
         telegramId: dbUser.telegramId,
         userId: dbUser.id,
@@ -210,6 +235,7 @@ router.post('/telegram', async (req: Request, res: Response) => {
     const newUser = await prisma.user.create({
       data: createData,
     });
+    await prisma.attribution.updateMany({ where: { telegramId, userId: null }, data: { userId: newUser.id } });
 
     logger.info('Telegram auth success: user created', {
       telegramId: newUser.telegramId,
@@ -245,6 +271,11 @@ router.post('/telegram', async (req: Request, res: Response) => {
 });
 
 router.post('/telegram/bot-sync', async (req: Request, res: Response) => {
+  const configuredSecret = process.env.BOT_SYNC_SECRET;
+  const suppliedSecret = req.get('x-bot-sync-secret') || '';
+  if (!configuredSecret || !suppliedSecret || !safeSecretEquals(configuredSecret, suppliedSecret)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
   try {
     const { telegramId, firstName, lastName, username, photoUrl, languageCode, isPremium, allowsWriteToPm } = req.body;
 
@@ -411,14 +442,20 @@ router.put('/profile', authMiddleware, async (req: Request, res: Response) => {
       }
     }
 
+    // An empty string means "clear the value"; undefined means "leave unchanged".
+    const cleared = (value: string | undefined | null) => {
+      if (value === undefined || value === null) return value === null ? null : undefined;
+      return value.trim() || null;
+    };
+
     const dbUser = await prisma.user.update({
       where: { id: userId },
       data: {
         firstName: firstName || undefined,
         lastName: lastName || undefined,
         username: username || undefined,
-        phone: phone || undefined,
-        email: email || undefined,
+        phone: cleared(phone),
+        email: cleared(email),
       },
     });
 
@@ -437,6 +474,9 @@ router.put('/profile', authMiddleware, async (req: Request, res: Response) => {
       username: dbUser.username,
     });
   } catch (error) {
+    if (isUniqueViolation(error)) {
+      return res.status(409).json({ error: 'Телефон или email уже используются другим пользователем' });
+    }
     logger.error('Error updating profile:', error);
     res.status(500).json({ error: 'Failed to update profile' });
   }

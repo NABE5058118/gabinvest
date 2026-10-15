@@ -17,39 +17,53 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user) {
-      const stored = localStorage.getItem('favorites');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored) as string[];
-          // eslint-disable-next-line react-hooks/set-state-in-effect
-          setFavoriteIds(new Set(parsed));
-        } catch {
-          // ignore
-        }
-      }
-      setLoading(false);
-      return;
-    }
+    let cancelled = false;
 
-    api
-      .get<{ object: { id: string } }[]>('/api/favorites')
-      .then((res) => {
-        const ids = new Set(res.data.map((f) => f.object.id));
-        setFavoriteIds(ids);
-      })
-      .catch(() => {
-        const stored = localStorage.getItem('favorites');
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored) as string[];
-            setFavoriteIds(new Set(parsed));
-          } catch {
-            // ignore
-          }
+    const readGuestFavorites = (): string[] => {
+      const stored = localStorage.getItem('favorites');
+      if (!stored) return [];
+      try {
+        const parsed = JSON.parse(stored) as unknown;
+        return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string' && id.length > 0) : [];
+      } catch {
+        return [];
+      }
+    };
+
+    const load = async () => {
+      if (!user) {
+        setFavoriteIds(new Set(readGuestFavorites()));
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const guestIds = readGuestFavorites();
+        if (guestIds.length) {
+          await api.post('/api/favorites/merge', { objectIds: guestIds.slice(0, 1000) });
+          localStorage.removeItem('favorites');
         }
-      })
-      .finally(() => setLoading(false));
+
+        // Preserve the existing response shape while requesting bounded server pages.
+        const first = await api.get<{ object: { id: string } }[]>('/api/favorites');
+        const all = [...first.data];
+        for (let page = 2; page <= 10000 && all.length % 100 === 0 && all.length > 0; page += 1) {
+          const { data } = await api.get<{ object: { id: string } }[]>('/api/favorites', { params: { page, limit: 100 } });
+          all.push(...data);
+          if (data.length < 100) break;
+        }
+        if (!cancelled) setFavoriteIds(new Set(all.map((f) => f.object.id)));
+      } catch {
+        if (!cancelled) setFavoriteIds(new Set(readGuestFavorites()));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+    void load();
+    return () => { cancelled = true; };
   }, [user]);
 
   const toggleFavorite = async (objectId: string) => {

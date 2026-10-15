@@ -84,23 +84,56 @@ interface ObjectsResponse {
   rotationTimestamp?: string;
 }
 
-export function useObjects() {
+export type ObjectQueryFilters = {
+  type?: string;
+  minPrice?: string;
+  maxPrice?: string;
+  minArea?: string;
+  maxArea?: string;
+  city?: string;
+  anchorTenant?: string;
+  sortBy?: 'createdAt' | 'price' | 'area' | 'yieldPercent' | 'leaseEndDate';
+  sortOrder?: 'asc' | 'desc';
+  minYield?: string;
+  maxYield?: string;
+  leaseEndBefore?: string;
+  leaseEndAfter?: string;
+};
+
+const PAGE_SIZE = 100;
+
+export function useObjects(filters: ObjectQueryFilters = {}) {
   const [objects, setObjects] = useState<ObjectType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const filtersKey = JSON.stringify(filters);
 
   const fetchObjects = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get<ObjectsResponse>('/api/objects');
-      setObjects(res.data.objects);
+      const queryFilters = JSON.parse(filtersKey) as ObjectQueryFilters;
+      const params = new URLSearchParams({ page: '1', limit: String(PAGE_SIZE) });
+      for (const [key, value] of Object.entries(queryFilters)) {
+        if (value !== undefined && value !== null && value !== '' && !(key === 'type' && value === 'all')) {
+          params.set(key, String(value));
+        }
+      }
+
+      const first = await api.get<ObjectsResponse>(`/api/objects?${params.toString()}`);
+      const allObjects = [...first.data.objects];
+      for (let page = 2; page <= first.data.totalPages; page += 1) {
+        params.set('page', String(page));
+        const next = await api.get<ObjectsResponse>(`/api/objects?${params.toString()}`);
+        allObjects.push(...next.data.objects);
+      }
+      setObjects(allObjects);
     } catch {
       setError('Ошибка загрузки');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filtersKey]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -108,9 +141,7 @@ export function useObjects() {
   }, [fetchObjects]);
 
   useEffect(() => {
-    const handler = () => {
-      fetchObjects();
-    };
+    const handler = () => { fetchObjects(); };
     window.addEventListener('objects:refresh', handler);
     const onVisibility = () => {
       if (document.visibilityState === 'visible') handler();

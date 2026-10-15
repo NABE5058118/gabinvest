@@ -1,74 +1,124 @@
 services:
   postgres:
     image: postgres:17-alpine
+    restart: unless-stopped
+    init: true
     environment:
-      POSTGRES_USER: "${POSTGRES_USER}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_USER: "${POSTGRES_USER:?Set POSTGRES_USER in .env}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}"
       POSTGRES_DB: gab_invest
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d gab_invest"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d gab_invest"]
       interval: 5s
       timeout: 5s
       retries: 5
     networks:
       - backend-net
+    mem_limit: 1g
+    cpus: "1.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend-migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: "no"
+    environment:
+      DATABASE_URL: "${DATABASE_URL:?Set DATABASE_URL using host postgres and connection_limit=10}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["sh", "-c", "npx tsx prisma/preserve-legacy-attribution.ts && npx prisma migrate deploy"]
+    networks:
+      - backend-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "3001:3001"
+    restart: unless-stopped
+    init: true
+    expose:
+      - "3001"
     environment:
-      DATABASE_URL: "${DATABASE_URL}"
-      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
-      MANAGER_CHAT_ID: "${MANAGER_CHAT_ID}"
+      DATABASE_URL: "${DATABASE_URL:?Set DATABASE_URL in .env}"
+      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:?Set TELEGRAM_BOT_TOKEN in .env}"
+      MANAGER_CHAT_ID: "${MANAGER_CHAT_ID:-}"
       PORT: 3001
-      JWT_SECRET: "${JWT_SECRET}"
-      ADMIN_JWT_SECRET: "${ADMIN_JWT_SECRET}"
-      ADMIN_TOKEN: "${ADMIN_TOKEN}"
-      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS}"
+      JWT_SECRET: "${JWT_SECRET:?Set JWT_SECRET in .env}"
+      ADMIN_JWT_SECRET: "${ADMIN_JWT_SECRET:?Set ADMIN_JWT_SECRET in .env}"
+      ADMIN_TOKEN: "${ADMIN_TOKEN:?Set ADMIN_TOKEN in .env}"
+      BOT_SYNC_SECRET: "${BOT_SYNC_SECRET:?Set BOT_SYNC_SECRET in .env}"
+      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:?Set ALLOWED_ORIGINS in .env}"
+      DATABASE_SLOW_QUERY_MS: "${DATABASE_SLOW_QUERY_MS:-500}"
+      NODE_ENV: production
     depends_on:
       postgres:
         condition: service_healthy
+      backend-migrate:
+        condition: service_completed_successfully
     volumes:
       - backend-uploads:/app/uploads
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3001/health || exit 1"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
-    command: ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+      start_period: 15s
+    command: ["node", "dist/index.js"]
     networks:
       - backend-net
+    mem_limit: 768m
+    cpus: "1.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: "${VITE_API_URL}"
-        VITE_ADMIN_TOKEN: "${VITE_ADMIN_TOKEN}"
+        VITE_API_URL: "${VITE_API_URL:?Set VITE_API_URL in .env}"
+    restart: unless-stopped
+    init: true
     ports:
       - "80:80"
       - "443:443"
     environment:
-      VITE_API_URL: "${VITE_API_URL}"
-      VITE_ADMIN_TOKEN: "${VITE_ADMIN_TOKEN}"
+      VITE_API_URL: "${VITE_API_URL:?Set VITE_API_URL in .env}"
     depends_on:
       backend:
         condition: service_healthy
     volumes:
       - ./data/certbot/www:/var/www/certbot
-      - /etc/letsencrypt:/etc/letsencrypt
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - backend-uploads:/var/www/uploads:ro
     networks:
       - frontend-net
       - backend-net
+    mem_limit: 256m
+    cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   frontend-net:

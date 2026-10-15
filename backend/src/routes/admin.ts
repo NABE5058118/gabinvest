@@ -15,6 +15,8 @@ import { normalizeOfferFileName } from '../utils/filename.js';
 const router = Router();
 const logger = createLogger('admin');
 
+declare global { namespace Express { interface Request { adminActor?: string } } }
+
 const objectTypeEnum = ['Офис', 'Склад', 'Торговое помещение', 'Другое'] as const;
 type ObjectType = typeof objectTypeEnum[number];
 
@@ -48,6 +50,17 @@ const updateObjectSchema = createObjectSchema.partial();
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET;
+
+function timingSafeStringEqual(a: string, b: string): boolean {
+  const aBuffer = Buffer.from(a);
+  const bBuffer = Buffer.from(b);
+  const length = Math.max(aBuffer.length, bBuffer.length, 1);
+  const paddedA = Buffer.alloc(length);
+  const paddedB = Buffer.alloc(length);
+  aBuffer.copy(paddedA);
+  bBuffer.copy(paddedB);
+  return crypto.timingSafeEqual(paddedA, paddedB) && aBuffer.length === bBuffer.length;
+}
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
 
@@ -73,14 +86,11 @@ const ALLOWED_IMAGE_MIMES = new Set([
 async function verifyFileType(filePath: string, expectedMime: string): Promise<boolean> {
   try {
     const type = await fileTypeFromFile(filePath);
-    if (!type) {
-      const ext = path.extname(filePath).toLowerCase();
-      return ALLOWED_IMAGE_MIMES.has(normalizeMime(expectedMime)) || ['.jpg', '.jpeg', '.png', '.webp'].includes(ext);
-    }
+    if (!type) return false;
     return normalizeMime(type.mime) === normalizeMime(expectedMime);
   } catch {
-    const ext = path.extname(filePath).toLowerCase();
-    return ALLOWED_IMAGE_MIMES.has(normalizeMime(expectedMime)) || ['.jpg', '.jpeg', '.png', '.webp'].includes(ext);
+    // Failure to inspect file bytes is a hard rejection, never a successful type check.
+    return false;
   }
 }
 
@@ -89,10 +99,11 @@ function requireAdmin(req: Request, res: Response, next: Function) {
   if (header?.startsWith('Bearer ')) {
     const token = header.slice(7);
     try {
-      const payload = jwt.verify(token, ADMIN_JWT_SECRET!, { algorithms: ['HS256'] }) as { role?: string };
+      const payload = jwt.verify(token, ADMIN_JWT_SECRET!, { algorithms: ['HS256'] }) as { role?: string; userId?: string };
       if (payload.role !== 'admin') {
         return res.status(401).json({ error: 'Unauthorized' });
       }
+      req.adminActor = payload.userId || 'admin-jwt';
       next();
       return;
     } catch {
@@ -101,9 +112,10 @@ function requireAdmin(req: Request, res: Response, next: Function) {
   }
 
   const token = req.headers['x-admin-token'];
-  if (!ADMIN_TOKEN || token !== ADMIN_TOKEN) {
+  if (typeof token !== 'string' || !ADMIN_TOKEN || !timingSafeStringEqual(token, ADMIN_TOKEN)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
+  req.adminActor = 'static-admin-token';
   next();
 }
 
@@ -181,17 +193,15 @@ const bulkImageUpload = multer({
 
 router.get('/objects', requireAdmin, async (req: Request, res: Response) => {
   try {
+    const page = Math.max(1, Math.min(1_000_000, Number.parseInt(String(req.query.page || '1'), 10) || 1));
+    const limit = Math.max(1, Math.min(50, Number.parseInt(String(req.query.limit || '50'), 10) || 50));
     const objects = await prisma.object.findMany({
+      skip: (page - 1) * limit,
+      take: limit,
       orderBy: { createdAt: 'desc' },
       include: {
-        images: true,
-        tenants: true,
-        expenses: true,
-        legalConstraints: true,
-        engineeringSpec: true,
-        vatRate: true,
-        moderation: true,
-        placement: true,
+        images: { select: { id: true, url: true, sort: true } },
+        moderation: { select: { id: true, status: true } },
       },
     });
     res.json(objects);
@@ -995,7 +1005,9 @@ router.get('/objects/:id/moderation', requireAdmin, async (req: Request, res: Re
 router.patch('/objects/:id/moderation', requireAdmin, async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
-    const { status, note } = req.body;
+    const parsed = z.object({ status: z.enum(moderationStatusEnum), note: z.string().max(2000).optional().nullable() }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0]?.message || 'Invalid moderation status' });
+    const { status, note } = parsed.data;
 
     const moderation = await prisma.moderation.upsert({
       where: { objectId: id },
@@ -1003,14 +1015,14 @@ router.patch('/objects/:id/moderation', requireAdmin, async (req: Request, res: 
         status: status as ModerationStatus,
         note: note || null,
         moderatedAt: new Date(),
-        moderatedBy: req.headers['x-admin-token'] as string || 'admin',
+        moderatedBy: req.adminActor || 'admin',
       },
       create: {
         objectId: id,
         status: status as ModerationStatus,
         note: note || null,
         moderatedAt: new Date(),
-        moderatedBy: req.headers['x-admin-token'] as string || 'admin',
+        moderatedBy: req.adminActor || 'admin',
       },
     });
 
@@ -1105,19 +1117,21 @@ router.post('/objects/:id/payments', requireAdmin, async (req: Request, res: Res
 
 router.get('/moderation/queue', requireAdmin, async (req: Request, res: Response) => {
   try {
-    const statusParam = req.query.status as string || 'pending';
-    const where: any = {};
-    if (statusParam && statusParam !== 'all') {
-      where.status = statusParam as ModerationStatus;
+    const statusParam = String(req.query.status || 'pending');
+    if (statusParam !== 'all' && !moderationStatusEnum.includes(statusParam as ModerationStatus)) {
+      return res.status(400).json({ error: 'Invalid moderation status' });
     }
+    const page = Math.max(1, Math.min(1_000_000, Number.parseInt(String(req.query.page || '1'), 10) || 1));
+    const limit = Math.max(1, Math.min(50, Number.parseInt(String(req.query.limit || '50'), 10) || 50));
+    const where: any = {};
+    if (statusParam !== 'all') where.status = statusParam as ModerationStatus;
     const moderations = await prisma.moderation.findMany({
       where,
+      skip: (page - 1) * limit,
+      take: limit,
       include: {
         object: {
-          include: {
-            images: true,
-            tenants: true,
-          },
+          select: { id: true, title: true, type: true, price: true, location: true },
         },
       },
       orderBy: { createdAt: 'desc' },

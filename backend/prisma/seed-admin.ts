@@ -6,9 +6,12 @@ const prisma = new PrismaClient();
 async function main() {
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@gab-invest.ru';
   const adminPhone = process.env.ADMIN_PHONE || '+79000000000';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-  const adminFirstName = process.env.ADMIN_FIRST_NAME || 'Admin';
+  const adminPassword = process.env.ADMIN_PASSWORD || '';
   const adminTelegramId = process.env.ADMIN_TELEGRAM_ID;
+  if (!adminTelegramId && (!adminPassword || adminPassword.length < 16 || ['admin123', 'password', '1234567890123456'].includes(adminPassword.toLowerCase()))) {
+    throw new Error('Set ADMIN_PASSWORD to a unique password of at least 16 characters, or set ADMIN_TELEGRAM_ID.');
+  }
+  const adminFirstName = process.env.ADMIN_FIRST_NAME || 'Admin';
 
   if (adminTelegramId) {
     const existing = await prisma.user.findFirst({

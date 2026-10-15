@@ -24,10 +24,16 @@ export default function MyLeadsPage() {
     try {
       setLoading(true);
       const clientId = getLeadClientId();
-      const { data } = await api.get('/api/leads/my', {
-        headers: { 'x-client-id': clientId },
-      });
-      setLeads(data);
+      const all: Lead[] = [];
+      for (let page = 1; page <= 10000; page += 1) {
+        const { data } = await api.get('/api/leads/my', {
+          params: { page, limit: 50 },
+          headers: { 'x-client-id': clientId },
+        });
+        all.push(...data);
+        if (data.length < 50) break;
+      }
+      setLeads(all);
     } catch {
       setError('Ошибка загрузки');
     } finally {

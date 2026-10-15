@@ -32,7 +32,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   if (header?.startsWith('Bearer ')) {
     const token = header.slice(7);
     try {
-      const payload = jwt.verify(token, JWT_SECRET) as { telegramId?: string; userId?: string };
+      const payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as { telegramId?: string; userId?: string };
       const telegramId = payload.telegramId;
       const userId = payload.userId;
 
@@ -100,29 +100,20 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   next();
 }
 
-export function optionalAuth(req: Request, res: Response, next: NextFunction) {
+export async function optionalAuth(req: Request, _res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (header?.startsWith('Bearer ')) {
     const token = header.slice(7);
     try {
-      const payload = jwt.verify(token, JWT_SECRET) as { telegramId?: string; userId?: string };
-      const telegramId = payload.telegramId;
-      const userId = payload.userId;
-
-      if (telegramId || userId) {
-        prisma.user.findUnique({
-          where: telegramId ? { telegramId } : { id: userId },
-          select: { id: true },
-        }).then((user) => {
-          if (user) {
-            req.userId = user.id;
-          }
-        }).catch(() => {
-          // ignore
-        });
-      }
+      const payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as { telegramId?: string; userId?: string };
+      const user = payload.telegramId
+        ? await prisma.user.findUnique({ where: { telegramId: payload.telegramId }, select: { id: true } })
+        : payload.userId
+          ? await prisma.user.findUnique({ where: { id: payload.userId }, select: { id: true } })
+          : null;
+      if (user) req.userId = user.id;
     } catch {
-      // ignore
+      // Optional authentication must not turn a public endpoint into an authentication oracle.
     }
   }
   next();

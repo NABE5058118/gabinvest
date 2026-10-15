@@ -1,21 +1,23 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { createLogger } from '../utils/logger.js';
+import { withCache } from '../utils/cache.js';
 
 const router = Router();
 const logger = createLogger('cities');
 
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const cities = await prisma.object.findMany({
-      where: { city: { not: null } },
+    const cities = await withCache('cities:public:router', 300_000, () => prisma.object.findMany({
+      where: { city: { not: null }, moderation: { is: { status: 'approved' } } },
       select: { city: true },
       orderBy: { city: 'asc' },
       distinct: ['city'],
-    });
+    }));
 
     const filtered = cities.map((c) => c.city).filter((city): city is string => city !== null);
-    logger.info('Fetched cities', { count: filtered.length });
+    res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
+    logger.info('Fetched public cities', { count: filtered.length });
     res.json(filtered);
   } catch (error) {
     logger.error('Error fetching cities:', error);

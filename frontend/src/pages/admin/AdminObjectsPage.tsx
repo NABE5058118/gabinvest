@@ -35,8 +35,13 @@ export default function AdminObjectsPage() {
   const fetchItems = async () => {
     try {
       setLoading(true);
-      const { data } = await adminApi.get('/api/admin/objects');
-      setItems(data);
+      const all: ObjectItem[] = [];
+      for (let page = 1; page <= 10000; page += 1) {
+        const { data } = await adminApi.get('/api/admin/objects', { params: { page, limit: 50 } });
+        all.push(...data);
+        if (data.length < 50) break;
+      }
+      setItems(all);
     } catch {
       setError('Ошибка загрузки');
     } finally {

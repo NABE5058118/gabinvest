@@ -29,6 +29,7 @@ export default function LeadFormPage() {
   useEffect(() => {
     if (user) {
       const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm((prev) => ({
         ...prev,
         name: fullName || prev.name,
@@ -100,7 +101,7 @@ export default function LeadFormPage() {
     setSubmitError(null);
 
     try {
-      await api.post('/api/leads', {
+      const response = await api.post('/api/leads', {
         objectId: id,
         name: form.name,
         phone: form.phone,
@@ -108,6 +109,7 @@ export default function LeadFormPage() {
         consent: agreed,
         clientId: getLeadClientId(),
       });
+      if (response.data?.guestToken) localStorage.setItem('lead_client_id', response.data.guestToken);
       setSubmitted(true);
       setTimeout(() => navigate('/lead-success'), 800);
     } catch {

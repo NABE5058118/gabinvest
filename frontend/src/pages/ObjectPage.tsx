@@ -36,6 +36,7 @@ const ObjectPage = () => {
   const { favoriteIds, toggleFavorite } = useFavorites();
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedImageIndex(0);
   }, [id]);
 

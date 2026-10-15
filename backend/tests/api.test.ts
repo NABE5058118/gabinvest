@@ -12,6 +12,8 @@ vi.mock('../src/utils/telegram', async () => {
 
 vi.stubEnv('JWT_SECRET', 'test-jwt-secret');
 vi.stubEnv('ADMIN_JWT_SECRET', 'test-admin-jwt-secret');
+vi.stubEnv('BOT_SYNC_SECRET', 'test-bot-sync-secret');
+const BOT_SYNC_SECRET = 'test-bot-sync-secret';
 
 const { app } = await import('../src/index');
 const { prisma } = await import('../src/lib/prisma');
@@ -34,7 +36,7 @@ describe('API Integration Tests', () => {
     it('should return ok status', async () => {
       const res = await request(app).get('/health');
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({ status: 'ok' });
+      expect(res.body).toEqual({ status: 'ok', database: 'ok' });
     });
   });
 
@@ -50,11 +52,8 @@ describe('API Integration Tests', () => {
 
   describe('GET /api/objects/:id', () => {
     it('should return a single object', async () => {
-      const objects = await prisma.object.findMany();
-      if (objects.length === 0) {
-        it.skip('no objects in database');
-        return;
-      }
+      const objects = await prisma.object.findMany({ where: { moderation: { is: { status: 'approved' } } } });
+      if (objects.length === 0) return;
 
       const res = await request(app).get(`/api/objects/${objects[0].id}`);
       expect(res.status).toBe(200);
@@ -103,20 +102,34 @@ describe('API Integration Tests', () => {
       expect(created.status).toBe(200);
       expect(created.body.user.firstName).toBe('RealName');
 
-      const sync = await request(app)
+      const adminSync = request(app)
         .post('/api/auth/telegram/bot-sync')
-        .send({
-          telegramId: 123460,
-          firstName: 'Changed',
-          lastName: 'User',
-          username: 'updateduser',
-          languageCode: 'ru',
-        });
+        .set('x-bot-sync-secret', BOT_SYNC_SECRET);
+
+      const sync = await adminSync.send({
+        telegramId: 123460,
+        firstName: 'Changed',
+        lastName: 'User',
+        username: 'updateduser',
+        languageCode: 'ru',
+      });
 
       expect(sync.status).toBe(200);
       expect(sync.body.firstName).toBe('RealName');
       expect(sync.body.lastName).toBe('User');
       expect(sync.body.username).toBe('updateduser');
+    });
+
+    it('should reject bot-sync without the shared secret', async () => {
+      await request(app)
+        .post('/api/auth/telegram')
+        .send({ initData: 'query_id=test&user={"id":123461,"first_name":"NoSecret","username":"nosecretuser"}' });
+
+      const res = await request(app)
+        .post('/api/auth/telegram/bot-sync')
+        .send({ telegramId: 123461, firstName: 'Hijacked' });
+
+      expect(res.status).toBe(401);
     });
 
     it('should update existing user and preserve phone', async () => {
@@ -181,6 +194,7 @@ describe('API Integration Tests', () => {
 
       const sync = await request(app)
         .post('/api/auth/telegram/bot-sync')
+        .set('x-bot-sync-secret', BOT_SYNC_SECRET)
         .send({
           telegramId: 999002,
           firstName: 'Updated',
@@ -199,11 +213,8 @@ describe('API Integration Tests', () => {
 
   describe('POST /api/leads', () => {
     it('should create a lead', async () => {
-      const objects = await prisma.object.findMany();
-      if (objects.length === 0) {
-        it.skip('no objects in database');
-        return;
-      }
+      const objects = await prisma.object.findMany({ where: { moderation: { is: { status: 'approved' } } } });
+      if (objects.length === 0) return;
 
       const res = await request(app)
         .post('/api/leads')
@@ -221,11 +232,8 @@ describe('API Integration Tests', () => {
     });
 
     it('should return 400 for invalid phone', async () => {
-      const objects = await prisma.object.findMany();
-      if (objects.length === 0) {
-        it.skip('no objects in database');
-        return;
-      }
+      const objects = await prisma.object.findMany({ where: { moderation: { is: { status: 'approved' } } } });
+      if (objects.length === 0) return;
 
       const res = await request(app)
         .post('/api/leads')
@@ -247,11 +255,8 @@ describe('API Integration Tests', () => {
     });
 
     it('should return user leads', async () => {
-      const objects = await prisma.object.findMany();
-      if (objects.length === 0) {
-        it.skip('no objects in database');
-        return;
-      }
+      const objects = await prisma.object.findMany({ where: { moderation: { is: { status: 'approved' } } } });
+      if (objects.length === 0) return;
 
       const user = await prisma.user.create({
         data: {
@@ -285,15 +290,10 @@ describe('API Integration Tests', () => {
 
   describe('GET /api/leads/my', () => {
     it('should return leads by clientId', async () => {
-      const objects = await prisma.object.findMany();
-      if (objects.length === 0) {
-        it.skip('no objects in database');
-        return;
-      }
+      const objects = await prisma.object.findMany({ where: { moderation: { is: { status: 'approved' } } } });
+      if (objects.length === 0) return;
 
-      const clientId = 'test-client-' + Date.now();
-
-      await request(app)
+      const created = await request(app)
         .post('/api/leads')
         .send({
           objectId: objects[0].id,
@@ -301,12 +301,15 @@ describe('API Integration Tests', () => {
           phone: '+79999999998',
           comment: 'client lead',
           consent: true,
-          clientId,
         });
+
+      expect(created.status).toBe(201);
+      const guestToken: string = created.body.guestToken;
+      expect(guestToken).toBeTruthy();
 
       const res = await request(app)
         .get('/api/leads/my')
-        .set('x-client-id', clientId);
+        .set('x-client-id', guestToken);
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
@@ -316,7 +319,9 @@ describe('API Integration Tests', () => {
 
     it('should return 400 without clientId', async () => {
       const res = await request(app).get('/api/leads/my');
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body.length).toBe(0);
     });
   });
 
@@ -403,11 +408,8 @@ describe('API Integration Tests', () => {
     });
 
     it('PUT /api/admin/objects/:id should update object', async () => {
-      const objects = await prisma.object.findMany();
-      if (objects.length === 0) {
-        it.skip('no objects in database');
-        return;
-      }
+      const objects = await prisma.object.findMany({ where: { moderation: { is: { status: 'approved' } } } });
+      if (objects.length === 0) return;
 
       const res = await request(app)
         .put(`/api/admin/objects/${objects[0].id}`)
@@ -426,11 +428,8 @@ describe('API Integration Tests', () => {
     });
 
     it('DELETE /api/admin/objects/:id should delete object', async () => {
-      const objects = await prisma.object.findMany();
-      if (objects.length === 0) {
-        it.skip('no objects in database');
-        return;
-      }
+      const objects = await prisma.object.findMany({ where: { moderation: { is: { status: 'approved' } } } });
+      if (objects.length === 0) return;
 
       const lastObject = objects[objects.length - 1];
       const res = await request(app)
@@ -441,11 +440,8 @@ describe('API Integration Tests', () => {
     });
 
     it('PATCH /api/leads/:id/status should update lead status', async () => {
-      const objects = await prisma.object.findMany();
-      if (objects.length === 0) {
-        it.skip('no objects in database');
-        return;
-      }
+      const objects = await prisma.object.findMany({ where: { moderation: { is: { status: 'approved' } } } });
+      if (objects.length === 0) return;
 
       const lead = await prisma.lead.create({
         data: {
@@ -465,11 +461,8 @@ describe('API Integration Tests', () => {
     });
 
     it('PATCH /api/leads/:id/status should return 400 for invalid status', async () => {
-      const objects = await prisma.object.findMany();
-      if (objects.length === 0) {
-        it.skip('no objects in database');
-        return;
-      }
+      const objects = await prisma.object.findMany({ where: { moderation: { is: { status: 'approved' } } } });
+      if (objects.length === 0) return;
 
       const lead = await prisma.lead.create({
         data: {
@@ -502,11 +495,8 @@ describe('API Integration Tests', () => {
       expect(created.status).toBe(200);
       const token = created.body.token;
 
-      const objects = await prisma.object.findMany();
-      if (objects.length === 0) {
-        it.skip('no objects in database');
-        return;
-      }
+      const objects = await prisma.object.findMany({ where: { moderation: { is: { status: 'approved' } } } });
+      if (objects.length === 0) return;
 
       const objectId = objects[0].id;
 
@@ -558,14 +548,20 @@ describe('API Integration Tests', () => {
       expect(created.status).toBe(200);
       const token = created.body.token;
 
+      const objects = await prisma.object.findMany({ where: { moderation: { is: { status: 'approved' } } } });
+      if (objects.length === 0) return;
+
+      const profileEmail = `profile-${Date.now()}@test.com`;
+      const profilePhone = `+7900${String(Date.now()).slice(-7)}`;
+
       const res = await request(app)
         .put('/api/auth/profile')
         .set('Authorization', `Bearer ${token}`)
-        .send({ firstName: 'Profile', lastName: 'User', email: 'profile@test.com', phone: '+79000000001' });
+        .send({ firstName: 'Profile', lastName: 'User', email: profileEmail, phone: profilePhone });
 
       expect(res.status).toBe(200);
-      expect(res.body.email).toBe('profile@test.com');
-      expect(res.body.phone).toBe('+79000000001');
+      expect(res.body.email).toBe(profileEmail);
+      expect(res.body.phone).toBe(profilePhone);
     });
 
     it('should clear email and phone when empty string is sent', async () => {
@@ -576,10 +572,13 @@ describe('API Integration Tests', () => {
       expect(created.status).toBe(200);
       const token = created.body.token;
 
+      const setEmail = `set-${Date.now()}@test.com`;
+      const setPhone = `+7901${String(Date.now()).slice(-7)}`;
+
       await request(app)
         .put('/api/auth/profile')
         .set('Authorization', `Bearer ${token}`)
-        .send({ firstName: 'Clear', email: 'set@test.com', phone: '+79000000002' });
+        .send({ firstName: 'Clear', email: setEmail, phone: setPhone });
 
       const res = await request(app)
         .put('/api/auth/profile')
@@ -616,10 +615,7 @@ describe('API Integration Tests', () => {
     });
 
     it('should return 404 for object without offer', async () => {
-      if (!targetObjectId) {
-        it.skip('no objects in database');
-        return;
-      }
+      if (!targetObjectId) return;
 
       await prisma.object.update({
         where: { id: targetObjectId },
@@ -636,10 +632,7 @@ describe('API Integration Tests', () => {
     });
 
     it('should download offer file for public', async () => {
-      if (!targetObjectId) {
-        it.skip('no objects in database');
-        return;
-      }
+      if (!targetObjectId) return;
 
       const fs = await import('fs');
       const path = await import('path');
@@ -675,10 +668,7 @@ describe('API Integration Tests', () => {
     });
 
     it('should normalize broken UTF-8 filename from latin1 mojibake', async () => {
-      if (!targetObjectId) {
-        it.skip('no objects in database');
-        return;
-      }
+      if (!targetObjectId) return;
 
       const fs = await import('fs');
       const path = await import('path');

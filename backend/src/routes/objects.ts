@@ -4,6 +4,8 @@ import { createLogger } from '../utils/logger.js';
 import { normalizeOfferFileName } from '../utils/filename.js';
 import path from 'path';
 import fs from 'fs';
+import { z } from 'zod';
+import { withCache } from '../utils/cache.js';
 import { fileURLToPath } from 'url';
 
 const router = Router();
@@ -18,97 +20,96 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+const catalogQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).max(1_000_000).default(1),
+  limit: z.coerce.number().int().min(1).max(MAX_ITEMS_PER_PAGE).default(DEFAULT_ITEMS_PER_PAGE),
+  type: z.string().max(80).optional(),
+  minPrice: z.coerce.number().finite().int().min(0).max(2_147_483_647).optional(),
+  maxPrice: z.coerce.number().finite().int().min(0).max(2_147_483_647).optional(),
+  city: z.string().max(120).optional(),
+  anchorTenant: z.string().max(120).optional(),
+  minArea: z.coerce.number().finite().int().min(0).max(1_000_000).optional(),
+  maxArea: z.coerce.number().finite().int().min(0).max(1_000_000).optional(),
+  minYield: z.coerce.number().finite().min(0).max(100).optional(),
+  maxYield: z.coerce.number().finite().min(0).max(100).optional(),
+  leaseEndBefore: z.string().max(40).refine((value) => !Number.isNaN(Date.parse(value)), 'Invalid leaseEndBefore').optional(),
+  leaseEndAfter: z.string().max(40).refine((value) => !Number.isNaN(Date.parse(value)), 'Invalid leaseEndAfter').optional(),
+  sortBy: z.enum(['createdAt', 'price', 'area', 'yieldPercent', 'leaseEndDate']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+}).refine((q) => q.minPrice === undefined || q.maxPrice === undefined || q.minPrice <= q.maxPrice, {
+  message: 'minPrice must be less than or equal to maxPrice',
+}).refine((q) => q.minArea === undefined || q.maxArea === undefined || q.minArea <= q.maxArea, {
+  message: 'minArea must be less than or equal to maxArea',
+}).refine((q) => q.minYield === undefined || q.maxYield === undefined || q.minYield <= q.maxYield, {
+  message: 'minYield must be less than or equal to maxYield',
+});
+
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.min(MAX_ITEMS_PER_PAGE, Math.max(1, parseInt(req.query.limit as string) || DEFAULT_ITEMS_PER_PAGE));
-    const type = req.query.type as string | undefined;
-    const minPrice = req.query.minPrice ? parseInt(req.query.minPrice as string) : undefined;
-    const maxPrice = req.query.maxPrice ? parseInt(req.query.maxPrice as string) : undefined;
-    const city = req.query.city as string | undefined;
-    const anchorTenant = req.query.anchorTenant as string | undefined;
-
-    const minArea = req.query.minArea ? parseInt(req.query.minArea as string) : undefined;
-    const maxArea = req.query.maxArea ? parseInt(req.query.maxArea as string) : undefined;
-    const minYield = req.query.minYield ? parseFloat(req.query.minYield as string) : undefined;
-    const maxYield = req.query.maxYield ? parseFloat(req.query.maxYield as string) : undefined;
-
-    const leaseEndBefore = req.query.leaseEndBefore as string | undefined;
-    const leaseEndAfter = req.query.leaseEndAfter as string | undefined;
-
-    const sortBy = req.query.sortBy as string || 'createdAt';
-    const sortOrder = (req.query.sortOrder as string) === 'asc' ? 'asc' : 'desc';
-
-    const where: any = {};
-
-    if (type && type !== 'all') {
-      where.type = type;
+    const parsed = catalogQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.errors[0]?.message || 'Invalid catalog filters' });
     }
 
-    if (minPrice !== undefined || maxPrice !== undefined) {
+    const q = parsed.data;
+    const where: any = { moderation: { is: { status: 'approved' } } };
+    if (q.type && q.type !== 'all') where.type = q.type;
+    if (q.minPrice !== undefined || q.maxPrice !== undefined) {
       where.price = {};
-      if (minPrice !== undefined) where.price.gte = minPrice;
-      if (maxPrice !== undefined) where.price.lte = maxPrice;
+      if (q.minPrice !== undefined) where.price.gte = q.minPrice;
+      if (q.maxPrice !== undefined) where.price.lte = q.maxPrice;
     }
-
-    if (minArea !== undefined || maxArea !== undefined) {
+    if (q.minArea !== undefined || q.maxArea !== undefined) {
       where.area = {};
-      if (minArea !== undefined) where.area.gte = minArea;
-      if (maxArea !== undefined) where.area.lte = maxArea;
+      if (q.minArea !== undefined) where.area.gte = q.minArea;
+      if (q.maxArea !== undefined) where.area.lte = q.maxArea;
     }
-
-    if (minYield !== undefined || maxYield !== undefined) {
+    if (q.minYield !== undefined || q.maxYield !== undefined) {
       where.yieldPercent = {};
-      if (minYield !== undefined) where.yieldPercent.gte = minYield;
-      if (maxYield !== undefined) where.yieldPercent.lte = maxYield;
+      if (q.minYield !== undefined) where.yieldPercent.gte = q.minYield;
+      if (q.maxYield !== undefined) where.yieldPercent.lte = q.maxYield;
     }
-
-    if (city) {
-      where.city = city;
-    }
-
-    if (anchorTenant) {
+    if (q.city) where.city = q.city;
+    if (q.anchorTenant) {
       where.OR = [
-        { anchorTenantName: { contains: anchorTenant } },
-        { tenants: { some: { name: { contains: anchorTenant } } } },
+        { anchorTenantName: { contains: q.anchorTenant, mode: 'insensitive' } },
+        { tenants: { some: { name: { contains: q.anchorTenant, mode: 'insensitive' } } } },
       ];
     }
-
-    if (leaseEndBefore || leaseEndAfter) {
+    if (q.leaseEndBefore || q.leaseEndAfter) {
       where.leaseEndDate = {};
-      if (leaseEndBefore) where.leaseEndDate.lte = new Date(leaseEndBefore);
-      if (leaseEndAfter) where.leaseEndDate.gte = new Date(leaseEndAfter);
+      if (q.leaseEndBefore) where.leaseEndDate.lte = new Date(q.leaseEndBefore);
+      if (q.leaseEndAfter) where.leaseEndDate.gte = new Date(q.leaseEndAfter);
     }
 
-    const allowedSortFields = ['createdAt', 'price', 'area', 'yieldPercent', 'leaseEndDate'];
-    const orderBy: any = allowedSortFields.includes(sortBy)
-      ? { [sortBy]: sortOrder }
-      : { createdAt: 'desc' };
-
-    const [objects, total] = await Promise.all([
-      prisma.object.findMany({
-        where,
-        orderBy,
-        skip: (page - 1) * limit,
-        take: limit,
-        include: {
-          images: { orderBy: { sort: 'asc' } },
-          tenants: true,
-        },
-      }),
-      prisma.object.count({ where }),
-    ]);
-
-    const rotationTimestamp = new Date().toISOString();
-
-    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=30');
-    res.json({
-      objects,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
-      rotationTimestamp,
+    const cacheKey = `catalog:${JSON.stringify(q)}`;
+    const payload = await withCache(cacheKey, 30_000, async () => {
+      const [objects, total] = await Promise.all([
+        prisma.object.findMany({
+          where,
+          orderBy: { [q.sortBy]: q.sortOrder } as any,
+          skip: (q.page - 1) * q.limit,
+          take: q.limit,
+          include: {
+            images: { orderBy: { sort: 'asc' } },
+            tenants: true,
+            moderation: { select: { status: true } },
+          },
+        }),
+        prisma.object.count({ where }),
+      ]);
+      return {
+        objects,
+        total,
+        page: q.page,
+        limit: q.limit,
+        totalPages: Math.ceil(total / q.limit),
+        rotationTimestamp: new Date().toISOString(),
+      };
     });
+
+    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=30');
+    res.json(payload);
   } catch (error) {
     logger.error('Error fetching objects:', error);
     res.status(500).json({ error: 'Failed to fetch objects' });
@@ -117,12 +118,12 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.get('/cities', async (req: Request, res: Response) => {
   try {
-    const cities = await prisma.object.findMany({
-      where: { city: { not: null } },
+    const cities = await withCache('cities:public', 300_000, () => prisma.object.findMany({
+      where: { city: { not: null }, moderation: { is: { status: 'approved' } } },
       select: { city: true },
       orderBy: { city: 'asc' },
       distinct: ['city'],
-    });
+    }));
 
     res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
     res.json(cities.map((c) => c.city).filter((city): city is string => city !== null));
@@ -134,12 +135,12 @@ router.get('/cities', async (req: Request, res: Response) => {
 
 router.get('/anchor-tenants', async (req: Request, res: Response) => {
   try {
-    const tenants = await prisma.tenant.findMany({
-      where: { isAnchor: true },
+    const tenants = await withCache('anchor-tenants:public', 300_000, () => prisma.tenant.findMany({
+      where: { isAnchor: true, object: { moderation: { is: { status: 'approved' } } } },
       select: { name: true },
       orderBy: { name: 'asc' },
       distinct: ['name'],
-    });
+    }));
 
     res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
     res.json(tenants.map((t) => t.name));
@@ -151,8 +152,8 @@ router.get('/anchor-tenants', async (req: Request, res: Response) => {
 
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const object = await prisma.object.findUnique({
-      where: { id: String(req.params.id) },
+    const object = await prisma.object.findFirst({
+      where: { id: String(req.params.id), moderation: { is: { status: 'approved' } } },
       include: {
         images: { orderBy: { sort: 'asc' } },
         tenants: true,
@@ -160,8 +161,8 @@ router.get('/:id', async (req: Request, res: Response) => {
         legalConstraints: true,
         engineeringSpec: true,
         vatRate: true,
-        moderation: true,
-        placement: true,
+        moderation: { select: { status: true } },
+        placement: { select: { id: true, type: true, isExclusive: true, createdAt: true, updatedAt: true } },
         leases: { include: { tenant: true } },
         commercialOffer: true,
       },

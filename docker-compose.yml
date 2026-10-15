@@ -61,6 +61,9 @@ services:
     environment:
       BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
       WEB_APP_URL: "${WEB_APP_URL:-http://localhost:5173}"
+      BACKEND_URL: "${BACKEND_URL:-http://localhost:3001}"
+      ADMIN_TELEGRAM_IDS: "${ADMIN_TELEGRAM_IDS:-}"
+      BOT_SYNC_SECRET: "${BOT_SYNC_SECRET:?Set BOT_SYNC_SECRET in .env}"
     volumes:
       - ./bot:/app
     command: python bot.py

@@ -28,8 +28,9 @@ export default function CatalogPage() {
     leaseEndBefore: '',
     leaseEndAfter: '',
   });
+  const [appliedFilters, setAppliedFilters] = useState(filters);
   const [lastRotation, setLastRotation] = useState<string | null>(null);
-  const { objects, loading, error, refetch } = useObjects();
+  const { objects, loading, error, refetch } = useObjects(appliedFilters);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -73,66 +74,20 @@ export default function CatalogPage() {
     );
   }
 
-  const filteredObjects = objects.filter((obj) => {
-    if (filters.type !== 'all' && obj.type !== filters.type) return false;
-    if (filters.city && obj.city !== filters.city) return false;
-    if (filters.anchorTenant) {
-      const tenantMatch = obj.tenants?.some((t) =>
-        t.name.toLowerCase().includes(filters.anchorTenant.toLowerCase())
-      );
-      if (!tenantMatch) return false;
-    }
-    if (filters.minPrice && obj.price < Number(filters.minPrice)) return false;
-    if (filters.maxPrice && obj.price > Number(filters.maxPrice)) return false;
-    if (filters.minArea && obj.area < Number(filters.minArea)) return false;
-    if (filters.maxArea && obj.area > Number(filters.maxArea)) return false;
-    if (filters.minYield && obj.yieldPercent < Number(filters.minYield)) return false;
-    if (filters.maxYield && obj.yieldPercent > Number(filters.maxYield)) return false;
-    if (filters.leaseEndBefore && obj.leaseEndDate && new Date(obj.leaseEndDate) > new Date(filters.leaseEndBefore)) return false;
-    if (filters.leaseEndAfter && obj.leaseEndDate && new Date(obj.leaseEndDate) < new Date(filters.leaseEndAfter)) return false;
-    return true;
-  });
-
-  const sortedObjects = [...filteredObjects].sort((a, b) => {
-    const field = filters.sortBy;
-    const mult = filters.sortOrder === 'asc' ? 1 : -1;
-
-    if (field === 'createdAt') {
-      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return (aTime - bTime) * mult;
-    }
-
-    if (field === 'leaseEndDate') {
-      const aTime = a.leaseEndDate ? new Date(a.leaseEndDate).getTime() : (mult === 1 ? Infinity : -Infinity);
-      const bTime = b.leaseEndDate ? new Date(b.leaseEndDate).getTime() : (mult === 1 ? Infinity : -Infinity);
-      return (aTime - bTime) * mult;
-    }
-
-    const aNum = Number(a[field as 'price' | 'area' | 'yieldPercent']) || 0;
-    const bNum = Number(b[field as 'price' | 'area' | 'yieldPercent']) || 0;
-    return (aNum - bNum) * mult;
-  });
+  const sortedObjects = objects;
 
   const resetFilters = () => {
-    setFilters({
-      type: 'all',
-      minPrice: '',
-      maxPrice: '',
-      minArea: '',
-      maxArea: '',
-      city: '',
-      anchorTenant: '',
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-      minYield: '',
-      maxYield: '',
-      leaseEndBefore: '',
-      leaseEndAfter: '',
-    });
+    const reset = {
+      type: 'all', minPrice: '', maxPrice: '', minArea: '', maxArea: '', city: '', anchorTenant: '',
+      sortBy: 'createdAt' as SortOption, sortOrder: 'desc' as 'asc' | 'desc', minYield: '', maxYield: '',
+      leaseEndBefore: '', leaseEndAfter: '',
+    };
+    setFilters(reset);
+    setAppliedFilters(reset);
   };
 
   const applyFilters = () => {
+    setAppliedFilters(filters);
     setShowFilters(false);
   };
 

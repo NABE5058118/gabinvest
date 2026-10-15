@@ -14,14 +14,17 @@ BOT_TOKEN = os.getenv('BOT_TOKEN')
 WEB_APP_URL = os.getenv('WEB_APP_URL', 'https://gabinvest.cloud-ip.cc')
 BACKEND_URL = os.getenv('BACKEND_URL', 'https://gabinvest.cloud-ip.cc')
 ADMIN_TELEGRAM_IDS = os.getenv('ADMIN_TELEGRAM_IDS', '')
+BOT_SYNC_SECRET = os.getenv('BOT_SYNC_SECRET', '')
 
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN is not set")
+if not BOT_SYNC_SECRET:
+    raise RuntimeError("BOT_SYNC_SECRET is not set")
 
 dp = Dispatcher()
 router = Router()
 dp.include_router(router)
-backend = BackendClient(BACKEND_URL)
+backend = BackendClient(BACKEND_URL, bot_sync_secret=BOT_SYNC_SECRET or None)
 
 DEAL_STAGES = ['offer', 'counter_offer', 'deposit', 'verification', 'contract', 'registration', 'closed']
 
@@ -38,7 +41,17 @@ def parse_deep_link(text: str | None) -> dict:
         return {'source': 'utm', 'campaign': payload, 'referrer': None}
     return {'source': 'direct', 'campaign': payload, 'referrer': None}
 
+_first_touch_session: ClientSession | None = None
+
+def get_first_touch_session() -> ClientSession:
+    """Lazily create one reusable session for attribution calls."""
+    global _first_touch_session
+    if _first_touch_session is None or _first_touch_session.closed:
+        _first_touch_session = ClientSession()
+    return _first_touch_session
+
 async def record_first_touch(message: types.Message):
+    session = get_first_touch_session()
     tg_user = message.from_user
     touch = parse_deep_link(message.text)
     data = {
@@ -51,10 +64,9 @@ async def record_first_touch(message: types.Message):
         'referrer': touch['referrer'],
     }
     try:
-        async with ClientSession() as session:
-            async with session.post(f"{BACKEND_URL.rstrip('/')}/api/attribution/first-touch", json=data, timeout=5) as resp:
-                if resp.status == 200:
-                    logging.info("First touch recorded for %s", tg_user.id)
+        async with session.post(f"{BACKEND_URL.rstrip('/')}/api/attribution/first-touch", json=data, timeout=5) as resp:
+            if resp.status == 200:
+                logging.info("First touch recorded for %s", tg_user.id)
     except Exception as exc:
         logging.warning("First touch failed: %s", exc)
 
@@ -95,23 +107,34 @@ async def handle_message(message: types.Message):
     await message.answer('Сообщение отправлено. Сделки проходят через маркетплейс.')
 
 async def run_bot():
-    retry_delay = 5
-    max_retry = 60
-    while True:
-        try:
-            bot = Bot(token=BOT_TOKEN)
-            await bot.delete_webhook(drop_pending_updates=True)
-            logging.info("Bot polling started")
-            await dp.start_polling(bot)
-        except asyncio.CancelledError:
-            raise
-        except Exception as e:
-            logging.exception("Polling failed: %s", e)
-            await asyncio.sleep(retry_delay)
-            retry_delay = min(retry_delay * 2, max_retry)
-        finally:
-            if 'bot' in locals():
-                await bot.session.close()
+    bot = Bot(token=BOT_TOKEN)
+    try:
+        await bot.delete_webhook(drop_pending_updates=False)
+        logging.info("Bot polling started")
+        await dp.start_polling(bot)
+    except asyncio.CancelledError:
+        raise
+    except Exception as e:
+        logging.exception("Polling failed: %s", e)
+        retry_delay = 5
+        max_retry = 60
+        while True:
+            try:
+                await bot.delete_webhook(drop_pending_updates=False)
+                logging.info("Bot polling resumed")
+                await dp.start_polling(bot)
+                return
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                logging.exception("Polling retry failed: %s", exc)
+                await asyncio.sleep(retry_delay)
+                retry_delay = min(retry_delay * 2, max_retry)
+    finally:
+        await backend.close()
+        if _first_touch_session is not None and not _first_touch_session.closed:
+            await _first_touch_session.close()
+        await bot.session.close()
 
 if __name__ == '__main__':
     try:

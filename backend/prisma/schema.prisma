@@ -109,6 +109,9 @@ model Object {
   @@index([yieldPercent])
   @@index([leaseEndDate])
   @@index([createdAt])
+  @@index([city, type, price])
+  @@index([city, price])
+  @@index([type, yieldPercent])
   images          ObjectImage[]
   offerFileUrl    String?
   offerFileName   String?
@@ -152,6 +155,7 @@ model Tenant {
   updatedAt DateTime @updatedAt
 
   @@index([objectId])
+  @@index([isAnchor, name])
 }
 
 model Lease {
@@ -276,6 +280,8 @@ model Lead {
   @@index([objectId])
   @@index([status])
   @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([clientId, createdAt])
 }
 
 model User {
@@ -285,8 +291,8 @@ model User {
   telegramLang     String?
   telegramPremium  Boolean?   @default(false)
   telegramAllowsPm Boolean?   @default(false)
-  phone            String?
-  email            String?
+  phone            String?   @unique
+  email            String?   @unique
   passwordHash     String?
   role             String?    @default("user")
   @@index([role])
@@ -316,6 +322,7 @@ model Favorite {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, objectId])
+  @@index([userId, createdAt])
 }
 
 model Consent {
@@ -357,7 +364,7 @@ model Payment {
 
 model Attribution {
   id                  String         @id @default(cuid())
-  userId              String         @unique
+  userId              String?        @unique
   telegramId          String?        @unique
   phone               String?        @unique
   email               String?

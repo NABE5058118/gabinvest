@@ -5,7 +5,7 @@ WORKDIR /app
 COPY pyproject.toml .
 RUN pip install --no-cache-dir aiogram aiohttp
 
-COPY bot.py .
+COPY *.py .
 
 RUN useradd -m -u 1001 appuser
 USER appuser
