@@ -1,14 +1,12 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { LayoutGrid, Heart, FileText, User, LogOut } from 'lucide-react';
 import { useAuth } from '@context/AuthContext';
-import { isTelegramWebApp } from '@utils/telegram';
 import styles from '@styles/Layout.module.css';
 
 export default function Layout() {
   const { user } = useAuth();
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
-  const web = !isTelegramWebApp();
 
   const handleAdminLogout = () => {
     localStorage.removeItem('adminToken');
@@ -23,39 +21,72 @@ export default function Layout() {
       <div className={styles.content}>
         <Outlet />
       </div>
+
       <nav className={styles.nav}>
         {isAdminPage ? (
           <>
-            <NavLink to="/admin/leads" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
+            <NavLink
+              to="/admin/leads"
+              className={({ isActive }) =>
+                `${styles.navItem} ${isActive ? styles.active : ''}`
+              }
+            >
               <FileText size={24} strokeWidth={2} />
               <span>Заявки</span>
             </NavLink>
-            <button className={styles.navItem} onClick={handleAdminLogout}>
+
+            <button
+              type="button"
+              className={styles.navItem}
+              onClick={handleAdminLogout}
+            >
               <LogOut size={24} strokeWidth={2} />
               <span>Выход</span>
             </button>
           </>
         ) : (
           <>
-            <NavLink to="/" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
+            <NavLink
+              to="/"
+              className={({ isActive }) =>
+                `${styles.navItem} ${isActive ? styles.active : ''}`
+              }
+            >
               <LayoutGrid size={24} strokeWidth={2} />
               <span>Каталог</span>
             </NavLink>
-            <NavLink to="/favorites" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
+
+            <NavLink
+              to="/favorites"
+              className={({ isActive }) =>
+                `${styles.navItem} ${isActive ? styles.active : ''}`
+              }
+            >
               <Heart size={24} strokeWidth={2} />
               <span>Избранное</span>
             </NavLink>
+
             {user ? (
-              <NavLink to="/profile" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
+              <NavLink
+                to="/profile"
+                className={({ isActive }) =>
+                  `${styles.navItem} ${isActive ? styles.active : ''}`
+                }
+              >
                 <User size={24} strokeWidth={2} />
                 <span>Профиль</span>
               </NavLink>
-            ) : web ? (
-              <NavLink to="/login" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}>
+            ) : (
+              <NavLink
+                to="/login"
+                className={({ isActive }) =>
+                  `${styles.navItem} ${isActive ? styles.active : ''}`
+                }
+              >
                 <User size={24} strokeWidth={2} />
                 <span>Вход</span>
               </NavLink>
-            ) : null}
+            )}
           </>
         )}
       </nav>
