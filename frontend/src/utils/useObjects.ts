@@ -85,7 +85,7 @@ interface ObjectsResponse {
 }
 
 export type ObjectQueryFilters = {
-  type?: string;
+  types?: string[];
   minPrice?: string;
   maxPrice?: string;
   minArea?: string;
@@ -115,9 +115,14 @@ export function useObjects(filters: ObjectQueryFilters = {}) {
       const queryFilters = JSON.parse(filtersKey) as ObjectQueryFilters;
       const params = new URLSearchParams({ page: '1', limit: String(PAGE_SIZE) });
       for (const [key, value] of Object.entries(queryFilters)) {
-        if (value !== undefined && value !== null && value !== '' && !(key === 'type' && value === 'all')) {
-          params.set(key, String(value));
+        if (value === undefined || value === null || value === '') continue;
+        if (key === 'types') {
+          const types = value as string[];
+          if (types.length === 0) continue;
+          types.forEach((t) => params.append('types', t));
+          continue;
         }
+        params.set(key, String(value));
       }
 
       const first = await api.get<ObjectsResponse>(`/api/objects?${params.toString()}`);

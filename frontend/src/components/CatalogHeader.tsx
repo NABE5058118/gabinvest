@@ -10,7 +10,7 @@ type CatalogHeaderProps = {
 
 export default function CatalogHeader({ styles, refetch, setShowFilters, lastRotation, loading }: CatalogHeaderProps) {
   return (
-    <header className={styles.header}>
+    <header className={'header'}>
       <div>
         <img className={styles.title} src="/logo.svg" alt="GAB Invest" />
         {lastRotation && (

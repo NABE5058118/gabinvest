@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, ChevronDown, Download } from 'lucide-react';
+import { MapPin, ChevronDown, Download } from 'lucide-react';
 import { ObjectType } from '@utils/types';
+import PageHeader from '@components/PageHeader';
 import { api } from '@utils/api';
 import { normalizeOfferFileName } from '@utils/filename';
 import styles from '@styles/OfferPage.module.css';
@@ -72,12 +73,12 @@ export default function OfferPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(`/objects/${id}`)} aria-label="Назад">
-          <ArrowLeft size={24} strokeWidth={2} />
-        </button>
-        <h1 className={styles.headerTitle}>Коммерческое предложение</h1>
-      </header>
+      <PageHeader
+        title="Коммерческое предложение"
+        titleClassName={styles.headerTitle}
+        onBack={() => navigate(`/objects/${id}`)}
+        backBtnClassName={styles.backBtn}
+      />
 
       <div className={styles.content}>
         <div className={styles.objectHeader}>

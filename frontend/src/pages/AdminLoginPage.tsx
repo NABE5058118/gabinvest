@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
 import { adminApi } from '@utils/adminApi';
+import PageHeader from '@components/PageHeader';
 import styles from '@styles/Auth.module.css';
 
 export default function AdminLoginPage() {
@@ -30,12 +30,12 @@ export default function AdminLoginPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate('/')} aria-label="Назад">
-          <ArrowLeft size={24} strokeWidth={2} />
-        </button>
-        <h1 className={styles.title}>Вход в админ панель</h1>
-      </header>
+      <PageHeader
+        title="Вход в админ панель"
+        titleClassName={styles.title}
+        onBack={() => navigate('/')}
+        backBtnClassName={styles.backBtn}
+      />
 
       <form className={styles.form} onSubmit={handleSubmit}>
         {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}

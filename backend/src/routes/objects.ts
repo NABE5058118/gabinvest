@@ -23,7 +23,10 @@ if (!fs.existsSync(uploadsDir)) {
 const catalogQuerySchema = z.object({
   page: z.coerce.number().int().min(1).max(1_000_000).default(1),
   limit: z.coerce.number().int().min(1).max(MAX_ITEMS_PER_PAGE).default(DEFAULT_ITEMS_PER_PAGE),
-  type: z.string().max(80).optional(),
+  types: z.preprocess(
+    (v) => (Array.isArray(v) ? v : v === undefined ? undefined : [v]),
+    z.array(z.string().max(80)).optional(),
+  ),
   minPrice: z.coerce.number().finite().int().min(0).max(2_147_483_647).optional(),
   maxPrice: z.coerce.number().finite().int().min(0).max(2_147_483_647).optional(),
   city: z.string().max(120).optional(),
@@ -53,7 +56,9 @@ router.get('/', async (req: Request, res: Response) => {
 
     const q = parsed.data;
     const where: any = { moderation: { is: { status: 'approved' } } };
-    if (q.type && q.type !== 'all') where.type = q.type;
+    if (q.types && q.types.length > 0) {
+      where.type = { in: q.types };
+    }
     if (q.minPrice !== undefined || q.maxPrice !== undefined) {
       where.price = {};
       if (q.minPrice !== undefined) where.price.gte = q.minPrice;

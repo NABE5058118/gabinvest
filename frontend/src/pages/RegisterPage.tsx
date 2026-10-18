@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
 import { api } from '@utils/api';
+import PageHeader from '@components/PageHeader';
 import { useAuth } from '@context/AuthContext';
 import { formatPhone } from '@utils/formatPhone';
 import styles from '@styles/Auth.module.css';
@@ -37,12 +37,12 @@ export default function RegisterPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Назад">
-          <ArrowLeft size={24} strokeWidth={2} />
-        </button>
-        <h1 className={styles.title}>Регистрация</h1>
-      </header>
+      <PageHeader
+        title="Регистрация"
+        titleClassName={styles.title}
+        onBack={() => navigate(-1)}
+        backBtnClassName={styles.backBtn}
+      />
 
       <div className={styles.form}>
         {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}

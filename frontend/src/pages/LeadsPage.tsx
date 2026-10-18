@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { adminApi } from '@utils/adminApi';
+import PageHeader from '@components/PageHeader';
 import { Lead } from '@utils/types';
 import styles from '@styles/LeadsPage.module.css';
 
@@ -100,11 +101,12 @@ export default function LeadsPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Назад">
-          <ArrowLeft size={24} strokeWidth={2} />
-        </button>
-        <h1 className={styles.title}>Заявки</h1>
+      <PageHeader
+        title="Заявки"
+        titleClassName={styles.title}
+        onBack={() => navigate(-1)}
+        backBtnClassName={styles.backBtn}
+      >
         <select
           className={styles.sortSelect}
           value={sort}
@@ -114,7 +116,7 @@ export default function LeadsPage() {
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
-      </header>
+      </PageHeader>
 
       <div className={styles.content}>
         {loading && <div className={styles.empty}>Загрузка...</div>}

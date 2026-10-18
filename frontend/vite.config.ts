@@ -7,6 +7,10 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    proxy: {
+      '/api': 'http://backend:3001',
+      '/uploads': 'http://backend:3001',
+    },
   },
   resolve: {
     alias: {

@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect, memo, useRef, useMemo, useCallback } from 'react';
-import { ArrowLeft, Heart, MapPin, LayoutGrid, Users, Calendar, FileText, Wrench, Percent, TrendingUp, Landmark, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, MapPin, LayoutGrid, Users, Calendar, FileText, Wrench, Percent, TrendingUp, Landmark, ChevronLeft, ChevronRight } from 'lucide-react';
+import PageHeader from '@components/PageHeader';
 import { useFavorites } from '@context/FavoritesContext';
 import { ObjectType } from '@utils/types';
 import { api } from '@utils/api';
@@ -124,10 +125,10 @@ const ObjectPage = () => {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Назад">
-          <ArrowLeft size={24} strokeWidth={2} />
-        </button>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        backBtnClassName={styles.backBtn}
+      >
         <button
           className={styles.favoriteBtn}
           onClick={() => toggleFavorite(object.id)}
@@ -135,7 +136,7 @@ const ObjectPage = () => {
         >
           <Heart size={24} strokeWidth={2} fill={isFav ? '#ff0000' : 'none'} />
         </button>
-      </header>
+      </PageHeader>
 
       <div
         className={styles.sliderContainer}

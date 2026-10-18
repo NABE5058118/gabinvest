@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import PageHeader from '@components/PageHeader';
 import { useAuth } from '@context/AuthContext';
 import { api } from '@utils/api';
 import { formatPhone } from '@utils/formatPhone';
@@ -61,12 +61,12 @@ export default function ProfileEditPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Назад">
-          <ArrowLeft size={24} strokeWidth={2} />
-        </button>
-        <h1 className={styles.title}>Редактировать профиль</h1>
-      </header>
+      <PageHeader
+        title="Редактировать профиль"
+        titleClassName={styles.title}
+        onBack={() => navigate(-1)}
+        backBtnClassName={styles.backBtn}
+      />
 
       <div className={styles.content}>
         {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}

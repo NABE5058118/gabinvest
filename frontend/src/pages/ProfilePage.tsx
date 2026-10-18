@@ -1,4 +1,4 @@
-import { User, ChevronRight, Settings, LogOut, FileText } from 'lucide-react';
+import PageHeader from '@components/PageHeader';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@context/AuthContext';
 import styles from '@styles/ProfilePage.module.css';
@@ -17,9 +17,7 @@ export default function ProfilePage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Профиль</h1>
-      </header>
+      <PageHeader title="Профиль" titleClassName={styles.title} />
 
       <div className={styles.content}>
         <div className={styles.profileCard}>

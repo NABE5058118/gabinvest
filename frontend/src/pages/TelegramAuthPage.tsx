@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Smartphone, CheckCircle } from 'lucide-react';
+import { Smartphone, CheckCircle } from 'lucide-react';
 import { api } from '@utils/api';
+import PageHeader from '@components/PageHeader';
 import { useAuth } from '@context/AuthContext';
 import { formatPhone } from '@utils/formatPhone';
 import { isTelegramWebApp } from '@utils/telegram';
@@ -65,12 +66,12 @@ export default function TelegramAuthPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Назад">
-          <ArrowLeft size={24} strokeWidth={2} />
-        </button>
-        <h1 className={styles.title}>Телефон</h1>
-      </header>
+      <PageHeader
+        title="Телефон"
+        titleClassName={styles.title}
+        onBack={() => navigate(-1)}
+        backBtnClassName={styles.backBtn}
+      />
 
       <form className={styles.form} onSubmit={handleSubmit}>
         {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}

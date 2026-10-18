@@ -6,21 +6,6 @@
   max-width: 1500px;
 }
 
-.header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background: #fff;
-  border-bottom: 1px solid #e5e5e5;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 12px;
-  z-index: 100;
-}
-
 .backBtn {
   padding: 4px;
   color: #000;

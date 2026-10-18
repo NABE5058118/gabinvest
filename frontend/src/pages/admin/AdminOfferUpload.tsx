@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Upload } from 'lucide-react';
+import { Upload } from 'lucide-react';
+import PageHeader from '@components/PageHeader';
 import { adminApi } from '@utils/adminApi';
 import { normalizeOfferFileName } from '@utils/filename';
 import styles from '@styles/AdminOfferUpload.module.css';
@@ -53,16 +54,16 @@ export default function AdminOfferUpload() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate('/admin')} aria-label="Назад">
-          <ArrowLeft size={24} strokeWidth={2} />
-        </button>
-        <h1 className={styles.title}>Коммерческое предложение</h1>
-      </header>
+      <PageHeader
+        title="Коммерческое предложение"
+        titleClassName={styles.title}
+        onBack={() => navigate('/admin')}
+        backBtnClassName={styles.backBtn}
+      />
 
       <div className={styles.form}>
         {object && (
-          <div style={{ marginBottom: 16 }}>
+          <div>
             <strong>{object.title}</strong>
             {object.offerFileName && (
               <div className={styles.currentFile}>
@@ -72,7 +73,7 @@ export default function AdminOfferUpload() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form className={styles.dropform} onSubmit={handleSubmit}>
           <div className={styles.field}>
             <label className={styles.label} htmlFor="offer-file">Файл PDF или PPTX</label>
             <label className={styles.dropzone}>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
 import { ObjectType } from '@utils/types';
+import PageHeader from '@components/PageHeader';
 import { api } from '@utils/api';
 import { getLeadClientId } from '@utils/types';
 import { useAuth } from '@context/AuthContext';
@@ -119,15 +119,14 @@ export default function LeadFormPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Назад">
-          <ArrowLeft size={24} strokeWidth={2} />
-        </button>
-        <div>
-          <h1 className={styles.headerTitle}>Оставить заявку</h1>
-          {object && <div className={styles.objectTitle}>{object.title}</div>}
-        </div>
-      </header>
+      <PageHeader
+        title="Оставить заявку"
+        titleClassName={styles.headerTitle}
+        onBack={() => navigate(-1)}
+        backBtnClassName={styles.backBtn}
+      >
+        {object && <div className={styles.objectTitle}>{object.title}</div>}
+      </PageHeader>
 
       <form className={styles.form} onSubmit={handleSubmit}>
         <div className={styles.field}>

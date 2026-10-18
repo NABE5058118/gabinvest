@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Heart, MapPin, LayoutGrid } from 'lucide-react';
+import PageHeader from '@components/PageHeader';
 import { useFavorites } from '@context/FavoritesContext';
 import { useObjects } from '@utils/useObjects';
 import { ObjectType } from '@utils/types';
@@ -27,9 +28,7 @@ export default function FavoritesPage() {
   if (loading) {
     return (
       <div className={styles.page}>
-        <header className={styles.header}>
-          <h1 className={styles.title}>Избранное</h1>
-        </header>
+      <PageHeader title="Избранное" titleClassName={styles.title} />
         <div className={styles.list}>
           {Array.from({ length: 6 }).map((_, idx) => (
             <div key={idx} className={styles.skeletonCard}>
@@ -56,9 +55,7 @@ export default function FavoritesPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Избранное</h1>
-      </header>
+      <PageHeader title="Избранное" titleClassName={styles.title} />
 
       <div className={styles.content}>
         {favorites.length === 0 ? (

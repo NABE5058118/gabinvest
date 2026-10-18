@@ -14,7 +14,7 @@ export default function CatalogPage() {
   const { favoriteIds, toggleFavorite } = useFavorites();
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>({
-    type: 'all',
+    types: [],
     minPrice: '',
     maxPrice: '',
     minArea: '',
@@ -28,9 +28,8 @@ export default function CatalogPage() {
     leaseEndBefore: '',
     leaseEndAfter: '',
   });
-  const [appliedFilters, setAppliedFilters] = useState(filters);
   const [lastRotation, setLastRotation] = useState<string | null>(null);
-  const { objects, loading, error, refetch } = useObjects(appliedFilters);
+  const { objects, loading, error, refetch } = useObjects(filters);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -78,17 +77,11 @@ export default function CatalogPage() {
 
   const resetFilters = () => {
     const reset = {
-      type: 'all', minPrice: '', maxPrice: '', minArea: '', maxArea: '', city: '', anchorTenant: '',
+      types: [], minPrice: '', maxPrice: '', minArea: '', maxArea: '', city: '', anchorTenant: '',
       sortBy: 'createdAt' as SortOption, sortOrder: 'desc' as 'asc' | 'desc', minYield: '', maxYield: '',
       leaseEndBefore: '', leaseEndAfter: '',
     };
     setFilters(reset);
-    setAppliedFilters(reset);
-  };
-
-  const applyFilters = () => {
-    setAppliedFilters(filters);
-    setShowFilters(false);
   };
 
   const typeLabels: Record<string, string> = {
@@ -104,14 +97,6 @@ export default function CatalogPage() {
     'below_market': { label: 'Ниже рынка', icon: TrendingDown },
   };
 
-  const sortLabels: Record<SortOption, string> = {
-    createdAt: 'Новые',
-    price: 'Цена',
-    area: 'Площадь',
-    yieldPercent: 'Доходность',
-    leaseEndDate: 'Срок аренды',
-  };
-
   return (
     <main className={styles.page}>
       <CatalogHeader
@@ -122,15 +107,13 @@ export default function CatalogPage() {
         loading={loading}
       />
 
-      <CatalogFilters
+<CatalogFilters
         styles={styles}
         filters={filters}
         setFilters={setFilters}
         showFilters={showFilters}
         setShowFilters={setShowFilters}
         resetFilters={resetFilters}
-        applyFilters={applyFilters}
-        sortLabels={sortLabels}
       />
 
       <div className={styles.list}>

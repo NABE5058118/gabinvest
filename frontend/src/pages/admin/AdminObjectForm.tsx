@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import PageHeader from '@components/PageHeader';
 import { adminApi } from '@utils/adminApi';
 import { CITIES } from '../../data/cities';
 import styles from '@styles/AdminObjectForm.module.css';
@@ -240,14 +240,12 @@ export default function AdminObjectForm() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate('/admin')} aria-label="Назад">
-          <ArrowLeft size={24} strokeWidth={2} />
-        </button>
-        <h1 className={styles.title}>
-          {id && id !== 'new' ? 'Редактировать объект' : 'Новый объект'}
-        </h1>
-      </header>
+      <PageHeader
+        title={id && id !== 'new' ? 'Редактировать объект' : 'Новый объект'}
+        titleClassName={styles.title}
+        onBack={() => navigate('/admin')}
+        backBtnClassName={styles.backBtn}
+      />
 
       <form className={styles.form} onSubmit={handleSubmit}>
         {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}
