@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect, memo, useRef, useMemo, useCallback } from 'react';
-import { Heart, MapPin, LayoutGrid, Users, Calendar, FileText, Wrench, Percent, TrendingUp, Landmark, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, MapPin, LayoutGrid, Users, Calendar, FileText, Wrench, Percent, TrendingUp, Landmark } from 'lucide-react';
 import { useFavorites } from '@context/FavoritesContext';
 import { ObjectType } from '@utils/types';
 import { api } from '@utils/api';
@@ -159,27 +159,21 @@ const ObjectPage = () => {
         </div>
 
         {allImages.length > 1 && (
-          <>
-            <button
-              type="button"
-              className={`${styles.sliderArrow} ${styles.arrowLeft}`}
-              onClick={prev}
-              aria-label="Предыдущее фото"
-            >
-              <ChevronLeft size={28} strokeWidth={2} />
-            </button>
-            <button
-              type="button"
-              className={`${styles.sliderArrow} ${styles.arrowRight}`}
-              onClick={next}
-              aria-label="Следующее фото"
-            >
-              <ChevronRight size={28} strokeWidth={2} />
-            </button>
-            <div className={styles.sliderCounter}>
-              {selectedImageIndex + 1} / {allImages.length}
-            </div>
-          </>
+          <div className={styles.sliderDots}>
+            {allImages.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                className={`${styles.dot} ${i === selectedImageIndex ? styles.dotActive : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedImageIndex(i);
+                }}
+                aria-label={`Фото ${i + 1} из ${allImages.length}`}
+                aria-pressed={i === selectedImageIndex}
+              />
+            ))}
+          </div>
         )}
       </div>
 
@@ -340,7 +334,7 @@ const ObjectPage = () => {
 
         {object.placement && (
           <div className={styles.section}>
-            <h3><Landmark size={16} strokeWidth={2} /> Размещение</h3>
+            <h3>Размещение</h3>
             <div className={styles.placementInfo}>
               <span className={styles.placementType}>
                 {object.placement.type === 'exclusive' ? 'Эксклюзив' : object.placement.type === 'paid' ? 'Платное' : 'Стандартное'}

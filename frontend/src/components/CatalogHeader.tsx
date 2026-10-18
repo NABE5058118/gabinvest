@@ -13,16 +13,16 @@ export default function CatalogHeader({
   styles,
   refetch,
   setShowFilters,
-  lastRotation,
+  // lastRotation,
   loading,
 }: CatalogHeaderProps) {
   return (
     <Header left={
       <div>
         <img className={styles.title} src="/logo.svg" alt="GAB Invest" />
-        {lastRotation && (
+        {/*{lastRotation && (
           <p className={styles.rotationInfo}>Лента обновлена: {lastRotation}</p>
-        )}
+        )}*/}
       </div>
     }>
       <div className={styles.headerActions}>

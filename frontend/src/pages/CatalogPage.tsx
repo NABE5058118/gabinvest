@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, MapPin, LayoutGrid, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Heart, MapPin, BuildingComplex, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useFavorites } from '@context/FavoritesContext';
 import { useObjects } from '@utils/useObjects';
 import CatalogHeader from '@components/CatalogHeader';
@@ -120,7 +120,7 @@ export default function CatalogPage() {
         {sortedObjects.length === 0 ? (
           <div className={styles.empty}>
             <div className={styles.emptyIcon}>
-              <LayoutGrid size={64} strokeWidth={1} color="#ccc" />
+              <BuildingComplex size={64} strokeWidth={1} color="#ccc" />
             </div>
             <p className={styles.emptyText}>Объекты не найдены</p>
             <button className={styles.emptyBtn} onClick={resetFilters}>
@@ -168,7 +168,7 @@ export default function CatalogPage() {
                   />
                 ) : (
                   <div className={styles.placeholder}>
-                    <LayoutGrid size={48} strokeWidth={1} color="#ccc" />
+                    <BuildingComplex size={64} strokeWidth={1} color="#ccc" />
                   </div>
                 )}
                 <span className={styles.typeBadge}>{typeLabels[obj.type] || obj.type}</span>

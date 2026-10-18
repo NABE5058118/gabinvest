@@ -56,50 +56,35 @@
   display: block;
 }
 
-.sliderArrow {
+.sliderDots {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid #e5e5e5;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+  gap: 8px;
   z-index: 10;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  border: none;
   padding: 0;
-  color: #000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.sliderArrow:hover {
+.dot:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.dotActive {
+  width: 28px;
+  border-radius: 4px;
   background: #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.arrowLeft {
-  left: 12px;
-}
-
-.arrowRight {
-  right: 12px;
-}
-
-.sliderCounter {
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
-  background: rgba(0, 0, 0, 0.6);
-  color: #fff;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-  z-index: 10;
-  pointer-events: none;
 }
 
 .placeholder {
