@@ -22,7 +22,10 @@ export default function Layout() {
         <Outlet />
       </div>
 
-      <nav className={styles.nav}>
+      <nav
+        className={styles.nav}
+        aria-label={isAdminPage ? 'Навигация администратора' : 'Основная навигация'}
+      >
         {isAdminPage ? (
           <>
             <NavLink

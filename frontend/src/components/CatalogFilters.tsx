@@ -30,7 +30,7 @@ type CatalogFiltersProps = {
 };
 
 export default function CatalogFilters({
-  styles,
+  styles = {},
   filters,
   setFilters,
   showFilters,

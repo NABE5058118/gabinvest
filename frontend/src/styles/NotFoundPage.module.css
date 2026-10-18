@@ -45,3 +45,32 @@
   align-items: center;
   gap: 8px;
 }
+
+/* Responsive layout refinements */
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px 16px;
+}
+
+.content {
+  max-width: 420px;
+  padding: clamp(22px, 4vw, 36px);
+  border: 1px solid #e8ebf0;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--shadow-card, 0 8px 24px rgba(16, 24, 40, 0.06));
+}
+
+.code {
+  color: var(--color-primary, #14213d);
+  font-size: clamp(56px, 12vw, 76px);
+}
+
+.button {
+  justify-content: center;
+  min-height: 48px;
+  border-radius: 10px;
+  background: var(--color-primary, #14213d);
+}
+

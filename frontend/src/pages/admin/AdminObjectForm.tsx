@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import PageHeader from '@components/PageHeader';
+import Header from '@components/Header';
 import { adminApi } from '@utils/adminApi';
 import { CITIES } from '../../data/cities';
 import styles from '@styles/AdminObjectForm.module.css';
@@ -240,12 +240,7 @@ export default function AdminObjectForm() {
 
   return (
     <div className={styles.page}>
-      <PageHeader
-        title={id && id !== 'new' ? 'Редактировать объект' : 'Новый объект'}
-        titleClassName={styles.title}
-        onBack={() => navigate('/admin')}
-        backBtnClassName={styles.backBtn}
-      />
+      <Header onBack={() => navigate('/admin')} title={id && id !== 'new' ? 'Редактировать объект' : 'Новый объект'} />
 
       <form className={styles.form} onSubmit={handleSubmit}>
         {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}

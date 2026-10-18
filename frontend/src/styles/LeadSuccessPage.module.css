@@ -44,3 +44,35 @@
   font-size: 15px;
   font-weight: 600;
 }
+
+/* Responsive layout refinements */
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px 16px calc(88px + env(safe-area-inset-bottom, 0px));
+}
+
+.content {
+  max-width: 440px;
+  padding: clamp(20px, 4vw, 36px);
+  border: 1px solid #e8ebf0;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--shadow-card, 0 8px 24px rgba(16, 24, 40, 0.06));
+}
+
+.icon {
+  background: var(--color-primary, #14213d);
+}
+
+.primaryBtn {
+  min-height: 48px;
+  border-radius: 10px;
+  background: var(--color-primary, #14213d);
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding-bottom: 32px;
+  }
+}

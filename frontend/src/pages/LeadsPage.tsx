@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { adminApi } from '@utils/adminApi';
-import PageHeader from '@components/PageHeader';
 import { Lead } from '@utils/types';
+import Header from '@components/Header';
 import styles from '@styles/LeadsPage.module.css';
 
 const STATUS_OPTIONS = [
@@ -101,12 +101,7 @@ export default function LeadsPage() {
 
   return (
     <div className={styles.page}>
-      <PageHeader
-        title="Заявки"
-        titleClassName={styles.title}
-        onBack={() => navigate(-1)}
-        backBtnClassName={styles.backBtn}
-      >
+      <Header onBack={() => navigate(-1)} title="Заявки">
         <select
           className={styles.sortSelect}
           value={sort}
@@ -116,7 +111,7 @@ export default function LeadsPage() {
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
-      </PageHeader>
+      </Header>
 
       <div className={styles.content}>
         {loading && <div className={styles.empty}>Загрузка...</div>}

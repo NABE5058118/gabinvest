@@ -68,3 +68,51 @@
   border-radius: 8px;
   font-size: 14px;
 }
+
+/* Responsive layout refinements */
+.page {
+  padding-top: 76px;
+  padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+}
+
+.form {
+  width: min(100%, 820px);
+  margin-inline: auto;
+  padding: 20px clamp(14px, 3vw, 32px) 36px;
+}
+
+.dropzone {
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-color: #cbd2dc;
+  border-radius: 12px;
+  background: #fafbfc;
+}
+
+.submitBtn {
+  min-height: 48px;
+  border-radius: 10px;
+  background: var(--color-primary, #14213d);
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding-top: 92px;
+    padding-bottom: 32px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .page {
+    padding-top: 104px;
+  }
+}
+
+@media (max-width: 420px) {
+  .form {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+}

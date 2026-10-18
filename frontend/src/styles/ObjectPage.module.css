@@ -22,7 +22,17 @@
   overflow: hidden;
 }
 
+@media (min-width: 640px) {
+  .image {
+    margin-top: 68px;
+  }
+}
+
 @media (min-width: 768px) {
+  .page {
+    padding-bottom: 32px;
+  }
+
   .image {
     height: 320px;
   }
@@ -605,5 +615,140 @@
   .primaryBtn,
   .secondaryBtn {
     max-width: 400px;
+  }
+}
+
+/* Responsive layout refinements */
+.page {
+  width: 100%;
+  min-width: 0;
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+}
+
+.image {
+  height: clamp(230px, 58vw, 440px);
+  margin-top: 64px;
+  background: #edf0f5;
+}
+
+.thumbnails {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+.content {
+  width: 100%;
+  max-width: 1040px;
+  margin-inline: auto;
+  padding: clamp(18px, 3vw, 32px) clamp(14px, 2.8vw, 32px);
+}
+
+.title {
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.section,
+.description {
+  min-width: 0;
+}
+
+.tenantItem,
+.leaseItem,
+.expenseItem,
+.engineeringItem {
+  min-width: 0;
+  border-radius: 10px;
+}
+
+.tenantItem,
+.vatInfo {
+  flex-wrap: wrap;
+}
+
+.primaryBtn,
+.secondaryBtn {
+  min-height: 48px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.actionRow {
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .image {
+    margin-top: 68px;
+  }
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding-bottom: 32px;
+  }
+
+  .image {
+    height: clamp(320px, 42vw, 480px);
+    margin-top: 68px;
+    border-radius: 0 0 16px 16px;
+  }
+
+  .thumbnails {
+    padding: 12px 24px 16px;
+  }
+
+  .content {
+    padding: 28px clamp(24px, 4vw, 44px);
+  }
+
+  .section {
+    margin-bottom: 28px;
+    padding-bottom: 28px;
+  }
+
+  .engineeringGrid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 12px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .image {
+    height: min(38vw, 500px);
+  }
+
+  .content {
+    padding: 36px 40px;
+  }
+
+  .title {
+    font-size: clamp(28px, 2.5vw, 34px);
+  }
+
+  .price {
+    font-size: clamp(30px, 2.7vw, 36px);
+  }
+}
+
+@media (max-width: 420px) {
+  .priceRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .engineeringGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .actionRow {
+    flex-direction: column;
+  }
+
+  .primaryBtn,
+  .secondaryBtn {
+    width: 100%;
+    max-width: none;
   }
 }

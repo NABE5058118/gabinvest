@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminApi } from '@utils/adminApi';
-import PageHeader from '@components/PageHeader';
+import Header from '@components/Header';
 import styles from '@styles/Auth.module.css';
 
 export default function AdminLoginPage() {
@@ -30,12 +30,7 @@ export default function AdminLoginPage() {
 
   return (
     <div className={styles.page}>
-      <PageHeader
-        title="Вход в админ панель"
-        titleClassName={styles.title}
-        onBack={() => navigate('/')}
-        backBtnClassName={styles.backBtn}
-      />
+      <Header onBack={() => navigate('/')} title="Вход в админ панель" />
 
       <form className={styles.form} onSubmit={handleSubmit}>
         {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}

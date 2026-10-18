@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Upload } from 'lucide-react';
-import PageHeader from '@components/PageHeader';
 import { adminApi } from '@utils/adminApi';
 import { normalizeOfferFileName } from '@utils/filename';
+import Header from '@components/Header';
 import styles from '@styles/AdminOfferUpload.module.css';
 
 type ObjectItem = {
@@ -54,12 +54,7 @@ export default function AdminOfferUpload() {
 
   return (
     <main className={styles.page}>
-      <PageHeader
-        title="Коммерческое предложение"
-        titleClassName={styles.title}
-        onBack={() => navigate('/admin')}
-        backBtnClassName={styles.backBtn}
-      />
+      <Header onBack={() => navigate('/admin')} title="Коммерческое предложение" />
 
       <div className={styles.form}>
         {object && (

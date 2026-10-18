@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import CatalogPage from './pages/CatalogPage';
 import FavoritesPage from './pages/FavoritesPage';
 import ProfilePage from './pages/ProfilePage';
@@ -11,7 +11,6 @@ import Layout from './components/Layout';
 import AdminRoute from './components/AdminRoute';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { AuthProvider } from './context/AuthContext';
-import { lazy } from 'react';
 
 const ObjectPage = lazy(() => import('./pages/ObjectPage'));
 const OfferPage = lazy(() => import('./pages/OfferPage'));

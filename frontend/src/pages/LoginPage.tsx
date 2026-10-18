@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '@utils/api';
-import PageHeader from '@components/PageHeader';
 import { useAuth } from '@context/AuthContext';
+import Header from '@components/Header';
 import styles from '@styles/Auth.module.css';
 
 export default function LoginPage() {
@@ -40,12 +40,7 @@ export default function LoginPage() {
 
   return (
     <div className={styles.page}>
-      <PageHeader
-        title="Вход"
-        titleClassName={styles.title}
-        onBack={() => navigate(-1)}
-        backBtnClassName={styles.backBtn}
-      />
+      <Header onBack={() => navigate(-1)} title="Вход" />
 
       <div className={styles.form}>
         {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}

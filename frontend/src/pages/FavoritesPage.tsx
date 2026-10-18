@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { Heart, MapPin, LayoutGrid } from 'lucide-react';
-import PageHeader from '@components/PageHeader';
 import { useFavorites } from '@context/FavoritesContext';
 import { useObjects } from '@utils/useObjects';
 import { ObjectType } from '@utils/types';
+import Header from '@components/Header';
 import styles from '@styles/FavoritesPage.module.css';
 
 const typeLabels: Record<string, string> = {
@@ -28,7 +28,7 @@ export default function FavoritesPage() {
   if (loading) {
     return (
       <div className={styles.page}>
-      <PageHeader title="Избранное" titleClassName={styles.title} />
+        <Header title="Избранное" />
         <div className={styles.list}>
           {Array.from({ length: 6 }).map((_, idx) => (
             <div key={idx} className={styles.skeletonCard}>
@@ -55,7 +55,7 @@ export default function FavoritesPage() {
 
   return (
     <main className={styles.page}>
-      <PageHeader title="Избранное" titleClassName={styles.title} />
+      <Header title="Избранное" />
 
       <div className={styles.content}>
         {favorites.length === 0 ? (

@@ -162,3 +162,65 @@
   padding: 40px 20px;
   color: #999;
 }
+
+/* Responsive layout refinements */
+.page {
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+}
+
+.content {
+  width: min(100%, 920px);
+  margin-inline: auto;
+  padding: 80px clamp(14px, 3vw, 28px) 24px;
+}
+
+.section,
+.subsection {
+  min-width: 0;
+}
+
+.row,
+.tenantRow {
+  gap: 16px;
+}
+
+.label,
+.value,
+.tenantName,
+.tenantValue {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.primaryBtn {
+  min-height: 48px;
+  border-radius: 10px;
+  background: var(--color-primary, #14213d);
+  color: #fff;
+  border-color: var(--color-primary, #14213d);
+}
+
+@media (min-width: 768px) {
+  .content {
+    padding-top: 92px;
+    padding-bottom: 48px;
+  }
+
+  .sectionHeader {
+    padding-block: 20px;
+  }
+}
+
+@media (max-width: 420px) {
+  .row,
+  .tenantRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .value,
+  .tenantValue {
+    text-align: left;
+  }
+}

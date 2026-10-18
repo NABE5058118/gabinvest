@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ObjectType } from '@utils/types';
-import PageHeader from '@components/PageHeader';
 import { api } from '@utils/api';
 import { getLeadClientId } from '@utils/types';
 import { useAuth } from '@context/AuthContext';
 import { formatPhone } from '@utils/formatPhone';
+import Header from '@components/Header';
 import styles from '@styles/LeadFormPage.module.css';
 
 export default function LeadFormPage() {
@@ -119,14 +119,9 @@ export default function LeadFormPage() {
 
   return (
     <main className={styles.page}>
-      <PageHeader
-        title="Оставить заявку"
-        titleClassName={styles.headerTitle}
-        onBack={() => navigate(-1)}
-        backBtnClassName={styles.backBtn}
-      >
+      <Header onBack={() => navigate(-1)} title="Оставить заявку">
         {object && <div className={styles.objectTitle}>{object.title}</div>}
-      </PageHeader>
+      </Header>
 
       <form className={styles.form} onSubmit={handleSubmit}>
         <div className={styles.field}>

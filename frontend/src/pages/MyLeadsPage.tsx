@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { api } from '@utils/api';
-import PageHeader from '@components/PageHeader';
 import { getLeadClientId } from '@utils/types';
+import Header from '@components/Header';
 import { Lead } from '@utils/types';
 import styles from '@styles/MyLeadsPage.module.css';
 
@@ -95,12 +95,7 @@ export default function MyLeadsPage() {
 
   return (
     <div className={styles.page}>
-      <PageHeader
-        title="Мои заявки"
-        titleClassName={styles.title}
-        onBack={() => navigate(-1)}
-        backBtnClassName={styles.backBtn}
-      >
+      <Header onBack={() => navigate(-1)} title="Мои заявки">
         <select
           className={styles.sortSelect}
           value={sort}
@@ -110,7 +105,7 @@ export default function MyLeadsPage() {
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
-      </PageHeader>
+      </Header>
 
       <div className={styles.content}>
         {loading && (

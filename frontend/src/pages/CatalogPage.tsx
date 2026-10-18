@@ -107,7 +107,7 @@ export default function CatalogPage() {
         loading={loading}
       />
 
-<CatalogFilters
+      <CatalogFilters
         styles={styles}
         filters={filters}
         setFilters={setFilters}

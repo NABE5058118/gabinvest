@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Eye } from 'lucide-react';
-import PageHeader from '@components/PageHeader';
 import { adminApi } from '@utils/adminApi';
 import styles from '@styles/ModerationQueue.module.css';
+import Header from '@components/Header';
 
 type ModerationItem = {
   id: string;
@@ -69,12 +69,7 @@ export default function ModerationQueuePage() {
 
   return (
     <div className={styles.page}>
-      <PageHeader
-        title="Модерация"
-        titleClassName={styles.title}
-        onBack={() => navigate('/admin')}
-        backBtnClassName={styles.backBtn}
-      />
+      <Header onBack={() => navigate('/admin')} title="Модерация" />
 
       <div className={styles.filterBar}>
         <select

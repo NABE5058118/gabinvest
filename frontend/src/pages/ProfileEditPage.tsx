@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PageHeader from '@components/PageHeader';
 import { useAuth } from '@context/AuthContext';
 import { api } from '@utils/api';
+import Header from '@components/Header';
 import { formatPhone } from '@utils/formatPhone';
 import styles from '@styles/ProfileEditPage.module.css';
 
@@ -61,12 +61,7 @@ export default function ProfileEditPage() {
 
   return (
     <main className={styles.page}>
-      <PageHeader
-        title="Редактировать профиль"
-        titleClassName={styles.title}
-        onBack={() => navigate(-1)}
-        backBtnClassName={styles.backBtn}
-      />
+      <Header onBack={() => navigate(-1)} title="Редактировать профиль" />
 
       <div className={styles.content}>
         {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}

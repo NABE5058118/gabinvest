@@ -2,7 +2,7 @@
   min-height: 100vh;
   padding: 70px 12px 80px;
   margin: 0 auto;
-  max-width: 1500px;
+  max-width: 1200px;
 }
 
 .title {
@@ -50,6 +50,18 @@
   margin-bottom: 16px;
   flex-wrap: wrap;
   padding-top: 8px
+}
+
+.activeChip{
+    background-color: var(--color-primary);
+    color:white;
+    border-radius: 18px;
+    padding: 8px 12px;
+    margin-right: 5px;
+}
+
+.activeChip:hover{
+    cursor: pointer;
 }
 
 .chip {
@@ -149,16 +161,13 @@
 
 .card {
   border: 1px solid #e5e5e5;
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
   transition: box-shadow 0.2s, transform 0.2s;
   content-visibility: auto;
   contain-intrinsic-size: 400px;
   text-align: left;
-}
-
-.card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   transform: translateY(-2px);
 }
@@ -365,7 +374,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
+  padding: 0px 16px;
   border-bottom: 1px solid #e5e5e5;
 }
 
@@ -518,5 +527,156 @@
   }
   100% {
     background-position: -200% 0;
+  }
+}
+
+/* Responsive layout refinements */
+.page {
+  width: 100%;
+  padding: 80px clamp(14px, 2.5vw, 36px) calc(92px + env(safe-area-inset-bottom, 0px));
+}
+
+.title {
+  height: clamp(36px, 4vw, 50px);
+  max-width: min(100%, 260px);
+}
+
+.refreshBtn,
+.filterBtn {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 12px;
+}
+
+.filterChips {
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.chip {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding-inline: clamp(12px, 1.5vw, 18px);
+  background: #fff;
+}
+
+.list {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  padding: 0;
+}
+
+.card {
+  min-width: 0;
+  border-color: #e8ebf0;
+  border-radius: 8px;
+  background: var(--color-surface, #fff);
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.025);
+}
+
+.card:hover {
+  border-color: #d4dbe5;
+  box-shadow: 0 12px 28px rgba(16, 24, 40, 0.09);
+}
+
+
+.cardTitle {
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.cardLocation {
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.cardBody {
+  padding: clamp(14px, 1.7vw, 20px);
+}
+
+.price {
+  line-height: 1.25;
+}
+
+.filterModal {
+  width: min(100%, 640px);
+  max-height: min(90vh, 900px);
+  max-height: min(90dvh, 900px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.filterBody {
+  min-height: 0;
+}
+
+.filterInput,
+.filterSelect,
+.sortSelect {
+  min-height: 44px;
+  max-width: 100%;
+}
+
+.filterFooter {
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 560px) {
+  .list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding: 92px clamp(24px, 3vw, 44px) 48px;
+  }
+
+  .list {
+    gap: 20px;
+  }
+
+
+  .filterOverlay {
+    align-items: center;
+    padding: 24px;
+  }
+
+  .filterModal {
+    max-height: min(86dvh, 900px);
+    border-radius: 20px;
+    box-shadow: 0 24px 64px rgba(16, 24, 40, 0.2);
+  }
+}
+
+@media (min-width: 1100px) {
+  .page {
+    padding-top: 104px;
+  }
+
+  .list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+  }
+}
+
+@media (max-width: 380px) {
+  .page {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .cardBody {
+    padding: 12px;
+  }
+
+  .filterRow {
+    gap: 8px;
+  }
+
+  .filterFooter {
+    gap: 8px;
+    padding-inline: 12px;
   }
 }

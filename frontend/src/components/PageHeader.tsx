@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
 
 type PageHeaderProps = {
@@ -7,7 +8,7 @@ type PageHeaderProps = {
   onBack?: () => void;
   backLabel?: string;
   backBtnClassName?: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
 };
 
 export default function PageHeader({
@@ -22,7 +23,12 @@ export default function PageHeader({
   return (
     <header className={className}>
       {onBack && (
-        <button className={backBtnClassName} onClick={onBack} aria-label={backLabel}>
+        <button
+          type="button"
+          className={backBtnClassName}
+          onClick={onBack}
+          aria-label={backLabel}
+        >
           <ArrowLeft size={24} strokeWidth={2} />
         </button>
       )}

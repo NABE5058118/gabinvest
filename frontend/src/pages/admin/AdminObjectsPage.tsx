@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Upload } from 'lucide-react';
-import PageHeader from '@components/PageHeader';
 import { adminApi } from '@utils/adminApi';
 import { normalizeOfferFileName } from '@utils/filename';
+import Header from '@components/Header';
 import ConfirmModal from '@components/ConfirmModal';
 import styles from '@styles/AdminObjects.module.css';
 
@@ -79,7 +79,7 @@ export default function AdminObjectsPage() {
 
   return (
     <div className={styles.page}>
-      <PageHeader title="Объекты" titleClassName={styles.title} />
+      <Header title="Объекты" />
 
       <div className={styles.content}>
         <button className={styles.addBtn} onClick={() => navigate('/admin/objects/new')}>
