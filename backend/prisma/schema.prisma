@@ -566,3 +566,11 @@ model Payout {
   @@index([commissionId])
   @@index([status])
 }
+
+model RateLimitCounter {
+  key     String   @id
+  count   Int      @default(0)
+  resetAt DateTime
+
+  @@index([resetAt])
+}
