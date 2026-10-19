@@ -1,7 +1,29 @@
 node_modules
-dist
 .env
 .env.local
 .env.*
 *.log
 .DS_Store
+uploads/
+# Python
+__pycache__
+*.py[cod]
+*.egg-info
+*.egg
+dist/
+build/
+.venv/
+venv/
+.pytest_cache
+.mypy_cache
+.tox/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db

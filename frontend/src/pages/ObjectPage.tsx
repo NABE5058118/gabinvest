@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect, memo, useRef, useMemo, useCallback } from 'react';
-import { Heart, MapPin, LayoutGrid, Users, Calendar, FileText, Wrench, Percent, TrendingUp, Landmark } from 'lucide-react';
+import { Heart, MapPin, LayoutGrid, Users, Calendar, FileText, Wrench, Percent, TrendingUp } from 'lucide-react';
 import { useFavorites } from '@context/FavoritesContext';
 import { ObjectType } from '@utils/types';
 import { api } from '@utils/api';
