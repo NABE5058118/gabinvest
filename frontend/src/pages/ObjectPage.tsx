@@ -5,6 +5,7 @@ import { useFavorites } from '@context/FavoritesContext';
 import { ObjectType } from '@utils/types';
 import { api } from '@utils/api';
 import Header from '@components/Header';
+import ErrorState from '@components/ErrorState';
 import styles from '@styles/ObjectPage.module.css';
 
 const formatDate = (dateStr?: string) => {
@@ -35,6 +36,24 @@ const ObjectPage = () => {
   const touchEndX = useRef(0);
 
   const { favoriteIds, toggleFavorite } = useFavorites();
+
+  const fetchObject = useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get<ObjectType>(`/api/objects/${id}`);
+      setObject(res.data);
+    } catch {
+      setError('Объект не найден');
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchObject();
+  }, [fetchObject]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -90,20 +109,6 @@ const ObjectPage = () => {
     touchEndX.current = 0;
   };
 
-  useEffect(() => {
-    if (!id) return;
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLoading(true);
-    setError(null);
-
-    api
-      .get<ObjectType>(`/api/objects/${id}`)
-      .then((res) => setObject(res.data))
-      .catch(() => setError('Объект не найден'))
-      .finally(() => setLoading(false));
-  }, [id]);
-
   if (loading) {
     return (
       <div className={styles.page}>
@@ -115,7 +120,8 @@ const ObjectPage = () => {
   if (error || !object) {
     return (
       <div className={styles.page}>
-        <div className={styles.error}>{error || 'Объект не найден'}</div>
+        <Header onBack={() => navigate(-1)} />
+        <ErrorState title="Не удалось загрузить объект" description={error || undefined} onRetry={fetchObject} />
       </div>
     );
   }

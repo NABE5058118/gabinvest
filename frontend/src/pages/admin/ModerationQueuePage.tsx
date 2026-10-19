@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Eye } from 'lucide-react';
 import { adminApi } from '@utils/adminApi';
+import ErrorState from '@components/ErrorState';
 import styles from '@styles/ModerationQueue.module.css';
 import Header from '@components/Header';
 
@@ -28,33 +29,25 @@ export default function ModerationQueuePage() {
   const [statusFilter, setStatusFilter] = useState('pending');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        setLoading(true);
-        const all: ModerationItem[] = [];
-        for (let page = 1; page <= 10000; page += 1) {
-          const { data } = await adminApi.get('/api/admin/moderation/queue', { params: { status: statusFilter, page, limit: 50 } });
-          all.push(...data);
-          if (data.length < 50) break;
-        }
-        if (!cancelled) setItems(all);
-      } catch {
-        if (!cancelled) {
-          setError('Ошибка загрузки');
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+  const load = async () => {
+    try {
+      setLoading(true);
+      const all: ModerationItem[] = [];
+      for (let page = 1; page <= 10000; page += 1) {
+        const { data } = await adminApi.get('/api/admin/moderation/queue', { params: { status: statusFilter, page, limit: 50 } });
+        all.push(...data);
+        if (data.length < 50) break;
       }
-    };
-    load();
+      setItems(all);
+    } catch {
+      setError('Ошибка загрузки');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return () => {
-      cancelled = true;
-    };
+  useEffect(() => {
+    load();
   }, [statusFilter]);
 
   const handleStatusUpdate = async (objectId: string, newStatus: string) => {
@@ -85,7 +78,7 @@ export default function ModerationQueuePage() {
 
       <div className={styles.content}>
         {loading && <div className={styles.empty}>Загрузка...</div>}
-        {error && <div className={styles.empty}>{error}</div>}
+        {error && <ErrorState title="Не удалось загрузить очередь модерации" onRetry={load} />}
         {!loading && !error && items.length === 0 && (
           <div className={styles.empty}>Нет объектов в очереди</div>
         )}

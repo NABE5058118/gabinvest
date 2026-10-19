@@ -5,6 +5,7 @@ import { api } from '@utils/api';
 import { getLeadClientId } from '@utils/types';
 import { useAuth } from '@context/AuthContext';
 import { formatPhone } from '@utils/formatPhone';
+import ErrorState from '@components/ErrorState';
 import Header from '@components/Header';
 import styles from '@styles/LeadFormPage.module.css';
 
@@ -69,13 +70,23 @@ export default function LeadFormPage() {
     }
   }, [form.phone]);
 
-  useEffect(() => {
+  const fetchObject = async () => {
     if (!id) return;
-    api
-      .get<ObjectType>(`/api/objects/${id}`)
-      .then((res) => setObject(res.data))
-      .catch(() => setError('Объект не найден'))
-      .finally(() => setLoading(false));
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get<ObjectType>(`/api/objects/${id}`);
+      setObject(res.data);
+    } catch {
+      setError('Объект не найден');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchObject();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   if (loading) {
@@ -89,7 +100,8 @@ export default function LeadFormPage() {
   if (error || !object) {
     return (
       <div className={styles.page}>
-        <div className={styles.error}>{error || 'Объект не найден'}</div>
+        <Header onBack={() => navigate(-1)} title="Оставить заявку" />
+        <ErrorState title="Не удалось загрузить объект" description={error || undefined} onRetry={fetchObject} />
       </div>
     );
   }

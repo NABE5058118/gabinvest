@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { api } from '@utils/api';
 import { getLeadClientId } from '@utils/types';
+import ErrorState from '@components/ErrorState';
 import Header from '@components/Header';
 import { Lead } from '@utils/types';
 import styles from '@styles/MyLeadsPage.module.css';
@@ -120,7 +121,7 @@ export default function MyLeadsPage() {
             ))}
           </div>
         )}
-        {error && <div className={styles.empty}>{error}</div>}
+        {error && <ErrorState title="Не удалось загрузить заявки" onRetry={fetchLeads} />}
         {!loading && !error && leads.length === 0 && (
           <div className={styles.empty}>У вас пока нет заявок</div>
         )}

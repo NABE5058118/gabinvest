@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Heart, MapPin, LayoutGrid } from 'lucide-react';
 import { useFavorites } from '@context/FavoritesContext';
 import { useObjects } from '@utils/useObjects';
+import ErrorState from '@components/ErrorState';
 import { ObjectType } from '@utils/types';
 import Header from '@components/Header';
 import styles from '@styles/FavoritesPage.module.css';
@@ -22,7 +23,7 @@ const priceIndicatorLabels: Record<string, { label: string }> = {
 export default function FavoritesPage() {
   const navigate = useNavigate();
   const { favoriteIds, toggleFavorite } = useFavorites();
-  const { objects, loading, error } = useObjects();
+  const { objects, loading, error, refetch } = useObjects();
   const favorites = objects.filter((obj): obj is ObjectType => favoriteIds.has(obj.id));
 
   if (loading) {
@@ -48,7 +49,8 @@ export default function FavoritesPage() {
   if (error) {
     return (
       <div className={styles.page}>
-        <div className={styles.error}>{error}</div>
+        <Header title="Избранное" />
+        <ErrorState title="Не удалось загрузить избранное" onRetry={refetch} />
       </div>
     );
   }

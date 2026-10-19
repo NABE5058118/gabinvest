@@ -4,6 +4,7 @@ import { MapPin, ChevronDown, Download } from 'lucide-react';
 import { ObjectType } from '@utils/types';
 import { api } from '@utils/api';
 import Header from '@components/Header';
+import ErrorState from '@components/ErrorState';
 import { normalizeOfferFileName } from '@utils/filename';
 import styles from '@styles/OfferPage.module.css';
 
@@ -36,13 +37,23 @@ export default function OfferPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchObject = async () => {
     if (!id) return;
-    api
-      .get<ObjectType>(`/api/objects/${id}`)
-      .then((res) => setObject(res.data))
-      .catch(() => setError('Объект не найден'))
-      .finally(() => setLoading(false));
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get<ObjectType>(`/api/objects/${id}`);
+      setObject(res.data);
+    } catch {
+      setError('Объект не найден');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchObject();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   if (loading) {
@@ -56,7 +67,8 @@ export default function OfferPage() {
   if (error || !object) {
     return (
       <div className={styles.page}>
-        <div className={styles.error}>{error || 'Объект не найден'}</div>
+        <Header onBack={() => navigate(`/objects/${id}`)} title="Коммерческое предложение" />
+        <ErrorState title="Не удалось загрузить предложение" description={error || undefined} onRetry={fetchObject} />
       </div>
     );
   }

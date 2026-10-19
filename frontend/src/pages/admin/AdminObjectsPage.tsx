@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Upload } from 'lucide-react';
 import { adminApi } from '@utils/adminApi';
 import { normalizeOfferFileName } from '@utils/filename';
+import ErrorState from '@components/ErrorState';
 import Header from '@components/Header';
 import ConfirmModal from '@components/ConfirmModal';
 import styles from '@styles/AdminObjects.module.css';
@@ -88,7 +89,7 @@ export default function AdminObjectsPage() {
         </button>
 
         {loading && <div className={styles.empty}>Загрузка...</div>}
-        {error && <div className={styles.empty}>{error}</div>}
+        {error && <ErrorState title="Не удалось загрузить объекты" onRetry={fetchItems} />}
         {toast && (
           <div className={toast.type === 'success' ? styles.toastSuccess : styles.toastError} role="status" aria-live="polite">
             {toast.message}

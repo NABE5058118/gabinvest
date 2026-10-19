@@ -5,6 +5,7 @@ import { useFavorites } from '@context/FavoritesContext';
 import { useObjects } from '@utils/useObjects';
 import CatalogHeader from '@components/CatalogHeader';
 import CatalogFilters, { type Filters } from '@components/CatalogFilters';
+import ErrorState from '@components/ErrorState';
 import styles from '@styles/CatalogPage.module.css';
 
 type SortOption = 'createdAt' | 'price' | 'area' | 'yieldPercent' | 'leaseEndDate';
@@ -67,9 +68,16 @@ export default function CatalogPage() {
 
   if (error) {
     return (
-      <div className={styles.page}>
-        <div className={styles.error}>{error}</div>
-      </div>
+      <main className={styles.page}>
+        <CatalogHeader
+          styles={styles}
+          refetch={refetch}
+          setShowFilters={setShowFilters}
+          lastRotation={lastRotation}
+          loading={loading}
+        />
+        <ErrorState title="Не удалось загрузить объекты" onRetry={refetch} />
+      </main>
     );
   }
 
