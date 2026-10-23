@@ -58,9 +58,34 @@ async def handle_lead_notify(request: web.Request) -> web.Response:
     return web.json_response({'ok': True, 'notified': notified, 'results': results})
 
 
+# ---- Вебхук от бэкенда: смена статуса заявки -> уведомить клиента ----
+async def handle_status_notify(request: web.Request) -> web.Response:
+    supplied = request.headers.get('x-bot-sync-secret', '')
+    if not BOT_SYNC_SECRET or not supplied or not hmac.compare_digest(supplied, BOT_SYNC_SECRET):
+        return web.json_response({'error': 'Unauthorized'}, status=401)
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({'error': 'invalid json'}, status=400)
+
+    client_tg_id = data.get('clientTelegramId')
+    text = data.get('text')
+    if not client_tg_id or not text:
+        return web.json_response({'error': 'clientTelegramId and text are required'}, status=400)
+
+    try:
+        await bot_instance.send_message(chat_id=int(client_tg_id), text=text, parse_mode='HTML')
+        logging.info('Status-notify sent to client %s', client_tg_id)
+        return web.json_response({'ok': True, 'client': client_tg_id})
+    except Exception as exc:
+        logging.warning('Status-notify: failed to notify client %s: %s', client_tg_id, exc)
+        return web.json_response({'ok': False, 'error': str(exc)}, status=500)
+
+
 def build_web_app() -> web.Application:
     app = web.Application()
     app.router.add_post('/webhook/lead-notify', handle_lead_notify)
+    app.router.add_post('/webhook/notify-status', handle_status_notify)
     return app
 
 

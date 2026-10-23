@@ -55,6 +55,35 @@ async function notifyBotOfLead(leadId: string, text: string): Promise<void> {
   }
 }
 
+async function notifyBotOfStatus(leadId: string, clientTelegramId: string | null | undefined, status: string, objectTitle: string): Promise<void> {
+  if (!clientTelegramId) return;
+  if (!BOT_WEBHOOK_URL) return;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (BOT_SYNC_SECRET) headers['x-bot-sync-secret'] = BOT_SYNC_SECRET;
+  const statusLabels: Record<string, string> = {
+    new: 'новая',
+    in_progress: 'в работе',
+    done: 'выполнена',
+    cancelled: 'отменена',
+  };
+  const text = `
+<b>Статус вашей заявки изменён</b>
+
+<b>Объект:</b> ${escapeHtml(objectTitle)}
+<b>Новый статус:</b> ${statusLabels[status] || status}
+    `.trim();
+  try {
+    const res = await axios.post(
+      BOT_WEBHOOK_URL.replace('/lead-notify', '/notify-status'),
+      { leadId, clientTelegramId, status, text },
+      { headers, timeout: 5000 }
+    );
+    logger.info('Bot status notify sent', { leadId, status: res.status });
+  } catch (err: any) {
+    logger.warn('Bot status notify failed', { leadId, status: err?.response?.status, message: err?.message });
+  }
+}
+
 function issueGuestLeadToken(clientId: string): string {
   return jwt.sign({ scope: 'guest-leads', clientId }, JWT_SECRET, { expiresIn: '365d', algorithm: 'HS256' });
 }
@@ -174,7 +203,7 @@ router.post('/', optionalAuth, async (req: Request, res: Response) => {
 
     logger.info('Lead created', { leadId: lead.id, objectId, userId });
 
-    const message = `
+const message = `
 <b>Новая заявка!</b>
 
 <b>Объект:</b> ${escapeHtml(obj.title)}
@@ -185,7 +214,7 @@ router.post('/', optionalAuth, async (req: Request, res: Response) => {
 <b>Телефон:</b> ${escapeHtml(phone)}
 ${comment ? `<b>Комментарий:</b> ${escapeHtml(comment)}` : ''}
 
-<a href="https://gab-invest.ru/objects/${obj.id}">Ссылка на объект</a>
+<a href="https://t.me/gabinvest_bot/app?startapp=object_${obj.id}">Ссылка на объект</a>
     `.trim();
 
     // Уведомление админам через вебхук бота (бот живёт на NL, где есть доступ к Telegram API;
@@ -236,8 +265,16 @@ router.patch('/:id/status', requireAdmin, async (req: Request, res: Response) =>
     const id = String(req.params.id);
     const parsed = statusSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0].message });
-    const lead = await prisma.lead.update({ where: { id }, data: { status: parsed.data.status } });
+    const lead = await prisma.lead.update({
+      where: { id },
+      data: { status: parsed.data.status },
+      include: {
+        object: { select: { title: true } },
+        user: { select: { telegramId: true } },
+      },
+    });
     logger.info('Lead status updated', { leadId: id, status: parsed.data.status });
+    await notifyBotOfStatus(lead.id, lead.user?.telegramId, parsed.data.status, lead.object.title);
     res.json(lead);
   } catch (error) {
     logger.error('Error updating lead status:', error);
