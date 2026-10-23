@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
+import axios from 'axios';
 import { prisma } from '../lib/prisma.js';
 import { sendTelegramMessage } from '../utils/telegram.js';
 import { z } from 'zod';
@@ -33,6 +34,26 @@ const statusSchema = z.object({
 
 const MANAGER_CHAT_ID = process.env.MANAGER_CHAT_ID || '';
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+const BOT_WEBHOOK_URL = (process.env.BOT_WEBHOOK_URL || '').trim();
+const BOT_SYNC_SECRET = process.env.BOT_SYNC_SECRET || '';
+
+async function notifyBotOfLead(leadId: string, text: string): Promise<void> {
+  if (!BOT_WEBHOOK_URL) {
+    // Фоллбэк: прямая отправка в Telegram (работает только если бэкенд может достучаться до api.telegram.org).
+    if (MANAGER_CHAT_ID && BOT_TOKEN) {
+      await sendTelegramMessage(BOT_TOKEN, MANAGER_CHAT_ID, text);
+    }
+    return;
+  }
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (BOT_SYNC_SECRET) headers['x-bot-sync-secret'] = BOT_SYNC_SECRET;
+  try {
+    const res = await axios.post(BOT_WEBHOOK_URL, { leadId, text }, { headers, timeout: 5000 });
+    logger.info('Bot webhook notified', { leadId, status: res.status });
+  } catch (err: any) {
+    logger.warn('Bot webhook notify failed', { leadId, status: err?.response?.status, message: err?.message });
+  }
+}
 
 function issueGuestLeadToken(clientId: string): string {
   return jwt.sign({ scope: 'guest-leads', clientId }, JWT_SECRET, { expiresIn: '365d', algorithm: 'HS256' });
@@ -153,8 +174,7 @@ router.post('/', optionalAuth, async (req: Request, res: Response) => {
 
     logger.info('Lead created', { leadId: lead.id, objectId, userId });
 
-    if (MANAGER_CHAT_ID && BOT_TOKEN) {
-      const message = `
+    const message = `
 <b>Новая заявка!</b>
 
 <b>Объект:</b> ${escapeHtml(obj.title)}
@@ -166,10 +186,11 @@ router.post('/', optionalAuth, async (req: Request, res: Response) => {
 ${comment ? `<b>Комментарий:</b> ${escapeHtml(comment)}` : ''}
 
 <a href="https://gab-invest.ru/objects/${obj.id}">Ссылка на объект</a>
-      `.trim();
-      await sendTelegramMessage(BOT_TOKEN, MANAGER_CHAT_ID, message);
-      logger.info('Telegram notification attempt finished', { leadId: lead.id });
-    }
+    `.trim();
+
+    // Уведомление админам через вебхук бота (бот живёт на NL, где есть доступ к Telegram API;
+    // бэкенд на RF не может обращаться в api.telegram.org напрямую).
+    await notifyBotOfLead(lead.id, message);
 
     res.status(201).json({ success: true, lead, ...(nextGuestToken ? { guestToken: nextGuestToken } : {}) });
   } catch (error) {

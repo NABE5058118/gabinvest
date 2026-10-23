@@ -1,9 +1,9 @@
 """GAB Invest Telegram Bot — deals, attribution, commissions."""
-import os, asyncio, logging, sys, re, hashlib
+import os, asyncio, logging, sys, re, hashlib, hmac
 from aiogram import Bot, Dispatcher, types, Router, F
 from aiogram.types import WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
-from aiohttp import ClientSession
+from aiohttp import ClientSession, web
 
 from backend_client import BackendClient
 from anti_bypass import is_allowed
@@ -25,6 +25,52 @@ dp = Dispatcher()
 router = Router()
 dp.include_router(router)
 backend = BackendClient(BACKEND_URL, bot_sync_secret=BOT_SYNC_SECRET or None)
+
+# Единый объект Bot — нужен и для polling, и для отправки уведомлений из вебхука.
+bot_instance = Bot(token=BOT_TOKEN)
+
+# ---- Вебхук от бэкенда: новая заявка -> уведомить админов ----
+async def handle_lead_notify(request: web.Request) -> web.Response:
+    supplied = request.headers.get('x-bot-sync-secret', '')
+    if not BOT_SYNC_SECRET or not supplied or not hmac.compare_digest(supplied, BOT_SYNC_SECRET):
+        return web.json_response({'error': 'Unauthorized'}, status=401)
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({'error': 'invalid json'}, status=400)
+
+    text = data.get('text')
+    if not text:
+        return web.json_response({'error': 'text is required'}, status=400)
+
+    admin_ids = [int(p.strip()) for p in ADMIN_TELEGRAM_IDS.split(',') if p.strip()]
+    results = []
+    for admin_id in admin_ids:
+        try:
+            await bot_instance.send_message(chat_id=admin_id, text=text, parse_mode='HTML')
+            results.append({'admin': admin_id, 'ok': True})
+        except Exception as exc:
+            logging.warning('Lead-notify: failed to notify admin %s: %s', admin_id, exc)
+            results.append({'admin': admin_id, 'ok': False, 'error': str(exc)})
+
+    notified = sum(1 for r in results if r['ok'])
+    logging.info('Lead-notify done: notified=%s of %s', notified, len(admin_ids))
+    return web.json_response({'ok': True, 'notified': notified, 'results': results})
+
+
+def build_web_app() -> web.Application:
+    app = web.Application()
+    app.router.add_post('/webhook/lead-notify', handle_lead_notify)
+    return app
+
+
+async def start_web_server() -> web.AppRunner:
+    runner = web.AppRunner(build_web_app())
+    await runner.setup()
+    site = web.TCPSite(runner, host='0.0.0.0', port=8080)
+    await site.start()
+    logging.info("Lead-notify webhook listening on :8080 (/webhook/lead-notify)")
+    return runner
 
 DEAL_STAGES = ['offer', 'counter_offer', 'deposit', 'verification', 'contract', 'registration', 'closed']
 
@@ -107,11 +153,11 @@ async def handle_message(message: types.Message):
     await message.answer('Сообщение отправлено. Сделки проходят через маркетплейс.')
 
 async def run_bot():
-    bot = Bot(token=BOT_TOKEN)
+    runner = await start_web_server()
     try:
-        await bot.delete_webhook(drop_pending_updates=False)
+        await bot_instance.delete_webhook(drop_pending_updates=False)
         logging.info("Bot polling started")
-        await dp.start_polling(bot)
+        await dp.start_polling(bot_instance)
     except asyncio.CancelledError:
         raise
     except Exception as e:
@@ -120,9 +166,9 @@ async def run_bot():
         max_retry = 60
         while True:
             try:
-                await bot.delete_webhook(drop_pending_updates=False)
+                await bot_instance.delete_webhook(drop_pending_updates=False)
                 logging.info("Bot polling resumed")
-                await dp.start_polling(bot)
+                await dp.start_polling(bot_instance)
                 return
             except asyncio.CancelledError:
                 raise
@@ -131,10 +177,11 @@ async def run_bot():
                 await asyncio.sleep(retry_delay)
                 retry_delay = min(retry_delay * 2, max_retry)
     finally:
+        await runner.cleanup()
         await backend.close()
         if _first_touch_session is not None and not _first_touch_session.closed:
             await _first_touch_session.close()
-        await bot.session.close()
+        await bot_instance.session.close()
 
 if __name__ == '__main__':
     try:

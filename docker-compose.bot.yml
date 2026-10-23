@@ -4,6 +4,8 @@ services:
       context: ./bot
       dockerfile: Dockerfile
     restart: unless-stopped
+    ports:
+      - "8080:8080"          # webhook endpoint for the backend (backend -> bot -> Telegram)
     environment:
       BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
       WEB_APP_URL: "${WEB_APP_URL}"
