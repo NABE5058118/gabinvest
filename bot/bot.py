@@ -206,6 +206,23 @@ async def admin(message: types.Message):
         ]])
     )
 
+
+@router.message(Command('notify'))
+async def notify(message: types.Message):
+    """Подписаться/отписаться от уведомлений о новых объектах."""
+    tg_user = message.from_user
+    try:
+        data = await backend.toggle_notify(tg_user.id)
+    except Exception as exc:
+        logging.warning('Notify toggle failed: %s', exc)
+        await message.answer('Не удалось изменить подписку.')
+        return
+
+    if data.get('subscribed'):
+        await message.answer('Вы подписались на уведомления о новых объектах.')
+    else:
+        await message.answer('Вы отписались от уведомлений о новых объектах.')
+
 @router.message(F.text)
 async def handle_message(message: types.Message):
     if not is_allowed(message.text or ''):

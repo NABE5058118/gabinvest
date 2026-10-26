@@ -22,7 +22,8 @@ class BackendClient:
             await self._session.close()
 
     async def _request(self, method: str, path: str, json: dict | None = None,
-                       headers: dict | None = None, timeout: int = 10) -> dict:
+                            headers: dict | None = None, timeout: int = 10,
+                            params: dict | None = None) -> dict:
         url = f"{self.base_url}{path}"
         session = await self._get_session()
         async with session.request(
@@ -30,6 +31,7 @@ class BackendClient:
             url,
             json=json,
             headers=headers,
+            params=params,
             timeout=aiohttp.ClientTimeout(total=timeout),
         ) as resp:
             if resp.status >= 400:
@@ -39,8 +41,8 @@ class BackendClient:
     async def post(self, path: str, json: dict, headers: dict | None = None, timeout: int = 10) -> dict:
         return await self._request('POST', path, json=json, headers=headers, timeout=timeout)
 
-    async def get(self, path: str, headers: dict | None = None, timeout: int = 10) -> dict:
-        return await self._request('GET', path, headers=headers, timeout=timeout)
+    async def get(self, path: str, headers: dict | None = None, timeout: int = 10, params: dict | None = None) -> dict:
+        return await self._request('GET', path, headers=headers, timeout=timeout, params=params)
 
     async def put(self, path: str, json: dict, headers: dict | None = None, timeout: int = 10) -> dict:
         return await self._request('PUT', path, json=json, headers=headers, timeout=timeout)
@@ -88,3 +90,14 @@ class BackendClient:
         if isinstance(result, list):
             return result
         return []
+
+    async def toggle_notify(self, telegram_id: int) -> dict:
+        """Переключить подписку на новые объекты. Вернёт {subscribed: bool}."""
+        headers = {}
+        if self.bot_sync_secret:
+            headers['x-bot-sync-secret'] = self.bot_sync_secret
+        return await self.post(
+            '/api/auth/telegram/notify-toggle',
+            {'telegramId': str(telegram_id)},
+            headers=headers,
+        )
