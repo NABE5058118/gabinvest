@@ -117,6 +117,30 @@ async def handle_object_notify(request: web.Request) -> web.Response:
     return web.json_response({'ok': True, 'notified': notified, 'failed': failed})
 
 
+# ---- Вебхук от бэкенда: смена статуса заявки -> уведомить клиента ----
+async def handle_status_notify(request: web.Request) -> web.Response:
+    supplied = request.headers.get('x-bot-sync-secret', '')
+    if not BOT_SYNC_SECRET or not supplied or not hmac.compare_digest(supplied, BOT_SYNC_SECRET):
+        return web.json_response({'error': 'Unauthorized'}, status=401)
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({'error': 'invalid json'}, status=400)
+
+    client_tg_id = data.get('clientTelegramId')
+    text = data.get('text')
+    if not client_tg_id or not text:
+        return web.json_response({'error': 'clientTelegramId and text are required'}, status=400)
+
+    try:
+        await bot_instance.send_message(chat_id=int(client_tg_id), text=text, parse_mode='HTML')
+        logging.info('Status-notify sent to client %s', client_tg_id)
+        return web.json_response({'ok': True, 'client': client_tg_id})
+    except Exception as exc:
+        logging.warning('Status-notify: failed to notify client %s: %s', client_tg_id, exc)
+        return web.json_response({'ok': False, 'error': str(exc)}, status=500)
+
+
 def build_web_app() -> web.Application:
     app = web.Application()
     app.router.add_post('/webhook/lead-notify', handle_lead_notify)
@@ -182,6 +206,11 @@ async def start(message: types.Message):
     await record_first_touch(message)
     tg_user = message.from_user
     await backend.sync_user(tg_user)
+    # Автоподписка на уведомления о новых объектах (опт-ин по умолчанию)
+    try:
+        await backend.toggle_notify(tg_user.id)
+    except Exception as exc:
+        logging.warning('Auto-subscribe failed: %s', exc)
     await message.answer(
         'Добро пожаловать в GAB Invest — маркетплейс коммерческой недвижимости.',
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
@@ -206,22 +235,6 @@ async def admin(message: types.Message):
         ]])
     )
 
-
-@router.message(Command('notify'))
-async def notify(message: types.Message):
-    """Подписаться/отписаться от уведомлений о новых объектах."""
-    tg_user = message.from_user
-    try:
-        data = await backend.toggle_notify(tg_user.id)
-    except Exception as exc:
-        logging.warning('Notify toggle failed: %s', exc)
-        await message.answer('Не удалось изменить подписку.')
-        return
-
-    if data.get('subscribed'):
-        await message.answer('Вы подписались на уведомления о новых объектах.')
-    else:
-        await message.answer('Вы отписались от уведомлений о новых объектах.')
 
 @router.message(F.text)
 async def handle_message(message: types.Message):
