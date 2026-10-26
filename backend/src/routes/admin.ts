@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { prisma } from '../lib/prisma.js';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import axios from 'axios';
 import { fileTypeFromFile } from 'file-type';
 import { z } from 'zod';
 import { createLogger } from '../utils/logger.js';
@@ -14,6 +15,25 @@ import { normalizeOfferFileName } from '../utils/filename.js';
 
 const router = Router();
 const logger = createLogger('admin');
+
+const BOT_WEBHOOK_URL = (process.env.BOT_WEBHOOK_URL || '').trim();
+const BOT_SYNC_SECRET = process.env.BOT_SYNC_SECRET || '';
+
+async function notifyBotOfObject(objectId: string, object: { title: string; location: string; price: number; priceIndicator?: string | null; image?: string | null }): Promise<void> {
+  if (!BOT_WEBHOOK_URL) return;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (BOT_SYNC_SECRET) headers['x-bot-sync-secret'] = BOT_SYNC_SECRET;
+  try {
+    const res = await axios.post(
+      BOT_WEBHOOK_URL.replace('/lead-notify', '/object-notify'),
+      { objectId, ...object },
+      { headers, timeout: 5000 }
+    );
+    logger.info('Bot object notify sent', { objectId, status: res.status });
+  } catch (err: any) {
+    logger.warn('Bot object notify failed', { objectId, status: err?.response?.status, message: err?.message });
+  }
+}
 
 declare global { namespace Express { interface Request { adminActor?: string } } }
 
@@ -268,6 +288,13 @@ router.post('/objects', requireAdmin, async (req: Request, res: Response) => {
         moderation: { create: { status: 'pending' } },
         placement: { create: { type: 'standard' } },
       },
+    });
+    await notifyBotOfObject(obj.id, {
+      title: obj.title,
+      location: obj.location,
+      price: obj.price,
+      priceIndicator: obj.priceIndicator,
+      image: obj.image,
     });
     res.status(201).json(obj);
   } catch (error) {
@@ -664,6 +691,19 @@ router.delete('/objects/:id/images/:imageId', requireAdmin, async (req: Request,
   }
 });
 
+router.get('/users/notify-subscribers', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const users = await prisma.user.findMany({
+      where: { notifyNewObjects: true, telegramId: { not: null } },
+      select: { telegramId: true },
+    });
+    res.json(users.map((u) => ({ telegramId: u.telegramId })));
+  } catch (error) {
+    logger.error('Error fetching notify subscribers:', error);
+    res.status(500).json({ error: 'Failed to fetch subscribers' });
+  }
+});
+
 router.get('/objects/:id/tenants', requireAdmin, async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
@@ -679,26 +719,27 @@ router.get('/objects/:id/tenants', requireAdmin, async (req: Request, res: Respo
   }
 });
 
-router.post('/objects/:id/tenants', requireAdmin, async (req: Request, res: Response) => {
-  try {
-    const id = String(req.params.id);
-    const { name, isAnchor, category } = req.body;
+    router.post('/objects/:id/tenants', requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = String(req.params.id);
+      const { name, isAnchor, category } = req.body;
 
-    const tenant = await prisma.tenant.create({
-      data: {
-        objectId: id,
-        name,
-        isAnchor: Boolean(isAnchor),
-        category: category || null,
-      },
-    });
+      const tenant = await prisma.tenant.create({
+        data: {
+          objectId: id,
+          name,
+          isAnchor: Boolean(isAnchor),
+          category: category || null,
+        },
+      });
 
-    res.status(201).json(tenant);
-  } catch (error) {
-    logger.error('Error creating tenant:', error);
-    res.status(500).json({ error: 'Failed to create tenant' });
+      res.status(201).json(tenant);
+    } catch (error) {
+      logger.error('Error creating tenant:', error);
+      res.status(500).json({ error: 'Failed to create tenant' });
+    }
   }
-});
+);
 
 router.delete('/objects/:id/tenants/:tenantId', requireAdmin, async (req: Request, res: Response) => {
   try {

@@ -58,8 +58,8 @@ async def handle_lead_notify(request: web.Request) -> web.Response:
     return web.json_response({'ok': True, 'notified': notified, 'results': results})
 
 
-# ---- Вебхук от бэкенда: смена статуса заявки -> уведомить клиента ----
-async def handle_status_notify(request: web.Request) -> web.Response:
+# ---- Вебхук от бэкенда: новый объект -> рассылка подписчикам ----
+async def handle_object_notify(request: web.Request) -> web.Response:
     supplied = request.headers.get('x-bot-sync-secret', '')
     if not BOT_SYNC_SECRET or not supplied or not hmac.compare_digest(supplied, BOT_SYNC_SECRET):
         return web.json_response({'error': 'Unauthorized'}, status=401)
@@ -68,24 +68,60 @@ async def handle_status_notify(request: web.Request) -> web.Response:
     except Exception:
         return web.json_response({'error': 'invalid json'}, status=400)
 
-    client_tg_id = data.get('clientTelegramId')
-    text = data.get('text')
-    if not client_tg_id or not text:
-        return web.json_response({'error': 'clientTelegramId and text are required'}, status=400)
+    object_id = data.get('objectId')
+    if not object_id:
+        return web.json_response({'error': 'objectId is required'}, status=400)
 
-    try:
-        await bot_instance.send_message(chat_id=int(client_tg_id), text=text, parse_mode='HTML')
-        logging.info('Status-notify sent to client %s', client_tg_id)
-        return web.json_response({'ok': True, 'client': client_tg_id})
-    except Exception as exc:
-        logging.warning('Status-notify: failed to notify client %s: %s', client_tg_id, exc)
-        return web.json_response({'ok': False, 'error': str(exc)}, status=500)
+    # Запросить список подписанных пользователей у бэкенда
+    subscribers = await backend.get_subscribers(object_id)
+    if not subscribers:
+        return web.json_response({'ok': True, 'notified': 0, 'message': 'No subscribers'})
+
+    # Формируем текст уведомления
+    title = data.get('title', 'Новый объект')
+    location = data.get('location', '')
+    price = data.get('price', 0)
+    price_indicator = data.get('priceIndicator', '')
+    image = data.get('image', '')
+
+    price_label = f"{int(price):,}".replace(',', ' ') + ' ₽' if price else ''
+    indicator_label = {'below_market': 'ниже рынка', 'market': 'по рынку', 'above_market': 'выше рынка'}.get(price_indicator, price_indicator)
+
+    text = f"<b>🆕 Новый объект на продажу!</b>\n\n<b>{title}</b>\n📍 {location}\n💰 {price_label}"
+    if indicator_label:
+        text += f" ({indicator_label})"
+
+    link = f"https://t.me/gabinvest_bot/app?startapp=object_{object_id}"
+
+    notified = 0
+    failed = 0
+    for sub in subscribers:
+        tg_id = sub.get('telegramId')
+        if not tg_id:
+            continue
+        try:
+            await bot_instance.send_message(
+                chat_id=int(tg_id),
+                text=text,
+                parse_mode='HTML',
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
+                    InlineKeyboardButton(text='Смотреть в каталоге', web_app=WebAppInfo(url=link))
+                ]])
+            )
+            notified += 1
+        except Exception as exc:
+            logging.warning('Object-notify: failed to notify %s: %s', tg_id, exc)
+            failed += 1
+
+    logging.info('Object-notify done: notified=%s failed=%s', notified, failed)
+    return web.json_response({'ok': True, 'notified': notified, 'failed': failed})
 
 
 def build_web_app() -> web.Application:
     app = web.Application()
     app.router.add_post('/webhook/lead-notify', handle_lead_notify)
     app.router.add_post('/webhook/notify-status', handle_status_notify)
+    app.router.add_post('/webhook/object-notify', handle_object_notify)
     return app
 
 

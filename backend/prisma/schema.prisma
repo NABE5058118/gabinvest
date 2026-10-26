@@ -291,6 +291,7 @@ model User {
   telegramLang     String?
   telegramPremium  Boolean?   @default(false)
   telegramAllowsPm Boolean?   @default(false)
+  notifyNewObjects Boolean?   @default(false)
   phone            String?   @unique
   email            String?   @unique
   passwordHash     String?

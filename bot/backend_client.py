@@ -74,3 +74,17 @@ class BackendClient:
             'username': tg_user.username or '',
             'languageCode': tg_user.language_code or '',
         }, headers=headers)
+
+    async def get_subscribers(self, object_id: str) -> list:
+        """Вернуть список подписчиков на новые объекты (telegramId)."""
+        headers = {}
+        if self.bot_sync_secret:
+            headers['x-bot-sync-secret'] = self.bot_sync_secret
+        result = await self.get(
+            f'/api/admin/users/notify-subscribers',
+            headers=headers,
+            params={'objectId': object_id},
+        )
+        if isinstance(result, list):
+            return result
+        return []
