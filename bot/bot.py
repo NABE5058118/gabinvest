@@ -88,7 +88,24 @@ async def handle_object_notify(request: web.Request) -> web.Response:
     location = data.get('location', '')
     price = data.get('price', 0)
     price_indicator = data.get('priceIndicator', '')
-    image = data.get('image', '')
+    image = data.get('image', '') or None
+
+    # Если картинка не пришла в вебхуке, попробуем получить её из бэкенда
+    if not image:
+        try:
+            obj_data = await backend.get(f'/api/admin/objects/{object_id}')
+            if isinstance(obj_data, dict):
+                if obj_data.get('image'):
+                    image = obj_data.get('image')
+                elif obj_data.get('images') and isinstance(obj_data.get('images'), list) and len(obj_data['images']) > 0:
+                    first_img = obj_data['images'][0]
+                    if isinstance(first_img, dict):
+                        image = first_img.get('url') or first_img.get('image')
+                    elif isinstance(first_img, str):
+                        image = first_img
+            logging.info('Object-notify: fetched object from backend, image=%s', image)
+        except Exception as exc:
+            logging.warning('Object-notify: failed to fetch object details: %s', exc)
 
     price_label = f"{int(price):,}".replace(',', ' ') + ' ₽' if price else ''
     indicator_label = {'below_market': 'ниже рынка', 'market': 'по рынку', 'above_market': 'выше рынка'}.get(price_indicator, price_indicator)
@@ -110,12 +127,14 @@ async def handle_object_notify(request: web.Request) -> web.Response:
             logging.info('Object-notify: trying to send to %s for objectId=%s', tg_id, object_id)
             photo_url = None
             if image:
-                if str(image).startswith('http://') or str(image).startswith('https://'):
-                    photo_url = image
-                elif str(image).startswith('/'):
-                    photo_url = f"{BACKEND_URL.rstrip('/')}{image}"
-                else:
-                    photo_url = f"{BACKEND_URL.rstrip('/')}/uploads/{image}"
+                img_str = str(image).strip()
+                if img_str.startswith('http://') or img_str.startswith('https://'):
+                    photo_url = img_str
+                elif img_str.startswith('/'):
+                    photo_url = f"{BACKEND_URL.rstrip('/')}{img_str}"
+                elif img_str:
+                    photo_url = f"{BACKEND_URL.rstrip('/')}/uploads/{img_str}"
+                logging.info('Object-notify: photo_url for %s = %s', tg_id, photo_url)
 
             if photo_url:
                 try:
