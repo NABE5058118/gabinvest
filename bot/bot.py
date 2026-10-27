@@ -108,6 +108,32 @@ async def handle_object_notify(request: web.Request) -> web.Response:
             continue
         try:
             logging.info('Object-notify: trying to send to %s for objectId=%s', tg_id, object_id)
+            photo_url = None
+            if image:
+                if str(image).startswith('http://') or str(image).startswith('https://'):
+                    photo_url = image
+                elif str(image).startswith('/'):
+                    photo_url = f"{BACKEND_URL.rstrip('/')}{image}"
+                else:
+                    photo_url = f"{BACKEND_URL.rstrip('/')}/uploads/{image}"
+
+            if photo_url:
+                try:
+                    await bot_instance.send_photo(
+                        chat_id=int(tg_id),
+                        photo=photo_url,
+                        caption=text,
+                        parse_mode='HTML',
+                        reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
+                            InlineKeyboardButton(text='Смотреть в каталоге', url=link)
+                        ]])
+                    )
+                    notified += 1
+                    logging.info('Object-notify: successfully sent photo to %s', tg_id)
+                    continue
+                except Exception as exc:
+                    logging.warning('Object-notify: send_photo failed for %s, fallback to text: %s', tg_id, exc)
+
             await bot_instance.send_message(
                 chat_id=int(tg_id),
                 text=text,
