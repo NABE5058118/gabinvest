@@ -232,8 +232,14 @@ router.get('/objects', requireAdmin, async (req: Request, res: Response) => {
   }
 });
 
-router.get('/objects/:id', requireAdmin, async (req: Request, res: Response) => {
+router.get('/objects/:id', async (req: Request, res: Response) => {
   try {
+    if (!allowBotSync(req)) {
+      requireAdmin(req, res, () => {});
+      if (!req.adminActor) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+    }
     const id = String(req.params.id);
     const obj = await prisma.object.findUnique({
       where: { id },

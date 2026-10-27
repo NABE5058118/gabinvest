@@ -93,17 +93,20 @@ async def handle_object_notify(request: web.Request) -> web.Response:
     # Если картинка не пришла в вебхуке, попробуем получить её из бэкенда
     if not image:
         try:
-            obj_data = await backend.get(f'/api/admin/objects/{object_id}')
+            headers = {}
+            if BOT_SYNC_SECRET:
+                headers['x-bot-sync-secret'] = BOT_SYNC_SECRET
+            obj_data = await backend.get(f'/api/admin/objects/{object_id}', headers=headers)
             if isinstance(obj_data, dict):
                 if obj_data.get('image'):
                     image = obj_data.get('image')
                 elif obj_data.get('images') and isinstance(obj_data.get('images'), list) and len(obj_data['images']) > 0:
                     first_img = obj_data['images'][0]
                     if isinstance(first_img, dict):
-                        image = first_img.get('url') or first_img.get('image')
+                        image = first_img.get('url') or first_img.get('image') or first_img.get('src')
                     elif isinstance(first_img, str):
                         image = first_img
-            logging.info('Object-notify: fetched object from backend, image=%s', image)
+                logging.info('Object-notify: fetched object from backend, image=%s', image)
         except Exception as exc:
             logging.warning('Object-notify: failed to fetch object details: %s', exc)
 
