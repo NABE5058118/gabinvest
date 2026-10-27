@@ -27,11 +27,12 @@ async function notifyBotOfObject(objectId: string, object: { title: string; loca
     const res = await axios.post(
       BOT_WEBHOOK_URL.replace('/lead-notify', '/object-notify'),
       { objectId, ...object },
-      { headers, timeout: 5000 }
+      { headers, timeout: 3000 }
     );
     logger.info('Bot object notify sent', { objectId, status: res.status });
   } catch (err: any) {
     logger.warn('Bot object notify failed', { objectId, status: err?.response?.status, message: err?.message });
+    // Don't throw - notification failure should not block object creation
   }
 }
 
@@ -289,12 +290,14 @@ router.post('/objects', requireAdmin, async (req: Request, res: Response) => {
         placement: { create: { type: 'standard' } },
       },
     });
-    await notifyBotOfObject(obj.id, {
+    notifyBotOfObject(obj.id, {
       title: obj.title,
       location: obj.location,
       price: obj.price,
       priceIndicator: obj.priceIndicator,
       image: obj.image,
+    }).catch((err) => {
+      logger.warn('Object notify failed (non-blocking)', { err: err?.message });
     });
     res.status(201).json(obj);
   } catch (error) {
