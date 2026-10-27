@@ -74,8 +74,11 @@ async def handle_object_notify(request: web.Request) -> web.Response:
 
     # Запросить список подписанных пользователей у бэкенда
     subscribers = await backend.get_subscribers(object_id)
+    logging.info('Object-notify: fetched subscribers count=%s for objectId=%s', len(subscribers), object_id)
     if not subscribers:
         return web.json_response({'ok': True, 'notified': 0, 'message': 'No subscribers'})
+    
+    logging.info('Object-notify: subscribers data=%s', subscribers)
 
     # Формируем текст уведомления
     title = data.get('title', 'Новый объект')
@@ -98,6 +101,7 @@ async def handle_object_notify(request: web.Request) -> web.Response:
     for sub in subscribers:
         tg_id = sub.get('telegramId')
         if not tg_id:
+            logging.warning('Object-notify: subscriber missing telegramId: %s', sub)
             continue
         try:
             await bot_instance.send_message(
@@ -109,11 +113,12 @@ async def handle_object_notify(request: web.Request) -> web.Response:
                 ]])
             )
             notified += 1
+            logging.info('Object-notify: sent to %s', tg_id)
         except Exception as exc:
             logging.warning('Object-notify: failed to notify %s: %s', tg_id, exc)
             failed += 1
-
-    logging.info('Object-notify done: notified=%s failed=%s', notified, failed)
+    
+    logging.info('Object-notify done: notified=%s failed=%s for objectId=%s', notified, failed, object_id)
     return web.json_response({'ok': True, 'notified': notified, 'failed': failed})
 
 
