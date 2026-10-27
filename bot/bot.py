@@ -91,7 +91,7 @@ async def handle_object_notify(request: web.Request) -> web.Response:
     if indicator_label:
         text += f" ({indicator_label})"
 
-    link = f"https://t.me/gabinvest_bot/app?startapp=object_{object_id}"
+    link = f"{WEB_APP_URL.rstrip('/')}/?startapp=object_{object_id}"
 
     notified = 0
     failed = 0
