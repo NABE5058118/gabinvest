@@ -691,8 +691,32 @@ router.delete('/objects/:id/images/:imageId', requireAdmin, async (req: Request,
   }
 });
 
-router.get('/users/notify-subscribers', requireAdmin, async (req: Request, res: Response) => {
+function safeSecretEquals(expected: string, actual: string): boolean {
+  const a = Buffer.from(expected);
+  const b = Buffer.from(actual);
+  const size = Math.max(a.length, b.length, 1);
+  const paddedA = Buffer.alloc(size);
+  const paddedB = Buffer.alloc(size);
+  a.copy(paddedA);
+  b.copy(paddedB);
+  return crypto.timingSafeEqual(paddedA, paddedB) && a.length === b.length;
+}
+
+function allowBotSync(req: Request): boolean {
+  const configured = process.env.BOT_SYNC_SECRET;
+  const supplied = req.get('x-bot-sync-secret') || '';
+  return Boolean(configured) && Boolean(supplied) && safeSecretEquals(configured, supplied);
+}
+
+router.get('/users/notify-subscribers', async (req: Request, res: Response) => {
   try {
+    if (!allowBotSync(req)) {
+      requireAdmin(req, res, () => {});
+      // requireAdmin sends a 401 response on failure; if it didn't, continue.
+      if (!req.adminActor) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+    }
     const users = await prisma.user.findMany({
       where: { notifyNewObjects: true, telegramId: { not: null } },
       select: { telegramId: true },
