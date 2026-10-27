@@ -295,7 +295,7 @@ router.post('/objects', requireAdmin, async (req: Request, res: Response) => {
       location: obj.location,
       price: obj.price,
       priceIndicator: obj.priceIndicator,
-      image: obj.image,
+      image: obj.image || (await prisma.objectImage.findFirst({ where: { objectId: obj.id }, orderBy: { sort: 'asc' } }).then(img => img?.url) || null),
     }).catch((err) => {
       logger.warn('Object notify failed (non-blocking)', { err: err?.message });
     });
