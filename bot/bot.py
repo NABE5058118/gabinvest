@@ -65,11 +65,14 @@ async def handle_object_notify(request: web.Request) -> web.Response:
         return web.json_response({'error': 'Unauthorized'}, status=401)
     try:
         data = await request.json()
-    except Exception:
+    except Exception as exc:
+        logging.warning('Object-notify: invalid json from %s: %s', request.remote, exc)
         return web.json_response({'error': 'invalid json'}, status=400)
 
     object_id = data.get('objectId')
+    logging.info('Object-notify: received webhook from %s with data=%s', request.remote, data)
     if not object_id:
+        logging.warning('Object-notify: missing objectId from %s', request.remote)
         return web.json_response({'error': 'objectId is required'}, status=400)
 
     # Запросить список подписанных пользователей у бэкенда
@@ -104,6 +107,7 @@ async def handle_object_notify(request: web.Request) -> web.Response:
             logging.warning('Object-notify: subscriber missing telegramId: %s', sub)
             continue
         try:
+            logging.info('Object-notify: trying to send to %s for objectId=%s', tg_id, object_id)
             await bot_instance.send_message(
                 chat_id=int(tg_id),
                 text=text,
@@ -113,9 +117,9 @@ async def handle_object_notify(request: web.Request) -> web.Response:
                 ]])
             )
             notified += 1
-            logging.info('Object-notify: sent to %s', tg_id)
+            logging.info('Object-notify: successfully sent to %s', tg_id)
         except Exception as exc:
-            logging.warning('Object-notify: failed to notify %s: %s', tg_id, exc)
+            logging.exception('Object-notify: EXCEPTION sending to %s: %s', tg_id, exc)
             failed += 1
     
     logging.info('Object-notify done: notified=%s failed=%s for objectId=%s', notified, failed, object_id)
