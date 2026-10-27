@@ -105,7 +105,7 @@ async def handle_object_notify(request: web.Request) -> web.Response:
                 text=text,
                 parse_mode='HTML',
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
-                    InlineKeyboardButton(text='Смотреть в каталоге', web_app=WebAppInfo(url=link))
+                    InlineKeyboardButton(text='Смотреть в каталоге', url=link)
                 ]])
             )
             notified += 1
