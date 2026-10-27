@@ -691,7 +691,8 @@ router.delete('/objects/:id/images/:imageId', requireAdmin, async (req: Request,
   }
 });
 
-function safeSecretEquals(expected: string, actual: string): boolean {
+function safeSecretEquals(expected: string | undefined, actual: string | undefined): boolean {
+  if (!expected || !actual) return false;
   const a = Buffer.from(expected);
   const b = Buffer.from(actual);
   const size = Math.max(a.length, b.length, 1);
