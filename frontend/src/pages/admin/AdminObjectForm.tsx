@@ -100,11 +100,18 @@ export default function AdminObjectForm() {
     }
   }, [id]);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    setImageFiles((prev) => [...prev, ...files]);
-    setImagePreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))]);
+  const parseDateInput = (value: string): string => {
+    // Accept DD.MM.YYYY or DD.MM.YYYYYY and normalize to YYYY-MM-DD
+    const m = value.match(/^(\d{1,2})\.(\d{1,2})\.(\d{1,})$/);
+    if (!m) return value;
+    const day = m[1].padStart(2, '0');
+    const month = m[2].padStart(2, '0');
+    const year = m[3].padStart(4, '0').slice(0, 4);
+    return `${year}-${month}-${day}`;
+  };
+
+  const handleDateChange = (field: 'leaseStartDate' | 'leaseEndDate') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [field]: parseDateInput(e.target.value) });
   };
 
   const uploadImages = async (objectId: string): Promise<void> => {
@@ -395,7 +402,7 @@ export default function AdminObjectForm() {
             className={styles.input}
             type="date"
             value={form.leaseStartDate}
-            onChange={(e) => setForm({ ...form, leaseStartDate: e.target.value })}
+            onChange={handleDateChange('leaseStartDate')}
             aria-invalid={!!fieldErrors.leaseStartDate}
             aria-describedby={fieldErrors.leaseStartDate ? 'field-error-leaseStartDate' : undefined}
           />
@@ -409,7 +416,7 @@ export default function AdminObjectForm() {
             className={styles.input}
             type="date"
             value={form.leaseEndDate}
-            onChange={(e) => setForm({ ...form, leaseEndDate: e.target.value })}
+            onChange={handleDateChange('leaseEndDate')}
           />
         </div>
 
