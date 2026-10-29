@@ -171,7 +171,7 @@ async def handle_object_notify(request: web.Request) -> web.Response:
     price_label = f"{int(price):,}".replace(',', ' ') + ' ₽' if price else ''
     indicator_label = {'below_market': 'ниже рынка', 'market': 'по рынку', 'above_market': 'выше рынка'}.get(price_indicator, price_indicator)
 
-    text = f"<b>🆕 Новый объект на продажу!</b>\n\n<b>{title}</b>\n📍 {location}\n💰 {price_label}"
+    text = f"Новый объект на продажу!\n\nОбъект: {title}\nЛокация: {location}\nЦена: {price_label}"
     if indicator_label:
         text += f" ({indicator_label})"
 
@@ -205,7 +205,6 @@ async def handle_object_notify(request: web.Request) -> web.Response:
                             chat_id=int(tg_id),
                             photo=BufferedInputFile(img_bytes, filename='photo.jpg'),
                             caption=text,
-                            parse_mode='HTML',
                             reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
                                 InlineKeyboardButton(text='Смотреть в каталоге', url=link)
                             ]])
@@ -219,7 +218,6 @@ async def handle_object_notify(request: web.Request) -> web.Response:
             await bot_instance.send_message(
                 chat_id=int(tg_id),
                 text=text,
-                parse_mode='HTML',
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
                     InlineKeyboardButton(text='Смотреть в каталоге', url=link)
                 ]])
