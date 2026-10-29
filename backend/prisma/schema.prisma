@@ -1,6 +1,6 @@
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["debian-openssl-3.0.x", "rhel-openssl-3.0.x", "debian-openssl-1.1.x", "linux-arm64-openssl-3.0.x"]
+  binaryTargets = ["debian-openssl-3.0.x", "rhel-openssl-3.0.x", "debian-openssl-1.1.x", "linux-arm64-openssl-3.0.x", "darwin"]
 }
 
 datasource db {
@@ -99,7 +99,8 @@ model Object {
   description     String?
   monthlyRent     Int?
   annualRevenue   Int?
-  leaseEndDate    DateTime?
+  leaseStartDate    DateTime?
+  leaseEndDate      DateTime?
   anchorTenantName String?
   priceIndicator  PriceIndicator?
   @@index([city])
@@ -107,6 +108,7 @@ model Object {
   @@index([price])
   @@index([area])
   @@index([yieldPercent])
+  @@index([leaseStartDate])
   @@index([leaseEndDate])
   @@index([createdAt])
   @@index([city, type, price])

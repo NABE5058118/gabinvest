@@ -16,6 +16,7 @@ type ObjectItem = {
   area: number;
   monthlyRent?: number;
   annualRevenue?: number;
+  leaseStartDate?: string;
   leaseEndDate?: string;
   anchorTenantName?: string;
   priceIndicator?: string;
@@ -39,6 +40,7 @@ export default function AdminObjectForm() {
     area: '',
     monthlyRent: '',
     annualRevenue: '',
+    leaseStartDate: '',
     leaseEndDate: '',
     anchorTenantName: '',
     priceIndicator: '',
@@ -80,6 +82,7 @@ export default function AdminObjectForm() {
             area: String(data.area),
             monthlyRent: data.monthlyRent ? String(data.monthlyRent) : '',
             annualRevenue: data.annualRevenue ? String(data.annualRevenue) : '',
+            leaseStartDate: data.leaseStartDate ? data.leaseStartDate.slice(0, 10) : '',
             leaseEndDate: data.leaseEndDate ? data.leaseEndDate.slice(0, 10) : '',
             anchorTenantName: data.anchorTenantName || '',
             priceIndicator: data.priceIndicator || '',
@@ -125,6 +128,9 @@ export default function AdminObjectForm() {
     if (form.yieldPercent === '' || Number(form.yieldPercent) < 0) errors.yieldPercent = 'Укажите доходность';
     if (!form.location.trim()) errors.location = 'Укажите локацию';
     if (form.area === '' || Number(form.area) <= 0) errors.area = 'Укажите площадь';
+    if (form.leaseStartDate && form.leaseEndDate && form.leaseStartDate > form.leaseEndDate) {
+      errors.leaseStartDate = 'Дата начала не может быть позже даты окончания';
+    }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -141,6 +147,7 @@ export default function AdminObjectForm() {
       area: String(data.area),
       monthlyRent: data.monthlyRent ? String(data.monthlyRent) : '',
       annualRevenue: data.annualRevenue ? String(data.annualRevenue) : '',
+      leaseStartDate: data.leaseStartDate ? data.leaseStartDate.slice(0, 10) : '',
       leaseEndDate: data.leaseEndDate ? data.leaseEndDate.slice(0, 10) : '',
       anchorTenantName: data.anchorTenantName || '',
       priceIndicator: data.priceIndicator || '',
@@ -179,6 +186,7 @@ export default function AdminObjectForm() {
       area: Number(form.area),
       monthlyRent: form.monthlyRent ? Number(form.monthlyRent) : null,
       annualRevenue: form.annualRevenue ? Number(form.annualRevenue) : null,
+      leaseStartDate: form.leaseStartDate ? new Date(form.leaseStartDate) : null,
       leaseEndDate: form.leaseEndDate ? new Date(form.leaseEndDate) : null,
       anchorTenantName: form.anchorTenantName || null,
       priceIndicator: form.priceIndicator || null,
@@ -378,6 +386,20 @@ export default function AdminObjectForm() {
             value={form.annualRevenue}
             onChange={(e) => setForm({ ...form, annualRevenue: e.target.value })}
           />
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="leaseStartDate">Начало договора аренды</label>
+          <input
+            id="leaseStartDate"
+            className={styles.input}
+            type="date"
+            value={form.leaseStartDate}
+            onChange={(e) => setForm({ ...form, leaseStartDate: e.target.value })}
+            aria-invalid={!!fieldErrors.leaseStartDate}
+            aria-describedby={fieldErrors.leaseStartDate ? 'field-error-leaseStartDate' : undefined}
+          />
+          {fieldErrors.leaseStartDate && <div id="field-error-leaseStartDate" className={styles.fieldError}>{fieldErrors.leaseStartDate}</div>}
         </div>
 
         <div className={styles.field}>

@@ -47,7 +47,7 @@ type PlacementType = typeof placementTypeEnum[number];
 const moderationStatusEnum = ['pending', 'approved', 'rejected'] as const;
 type ModerationStatus = typeof moderationStatusEnum[number];
 
-const createObjectSchema = z.object({
+const objectBaseSchema = z.object({
   title: z.string().min(1).max(200),
   type: z.enum(objectTypeEnum),
   price: z.coerce.number().int().positive().max(2_147_483_647, 'Цена слишком большая'),
@@ -57,6 +57,7 @@ const createObjectSchema = z.object({
   area: z.coerce.number().int().positive().max(1_000_000, 'Площадь слишком большая'),
   monthlyRent: z.coerce.number().int().positive().nullable().optional(),
   annualRevenue: z.coerce.number().int().positive().nullable().optional(),
+  leaseStartDate: z.coerce.date().nullable().optional(),
   leaseEndDate: z.coerce.date().nullable().optional(),
   anchorTenantName: z.string().max(200).nullable().optional(),
   priceIndicator: z.enum(priceIndicatorEnum).nullable().optional(),
@@ -64,7 +65,17 @@ const createObjectSchema = z.object({
   image: z.string().nullable().optional(),
 });
 
-const updateObjectSchema = createObjectSchema.partial();
+const createObjectSchema = objectBaseSchema.refine(
+  (data) =>
+    !data.leaseStartDate || !data.leaseEndDate || data.leaseStartDate <= data.leaseEndDate,
+  { path: ['leaseStartDate'], message: 'Дата начала аренды не может быть позже даты окончания' },
+);
+
+const updateObjectSchema = objectBaseSchema.partial().refine(
+  (data) =>
+    !data.leaseStartDate || !data.leaseEndDate || data.leaseStartDate <= data.leaseEndDate,
+  { path: ['leaseStartDate'], message: 'Дата начала аренды не может быть позже даты окончания' },
+);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
@@ -240,6 +251,7 @@ router.post('/objects', requireAdmin, async (req: Request, res: Response) => {
         area,
         monthlyRent: data.monthlyRent || null,
         annualRevenue: data.annualRevenue || null,
+        leaseStartDate: data.leaseStartDate || null,
         leaseEndDate: data.leaseEndDate || null,
         anchorTenantName: data.anchorTenantName || null,
         priceIndicator: data.priceIndicator || null,
@@ -284,6 +296,7 @@ router.put('/objects/:id', requireAdmin, async (req: Request, res: Response) => 
     if (data.area !== undefined) updateData.area = data.area;
     if (data.monthlyRent !== undefined) updateData.monthlyRent = data.monthlyRent;
     if (data.annualRevenue !== undefined) updateData.annualRevenue = data.annualRevenue;
+    if (data.leaseStartDate !== undefined) updateData.leaseStartDate = data.leaseStartDate;
     if (data.leaseEndDate !== undefined) updateData.leaseEndDate = data.leaseEndDate;
     if (data.anchorTenantName !== undefined) updateData.anchorTenantName = data.anchorTenantName;
     if (data.priceIndicator !== undefined) updateData.priceIndicator = data.priceIndicator;
