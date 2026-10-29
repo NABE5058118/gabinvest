@@ -23,7 +23,7 @@ async function notifyBotOfObject(objectId: string, object: { title: string; loca
     const status = await sendBotWebhook(
       'object',
       { objectId, ...object },
-      3000
+      15000
     );
     if (status === null) return;
     logger.info('Bot object notify sent', { objectId, status });

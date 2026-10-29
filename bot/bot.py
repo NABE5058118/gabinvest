@@ -1,9 +1,10 @@
 """GAB Invest Telegram Bot — deals, attribution, commissions."""
 import os, asyncio, logging, sys, re, hashlib, hmac, ipaddress, ssl
 from aiogram import Bot, Dispatcher, types, Router, F
-from aiogram.types import WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton, BufferedInputFile
 from aiogram.filters import Command
 from aiohttp import ClientSession, web
+import aiohttp
 
 from backend_client import BackendClient
 from anti_bypass import is_allowed
@@ -59,6 +60,17 @@ def webhook_ip_allowed(remote: str | None) -> bool:
     except ValueError:
         return False
     return any(address in network for network in ALLOWED_WEBHOOK_NETWORKS)
+
+
+async def download_image(url: str, timeout: int = 10) -> bytes | None:
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=timeout)) as resp:
+                if resp.status == 200:
+                    return await resp.read()
+    except Exception as exc:
+        logging.warning('Object-notify: failed to download image %s: %s', url, exc)
+    return None
 
 
 @web.middleware
@@ -186,21 +198,23 @@ async def handle_object_notify(request: web.Request) -> web.Response:
                 logging.info('Object-notify: photo_url for %s = %s', tg_id, photo_url)
 
             if photo_url:
-                try:
-                    await bot_instance.send_photo(
-                        chat_id=int(tg_id),
-                        photo=photo_url,
-                        caption=text,
-                        parse_mode='HTML',
-                        reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
-                            InlineKeyboardButton(text='Смотреть в каталоге', url=link)
-                        ]])
-                    )
-                    notified += 1
-                    logging.info('Object-notify: successfully sent photo to %s', tg_id)
-                    continue
-                except Exception as exc:
-                    logging.warning('Object-notify: send_photo failed for %s, fallback to text: %s', tg_id, exc)
+                img_bytes = await download_image(photo_url, timeout=10)
+                if img_bytes:
+                    try:
+                        await bot_instance.send_photo(
+                            chat_id=int(tg_id),
+                            photo=BufferedInputFile(img_bytes, filename='photo.jpg'),
+                            caption=text,
+                            parse_mode='HTML',
+                            reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
+                                InlineKeyboardButton(text='Смотреть в каталоге', url=link)
+                            ]])
+                        )
+                        notified += 1
+                        logging.info('Object-notify: successfully sent photo bytes to %s', tg_id)
+                        continue
+                    except Exception as exc:
+                        logging.warning('Object-notify: send_photo failed for %s, fallback to text: %s', tg_id, exc)
 
             await bot_instance.send_message(
                 chat_id=int(tg_id),
