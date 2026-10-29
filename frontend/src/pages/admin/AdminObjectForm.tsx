@@ -114,6 +114,13 @@ export default function AdminObjectForm() {
     setForm({ ...form, [field]: parseDateInput(e.target.value) });
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setImageFiles((prev) => [...prev, ...files]);
+    setImagePreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))]);
+  };
+
   const uploadImages = async (objectId: string): Promise<void> => {
     if (!imageFiles.length) return;
     const formData = new FormData();
