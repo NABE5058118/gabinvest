@@ -1,17 +1,16 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
-import axios from 'axios';
 import { prisma } from '../lib/prisma.js';
 import { sendTelegramMessage } from '../utils/telegram.js';
 import { z } from 'zod';
 import { requireAdmin } from '../routes/admin.js';
 import { authMiddleware, optionalAuth } from '../middleware/jwt.js';
 import { createLogger } from '../utils/logger.js';
+import { getBotWebhookUrl, sendBotWebhook } from '../lib/botWebhook.js';
+import { signGuestToken, verifyGuestToken } from '../lib/tokens.js';
 
 const router = Router();
 const logger = createLogger('leads');
-const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'test' ? 'test-jwt-secret' : '');
 const PAGE_LIMIT = 50;
 
 const escapeHtml = (s: string) =>
@@ -34,22 +33,19 @@ const statusSchema = z.object({
 
 const MANAGER_CHAT_ID = process.env.MANAGER_CHAT_ID || '';
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
-const BOT_WEBHOOK_URL = (process.env.BOT_WEBHOOK_URL || '').trim();
-const BOT_SYNC_SECRET = process.env.BOT_SYNC_SECRET || '';
+const BOT_WEBHOOK_ENABLED = Boolean(getBotWebhookUrl('lead'));
 
 async function notifyBotOfLead(leadId: string, text: string): Promise<void> {
-  if (!BOT_WEBHOOK_URL) {
+  if (!BOT_WEBHOOK_ENABLED) {
     // Фоллбэк: прямая отправка в Telegram (работает только если бэкенд может достучаться до api.telegram.org).
     if (MANAGER_CHAT_ID && BOT_TOKEN) {
       await sendTelegramMessage(BOT_TOKEN, MANAGER_CHAT_ID, text);
     }
     return;
   }
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (BOT_SYNC_SECRET) headers['x-bot-sync-secret'] = BOT_SYNC_SECRET;
   try {
-    const res = await axios.post(BOT_WEBHOOK_URL, { leadId, text }, { headers, timeout: 5000 });
-    logger.info('Bot webhook notified', { leadId, status: res.status });
+    const status = await sendBotWebhook('lead', { leadId, text }, 5000);
+    logger.info('Bot webhook notified', { leadId, status });
   } catch (err: any) {
     logger.warn('Bot webhook notify failed', { leadId, status: err?.response?.status, message: err?.message });
   }
@@ -57,9 +53,7 @@ async function notifyBotOfLead(leadId: string, text: string): Promise<void> {
 
 async function notifyBotOfStatus(leadId: string, clientTelegramId: string | null | undefined, status: string, objectTitle: string): Promise<void> {
   if (!clientTelegramId) return;
-  if (!BOT_WEBHOOK_URL) return;
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (BOT_SYNC_SECRET) headers['x-bot-sync-secret'] = BOT_SYNC_SECRET;
+  if (!BOT_WEBHOOK_ENABLED) return;
   const statusLabels: Record<string, string> = {
     new: 'новая',
     in_progress: 'в работе',
@@ -73,34 +67,19 @@ async function notifyBotOfStatus(leadId: string, clientTelegramId: string | null
 <b>Новый статус:</b> ${statusLabels[status] || status}
     `.trim();
   try {
-    const res = await axios.post(
-      BOT_WEBHOOK_URL.replace('/lead-notify', '/notify-status'),
+    const statusCode = await sendBotWebhook(
+      'status',
       { leadId, clientTelegramId, status, text },
-      { headers, timeout: 5000 }
+      5000
     );
-    logger.info('Bot status notify sent', { leadId, status: res.status });
+    logger.info('Bot status notify sent', { leadId, status: statusCode });
   } catch (err: any) {
     logger.warn('Bot status notify failed', { leadId, status: err?.response?.status, message: err?.message });
   }
 }
 
-function issueGuestLeadToken(clientId: string): string {
-  return jwt.sign({ scope: 'guest-leads', clientId }, JWT_SECRET, { expiresIn: '365d', algorithm: 'HS256' });
-}
-
-function readGuestLeadToken(token: unknown): string | null {
-  if (typeof token !== 'string' || !JWT_SECRET) return null;
-  try {
-    const payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as { scope?: string; clientId?: string };
-    if (payload.scope !== 'guest-leads' || !payload.clientId || payload.clientId.length > 100) return null;
-    return payload.clientId;
-  } catch {
-    return null;
-  }
-}
-
 async function mergeGuestLeads(clientToken: unknown, userId: string): Promise<void> {
-  const guestClientId = readGuestLeadToken(clientToken);
+  const guestClientId = verifyGuestToken(clientToken);
   if (!guestClientId) return;
   await prisma.lead.updateMany({
     where: { clientId: guestClientId, userId: null },
@@ -173,8 +152,8 @@ router.post('/', optionalAuth, async (req: Request, res: Response) => {
     let actualGuestClientId: string | undefined;
     let nextGuestToken: string | undefined;
     if (!userId) {
-      actualGuestClientId = readGuestLeadToken(guestToken) || crypto.randomUUID();
-      nextGuestToken = issueGuestLeadToken(actualGuestClientId);
+      actualGuestClientId = verifyGuestToken(guestToken) || crypto.randomUUID();
+      nextGuestToken = signGuestToken(actualGuestClientId);
     }
 
     const lead = await prisma.lead.create({
@@ -244,7 +223,7 @@ router.get('/my', optionalAuth, async (req: Request, res: Response) => {
       return res.json(leads);
     }
 
-    const clientId = readGuestLeadToken(req.headers['x-client-id'] || req.query.clientId);
+    const clientId = verifyGuestToken(req.headers['x-client-id'] || req.query.clientId);
     if (!clientId) return res.json([]);
     const leads = await prisma.lead.findMany({
       where: { clientId, userId: null },
@@ -303,7 +282,7 @@ router.delete('/my/:id', optionalAuth, async (req: Request, res: Response) => {
       return res.status(204).send();
     }
 
-    const clientId = readGuestLeadToken(req.headers['x-client-id'] || req.query.clientId);
+    const clientId = verifyGuestToken(req.headers['x-client-id'] || req.query.clientId);
     if (!clientId) return res.status(401).json({ error: 'Unauthorized' });
     const result = await prisma.lead.deleteMany({ where: { id, clientId, userId: null } });
     if (result.count === 0) return res.status(404).json({ error: 'Lead not found' });

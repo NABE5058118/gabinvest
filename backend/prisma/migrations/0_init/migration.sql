@@ -2,34 +2,124 @@
 CREATE SCHEMA IF NOT EXISTS "public";
 
 -- CreateEnum
-CREATE TYPE "PlacementType" AS ENUM ('standard', 'paid', 'exclusive');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'PlacementType' AND n.nspname = 'public'
+  ) THEN
+    CREATE TYPE "PlacementType" AS ENUM ('standard', 'paid', 'exclusive');
+  END IF;
+END
+$$;
 
 -- CreateEnum
-CREATE TYPE "ModerationStatus" AS ENUM ('pending', 'approved', 'rejected');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'ModerationStatus' AND n.nspname = 'public'
+  ) THEN
+    CREATE TYPE "ModerationStatus" AS ENUM ('pending', 'approved', 'rejected');
+  END IF;
+END
+$$;
 
 -- CreateEnum
-CREATE TYPE "PriceIndicator" AS ENUM ('below_market', 'market', 'above_market');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'PriceIndicator' AND n.nspname = 'public'
+  ) THEN
+    CREATE TYPE "PriceIndicator" AS ENUM ('below_market', 'market', 'above_market');
+  END IF;
+END
+$$;
 
 -- CreateEnum
-CREATE TYPE "DealStage" AS ENUM ('offer', 'counter_offer', 'deposit', 'verification', 'contract', 'registration', 'closed', 'cancelled');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'DealStage' AND n.nspname = 'public'
+  ) THEN
+    CREATE TYPE "DealStage" AS ENUM ('offer', 'counter_offer', 'deposit', 'verification', 'contract', 'registration', 'closed', 'cancelled');
+  END IF;
+END
+$$;
 
 -- CreateEnum
-CREATE TYPE "DealStatus" AS ENUM ('active', 'completed', 'cancelled', 'disputed');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'DealStatus' AND n.nspname = 'public'
+  ) THEN
+    CREATE TYPE "DealStatus" AS ENUM ('active', 'completed', 'cancelled', 'disputed');
+  END IF;
+END
+$$;
 
 -- CreateEnum
-CREATE TYPE "CommissionStatus" AS ENUM ('pending', 'reserved', 'released', 'refunded');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'CommissionStatus' AND n.nspname = 'public'
+  ) THEN
+    CREATE TYPE "CommissionStatus" AS ENUM ('pending', 'reserved', 'released', 'refunded');
+  END IF;
+END
+$$;
 
 -- CreateEnum
-CREATE TYPE "AuditEventType" AS ENUM ('user_registered', 'user_verified', 'deal_created', 'deal_stage_changed', 'offer_sent', 'counter_offer_sent', 'deposit_paid', 'contract_signed', 'registration_completed', 'deal_closed', 'payment_received', 'commission_reserved', 'commission_released', 'contact_disclosed', 'chat_message_sent', 'anti_bypass_violation', 'deal_alert_created');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'AuditEventType' AND n.nspname = 'public'
+  ) THEN
+    CREATE TYPE "AuditEventType" AS ENUM ('user_registered', 'user_verified', 'deal_created', 'deal_stage_changed', 'offer_sent', 'counter_offer_sent', 'deposit_paid', 'contract_signed', 'registration_completed', 'deal_closed', 'payment_received', 'commission_reserved', 'commission_released', 'contact_disclosed', 'chat_message_sent', 'anti_bypass_violation', 'deal_alert_created');
+  END IF;
+END
+$$;
 
 -- CreateEnum
-CREATE TYPE "TouchSource" AS ENUM ('direct', 'deep_link', 'referral', 'utm', 'qr', 'invite');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'TouchSource' AND n.nspname = 'public'
+  ) THEN
+    CREATE TYPE "TouchSource" AS ENUM ('direct', 'deep_link', 'referral', 'utm', 'qr', 'invite');
+  END IF;
+END
+$$;
 
 -- CreateEnum
-CREATE TYPE "VerificationMethod" AS ENUM ('telegram', 'sms', 'email');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'VerificationMethod' AND n.nspname = 'public'
+  ) THEN
+    CREATE TYPE "VerificationMethod" AS ENUM ('telegram', 'sms', 'email');
+  END IF;
+END
+$$;
 
 -- CreateTable
-CREATE TABLE "Object" (
+CREATE TABLE IF NOT EXISTS "Object" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "type" TEXT NOT NULL,
@@ -55,7 +145,7 @@ CREATE TABLE "Object" (
 );
 
 -- CreateTable
-CREATE TABLE "ObjectImage" (
+CREATE TABLE IF NOT EXISTS "ObjectImage" (
     "id" TEXT NOT NULL,
     "objectId" TEXT NOT NULL,
     "url" TEXT NOT NULL,
@@ -66,7 +156,7 @@ CREATE TABLE "ObjectImage" (
 );
 
 -- CreateTable
-CREATE TABLE "Tenant" (
+CREATE TABLE IF NOT EXISTS "Tenant" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "isAnchor" BOOLEAN NOT NULL DEFAULT false,
@@ -79,7 +169,7 @@ CREATE TABLE "Tenant" (
 );
 
 -- CreateTable
-CREATE TABLE "Lease" (
+CREATE TABLE IF NOT EXISTS "Lease" (
     "id" TEXT NOT NULL,
     "objectId" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
@@ -96,7 +186,7 @@ CREATE TABLE "Lease" (
 );
 
 -- CreateTable
-CREATE TABLE "Expense" (
+CREATE TABLE IF NOT EXISTS "Expense" (
     "id" TEXT NOT NULL,
     "objectId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -111,7 +201,7 @@ CREATE TABLE "Expense" (
 );
 
 -- CreateTable
-CREATE TABLE "LegalConstraint" (
+CREATE TABLE IF NOT EXISTS "LegalConstraint" (
     "id" TEXT NOT NULL,
     "objectId" TEXT NOT NULL,
     "type" TEXT NOT NULL,
@@ -123,7 +213,7 @@ CREATE TABLE "LegalConstraint" (
 );
 
 -- CreateTable
-CREATE TABLE "EngineeringSpec" (
+CREATE TABLE IF NOT EXISTS "EngineeringSpec" (
     "id" TEXT NOT NULL,
     "objectId" TEXT NOT NULL,
     "electricityKw" INTEGER,
@@ -136,7 +226,7 @@ CREATE TABLE "EngineeringSpec" (
 );
 
 -- CreateTable
-CREATE TABLE "VatRate" (
+CREATE TABLE IF NOT EXISTS "VatRate" (
     "id" TEXT NOT NULL,
     "objectId" TEXT NOT NULL,
     "rate" INTEGER NOT NULL,
@@ -148,7 +238,7 @@ CREATE TABLE "VatRate" (
 );
 
 -- CreateTable
-CREATE TABLE "Moderation" (
+CREATE TABLE IF NOT EXISTS "Moderation" (
     "id" TEXT NOT NULL,
     "objectId" TEXT NOT NULL,
     "status" "ModerationStatus" NOT NULL DEFAULT 'pending',
@@ -162,7 +252,7 @@ CREATE TABLE "Moderation" (
 );
 
 -- CreateTable
-CREATE TABLE "Placement" (
+CREATE TABLE IF NOT EXISTS "Placement" (
     "id" TEXT NOT NULL,
     "objectId" TEXT NOT NULL,
     "type" "PlacementType" NOT NULL DEFAULT 'standard',
@@ -175,7 +265,7 @@ CREATE TABLE "Placement" (
 );
 
 -- CreateTable
-CREATE TABLE "CommercialOffer" (
+CREATE TABLE IF NOT EXISTS "CommercialOffer" (
     "id" TEXT NOT NULL,
     "objectId" TEXT NOT NULL,
     "content" JSONB NOT NULL,
@@ -186,7 +276,7 @@ CREATE TABLE "CommercialOffer" (
 );
 
 -- CreateTable
-CREATE TABLE "Lead" (
+CREATE TABLE IF NOT EXISTS "Lead" (
     "id" TEXT NOT NULL,
     "objectId" TEXT NOT NULL,
     "userId" TEXT,
@@ -202,7 +292,7 @@ CREATE TABLE "Lead" (
 );
 
 -- CreateTable
-CREATE TABLE "User" (
+CREATE TABLE IF NOT EXISTS "User" (
     "id" TEXT NOT NULL,
     "telegramId" TEXT,
     "telegramPhotoUrl" TEXT,
@@ -223,7 +313,7 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
-CREATE TABLE "Favorite" (
+CREATE TABLE IF NOT EXISTS "Favorite" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "objectId" TEXT NOT NULL,
@@ -233,7 +323,7 @@ CREATE TABLE "Favorite" (
 );
 
 -- CreateTable
-CREATE TABLE "Consent" (
+CREATE TABLE IF NOT EXISTS "Consent" (
     "id" TEXT NOT NULL,
     "userId" TEXT,
     "leadId" TEXT,
@@ -248,7 +338,7 @@ CREATE TABLE "Consent" (
 );
 
 -- CreateTable
-CREATE TABLE "Payment" (
+CREATE TABLE IF NOT EXISTS "Payment" (
     "id" TEXT NOT NULL,
     "dealId" TEXT,
     "objectId" TEXT NOT NULL,
@@ -264,7 +354,7 @@ CREATE TABLE "Payment" (
 );
 
 -- CreateTable
-CREATE TABLE "Attribution" (
+CREATE TABLE IF NOT EXISTS "Attribution" (
     "id" TEXT NOT NULL,
     "userId" TEXT,
     "telegramId" TEXT,
@@ -284,7 +374,7 @@ CREATE TABLE "Attribution" (
 );
 
 -- CreateTable
-CREATE TABLE "Deal" (
+CREATE TABLE IF NOT EXISTS "Deal" (
     "id" TEXT NOT NULL,
     "objectId" TEXT NOT NULL,
     "buyerId" TEXT NOT NULL,
@@ -302,7 +392,7 @@ CREATE TABLE "Deal" (
 );
 
 -- CreateTable
-CREATE TABLE "DealStageLog" (
+CREATE TABLE IF NOT EXISTS "DealStageLog" (
     "id" TEXT NOT NULL,
     "dealId" TEXT NOT NULL,
     "fromStage" TEXT,
@@ -315,7 +405,7 @@ CREATE TABLE "DealStageLog" (
 );
 
 -- CreateTable
-CREATE TABLE "Commission" (
+CREATE TABLE IF NOT EXISTS "Commission" (
     "id" TEXT NOT NULL,
     "dealId" TEXT NOT NULL,
     "amount" INTEGER NOT NULL,
@@ -335,7 +425,7 @@ CREATE TABLE "Commission" (
 );
 
 -- CreateTable
-CREATE TABLE "AuditEvent" (
+CREATE TABLE IF NOT EXISTS "AuditEvent" (
     "id" TEXT NOT NULL,
     "eventType" "AuditEventType" NOT NULL,
     "userId" TEXT,
@@ -350,7 +440,7 @@ CREATE TABLE "AuditEvent" (
 );
 
 -- CreateTable
-CREATE TABLE "Chat" (
+CREATE TABLE IF NOT EXISTS "Chat" (
     "id" TEXT NOT NULL,
     "dealId" TEXT NOT NULL,
     "participant1" TEXT NOT NULL,
@@ -362,7 +452,7 @@ CREATE TABLE "Chat" (
 );
 
 -- CreateTable
-CREATE TABLE "ChatMessage" (
+CREATE TABLE IF NOT EXISTS "ChatMessage" (
     "id" TEXT NOT NULL,
     "chatId" TEXT NOT NULL,
     "senderId" TEXT NOT NULL,
@@ -375,7 +465,7 @@ CREATE TABLE "ChatMessage" (
 );
 
 -- CreateTable
-CREATE TABLE "PhoneVerification" (
+CREATE TABLE IF NOT EXISTS "PhoneVerification" (
     "id" TEXT NOT NULL,
     "userId" TEXT,
     "phone" TEXT NOT NULL,
@@ -392,7 +482,7 @@ CREATE TABLE "PhoneVerification" (
 );
 
 -- CreateTable
-CREATE TABLE "Referral" (
+CREATE TABLE IF NOT EXISTS "Referral" (
     "id" TEXT NOT NULL,
     "referrerId" TEXT NOT NULL,
     "refereeId" TEXT NOT NULL,
@@ -403,7 +493,7 @@ CREATE TABLE "Referral" (
 );
 
 -- CreateTable
-CREATE TABLE "AntiBypassRule" (
+CREATE TABLE IF NOT EXISTS "AntiBypassRule" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "pattern" TEXT NOT NULL,
@@ -415,7 +505,7 @@ CREATE TABLE "AntiBypassRule" (
 );
 
 -- CreateTable
-CREATE TABLE "PaymentProvider" (
+CREATE TABLE IF NOT EXISTS "PaymentProvider" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "enabled" BOOLEAN NOT NULL DEFAULT true,
@@ -427,7 +517,7 @@ CREATE TABLE "PaymentProvider" (
 );
 
 -- CreateTable
-CREATE TABLE "Payout" (
+CREATE TABLE IF NOT EXISTS "Payout" (
     "id" TEXT NOT NULL,
     "commissionId" TEXT NOT NULL,
     "amount" INTEGER NOT NULL,
@@ -442,338 +532,658 @@ CREATE TABLE "Payout" (
 );
 
 -- CreateIndex
-CREATE INDEX "Object_city_idx" ON "Object"("city");
+CREATE INDEX IF NOT EXISTS "Object_city_idx" ON "Object"("city");
 
 -- CreateIndex
-CREATE INDEX "Object_type_idx" ON "Object"("type");
+CREATE INDEX IF NOT EXISTS "Object_type_idx" ON "Object"("type");
 
 -- CreateIndex
-CREATE INDEX "Object_price_idx" ON "Object"("price");
+CREATE INDEX IF NOT EXISTS "Object_price_idx" ON "Object"("price");
 
 -- CreateIndex
-CREATE INDEX "Object_area_idx" ON "Object"("area");
+CREATE INDEX IF NOT EXISTS "Object_area_idx" ON "Object"("area");
 
 -- CreateIndex
-CREATE INDEX "Object_yieldPercent_idx" ON "Object"("yieldPercent");
+CREATE INDEX IF NOT EXISTS "Object_yieldPercent_idx" ON "Object"("yieldPercent");
 
 -- CreateIndex
-CREATE INDEX "Object_leaseEndDate_idx" ON "Object"("leaseEndDate");
+CREATE INDEX IF NOT EXISTS "Object_leaseEndDate_idx" ON "Object"("leaseEndDate");
 
 -- CreateIndex
-CREATE INDEX "Object_createdAt_idx" ON "Object"("createdAt");
+CREATE INDEX IF NOT EXISTS "Object_createdAt_idx" ON "Object"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "Object_city_type_price_idx" ON "Object"("city", "type", "price");
+CREATE INDEX IF NOT EXISTS "Object_city_type_price_idx" ON "Object"("city", "type", "price");
 
 -- CreateIndex
-CREATE INDEX "Object_city_price_idx" ON "Object"("city", "price");
+CREATE INDEX IF NOT EXISTS "Object_city_price_idx" ON "Object"("city", "price");
 
 -- CreateIndex
-CREATE INDEX "Object_type_yieldPercent_idx" ON "Object"("type", "yieldPercent");
+CREATE INDEX IF NOT EXISTS "Object_type_yieldPercent_idx" ON "Object"("type", "yieldPercent");
 
 -- CreateIndex
-CREATE INDEX "ObjectImage_objectId_idx" ON "ObjectImage"("objectId");
+CREATE INDEX IF NOT EXISTS "ObjectImage_objectId_idx" ON "ObjectImage"("objectId");
 
 -- CreateIndex
-CREATE INDEX "Tenant_objectId_idx" ON "Tenant"("objectId");
+CREATE INDEX IF NOT EXISTS "Tenant_objectId_idx" ON "Tenant"("objectId");
 
 -- CreateIndex
-CREATE INDEX "Tenant_isAnchor_name_idx" ON "Tenant"("isAnchor", "name");
+CREATE INDEX IF NOT EXISTS "Tenant_isAnchor_name_idx" ON "Tenant"("isAnchor", "name");
 
 -- CreateIndex
-CREATE INDEX "Lease_objectId_idx" ON "Lease"("objectId");
+CREATE INDEX IF NOT EXISTS "Lease_objectId_idx" ON "Lease"("objectId");
 
 -- CreateIndex
-CREATE INDEX "Lease_tenantId_idx" ON "Lease"("tenantId");
+CREATE INDEX IF NOT EXISTS "Lease_tenantId_idx" ON "Lease"("tenantId");
 
 -- CreateIndex
-CREATE INDEX "Lease_endDate_idx" ON "Lease"("endDate");
+CREATE INDEX IF NOT EXISTS "Lease_endDate_idx" ON "Lease"("endDate");
 
 -- CreateIndex
-CREATE INDEX "Expense_objectId_idx" ON "Expense"("objectId");
+CREATE INDEX IF NOT EXISTS "Expense_objectId_idx" ON "Expense"("objectId");
 
 -- CreateIndex
-CREATE INDEX "LegalConstraint_objectId_idx" ON "LegalConstraint"("objectId");
+CREATE INDEX IF NOT EXISTS "LegalConstraint_objectId_idx" ON "LegalConstraint"("objectId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "EngineeringSpec_objectId_key" ON "EngineeringSpec"("objectId");
+CREATE UNIQUE INDEX IF NOT EXISTS "EngineeringSpec_objectId_key" ON "EngineeringSpec"("objectId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "VatRate_objectId_key" ON "VatRate"("objectId");
+CREATE UNIQUE INDEX IF NOT EXISTS "VatRate_objectId_key" ON "VatRate"("objectId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Moderation_objectId_key" ON "Moderation"("objectId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Moderation_objectId_key" ON "Moderation"("objectId");
 
 -- CreateIndex
-CREATE INDEX "Moderation_status_idx" ON "Moderation"("status");
+CREATE INDEX IF NOT EXISTS "Moderation_status_idx" ON "Moderation"("status");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Placement_objectId_key" ON "Placement"("objectId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Placement_objectId_key" ON "Placement"("objectId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "CommercialOffer_objectId_key" ON "CommercialOffer"("objectId");
+CREATE UNIQUE INDEX IF NOT EXISTS "CommercialOffer_objectId_key" ON "CommercialOffer"("objectId");
 
 -- CreateIndex
-CREATE INDEX "Lead_userId_idx" ON "Lead"("userId");
+CREATE INDEX IF NOT EXISTS "Lead_userId_idx" ON "Lead"("userId");
 
 -- CreateIndex
-CREATE INDEX "Lead_clientId_idx" ON "Lead"("clientId");
+CREATE INDEX IF NOT EXISTS "Lead_clientId_idx" ON "Lead"("clientId");
 
 -- CreateIndex
-CREATE INDEX "Lead_objectId_idx" ON "Lead"("objectId");
+CREATE INDEX IF NOT EXISTS "Lead_objectId_idx" ON "Lead"("objectId");
 
 -- CreateIndex
-CREATE INDEX "Lead_status_idx" ON "Lead"("status");
+CREATE INDEX IF NOT EXISTS "Lead_status_idx" ON "Lead"("status");
 
 -- CreateIndex
-CREATE INDEX "Lead_createdAt_idx" ON "Lead"("createdAt");
+CREATE INDEX IF NOT EXISTS "Lead_createdAt_idx" ON "Lead"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "Lead_userId_createdAt_idx" ON "Lead"("userId", "createdAt");
+CREATE INDEX IF NOT EXISTS "Lead_userId_createdAt_idx" ON "Lead"("userId", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "Lead_clientId_createdAt_idx" ON "Lead"("clientId", "createdAt");
+CREATE INDEX IF NOT EXISTS "Lead_clientId_createdAt_idx" ON "Lead"("clientId", "createdAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_telegramId_key" ON "User"("telegramId");
+CREATE UNIQUE INDEX IF NOT EXISTS "User_telegramId_key" ON "User"("telegramId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_phone_key" ON "User"("phone");
+CREATE UNIQUE INDEX IF NOT EXISTS "User_phone_key" ON "User"("phone");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email");
 
 -- CreateIndex
-CREATE INDEX "User_role_idx" ON "User"("role");
+CREATE INDEX IF NOT EXISTS "User_role_idx" ON "User"("role");
 
 -- CreateIndex
-CREATE INDEX "Favorite_userId_createdAt_idx" ON "Favorite"("userId", "createdAt");
+CREATE INDEX IF NOT EXISTS "Favorite_userId_createdAt_idx" ON "Favorite"("userId", "createdAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Favorite_userId_objectId_key" ON "Favorite"("userId", "objectId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Favorite_userId_objectId_key" ON "Favorite"("userId", "objectId");
 
 -- CreateIndex
-CREATE INDEX "Consent_userId_idx" ON "Consent"("userId");
+CREATE INDEX IF NOT EXISTS "Consent_userId_idx" ON "Consent"("userId");
 
 -- CreateIndex
-CREATE INDEX "Consent_leadId_idx" ON "Consent"("leadId");
+CREATE INDEX IF NOT EXISTS "Consent_leadId_idx" ON "Consent"("leadId");
 
 -- CreateIndex
-CREATE INDEX "Consent_consentType_idx" ON "Consent"("consentType");
+CREATE INDEX IF NOT EXISTS "Consent_consentType_idx" ON "Consent"("consentType");
 
 -- CreateIndex
-CREATE INDEX "Consent_acceptedAt_idx" ON "Consent"("acceptedAt");
+CREATE INDEX IF NOT EXISTS "Consent_acceptedAt_idx" ON "Consent"("acceptedAt");
 
 -- CreateIndex
-CREATE INDEX "Payment_objectId_idx" ON "Payment"("objectId");
+CREATE INDEX IF NOT EXISTS "Payment_objectId_idx" ON "Payment"("objectId");
 
 -- CreateIndex
-CREATE INDEX "Payment_status_idx" ON "Payment"("status");
+CREATE INDEX IF NOT EXISTS "Payment_status_idx" ON "Payment"("status");
 
 -- CreateIndex
-CREATE INDEX "Payment_dealId_idx" ON "Payment"("dealId");
+CREATE INDEX IF NOT EXISTS "Payment_dealId_idx" ON "Payment"("dealId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Attribution_userId_key" ON "Attribution"("userId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Attribution_userId_key" ON "Attribution"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Attribution_telegramId_key" ON "Attribution"("telegramId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Attribution_telegramId_key" ON "Attribution"("telegramId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Attribution_phone_key" ON "Attribution"("phone");
+CREATE UNIQUE INDEX IF NOT EXISTS "Attribution_phone_key" ON "Attribution"("phone");
 
 -- CreateIndex
-CREATE INDEX "Attribution_firstTouchSource_idx" ON "Attribution"("firstTouchSource");
+CREATE INDEX IF NOT EXISTS "Attribution_firstTouchSource_idx" ON "Attribution"("firstTouchSource");
 
 -- CreateIndex
-CREATE INDEX "Attribution_firstSeenAt_idx" ON "Attribution"("firstSeenAt");
+CREATE INDEX IF NOT EXISTS "Attribution_firstSeenAt_idx" ON "Attribution"("firstSeenAt");
 
 -- CreateIndex
-CREATE INDEX "Attribution_phone_idx" ON "Attribution"("phone");
+CREATE INDEX IF NOT EXISTS "Attribution_phone_idx" ON "Attribution"("phone");
 
 -- CreateIndex
-CREATE INDEX "Attribution_telegramId_idx" ON "Attribution"("telegramId");
+CREATE INDEX IF NOT EXISTS "Attribution_telegramId_idx" ON "Attribution"("telegramId");
 
 -- CreateIndex
-CREATE INDEX "Deal_buyerId_idx" ON "Deal"("buyerId");
+CREATE INDEX IF NOT EXISTS "Deal_buyerId_idx" ON "Deal"("buyerId");
 
 -- CreateIndex
-CREATE INDEX "Deal_sellerId_idx" ON "Deal"("sellerId");
+CREATE INDEX IF NOT EXISTS "Deal_sellerId_idx" ON "Deal"("sellerId");
 
 -- CreateIndex
-CREATE INDEX "Deal_stage_idx" ON "Deal"("stage");
+CREATE INDEX IF NOT EXISTS "Deal_stage_idx" ON "Deal"("stage");
 
 -- CreateIndex
-CREATE INDEX "Deal_status_idx" ON "Deal"("status");
+CREATE INDEX IF NOT EXISTS "Deal_status_idx" ON "Deal"("status");
 
 -- CreateIndex
-CREATE INDEX "Deal_objectId_idx" ON "Deal"("objectId");
+CREATE INDEX IF NOT EXISTS "Deal_objectId_idx" ON "Deal"("objectId");
 
 -- CreateIndex
-CREATE INDEX "Deal_createdAt_idx" ON "Deal"("createdAt");
+CREATE INDEX IF NOT EXISTS "Deal_createdAt_idx" ON "Deal"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "DealStageLog_dealId_idx" ON "DealStageLog"("dealId");
+CREATE INDEX IF NOT EXISTS "DealStageLog_dealId_idx" ON "DealStageLog"("dealId");
 
 -- CreateIndex
-CREATE INDEX "DealStageLog_createdAt_idx" ON "DealStageLog"("createdAt");
+CREATE INDEX IF NOT EXISTS "DealStageLog_createdAt_idx" ON "DealStageLog"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "Commission_dealId_idx" ON "Commission"("dealId");
+CREATE INDEX IF NOT EXISTS "Commission_dealId_idx" ON "Commission"("dealId");
 
 -- CreateIndex
-CREATE INDEX "Commission_status_idx" ON "Commission"("status");
+CREATE INDEX IF NOT EXISTS "Commission_status_idx" ON "Commission"("status");
 
 -- CreateIndex
-CREATE INDEX "Commission_createdAt_idx" ON "Commission"("createdAt");
+CREATE INDEX IF NOT EXISTS "Commission_createdAt_idx" ON "Commission"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "AuditEvent_eventType_idx" ON "AuditEvent"("eventType");
+CREATE INDEX IF NOT EXISTS "AuditEvent_eventType_idx" ON "AuditEvent"("eventType");
 
 -- CreateIndex
-CREATE INDEX "AuditEvent_userId_idx" ON "AuditEvent"("userId");
+CREATE INDEX IF NOT EXISTS "AuditEvent_userId_idx" ON "AuditEvent"("userId");
 
 -- CreateIndex
-CREATE INDEX "AuditEvent_dealId_idx" ON "AuditEvent"("dealId");
+CREATE INDEX IF NOT EXISTS "AuditEvent_dealId_idx" ON "AuditEvent"("dealId");
 
 -- CreateIndex
-CREATE INDEX "AuditEvent_objectId_idx" ON "AuditEvent"("objectId");
+CREATE INDEX IF NOT EXISTS "AuditEvent_objectId_idx" ON "AuditEvent"("objectId");
 
 -- CreateIndex
-CREATE INDEX "AuditEvent_createdAt_idx" ON "AuditEvent"("createdAt");
+CREATE INDEX IF NOT EXISTS "AuditEvent_createdAt_idx" ON "AuditEvent"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "Chat_dealId_idx" ON "Chat"("dealId");
+CREATE INDEX IF NOT EXISTS "Chat_dealId_idx" ON "Chat"("dealId");
 
 -- CreateIndex
-CREATE INDEX "Chat_participant1_idx" ON "Chat"("participant1");
+CREATE INDEX IF NOT EXISTS "Chat_participant1_idx" ON "Chat"("participant1");
 
 -- CreateIndex
-CREATE INDEX "ChatMessage_chatId_idx" ON "ChatMessage"("chatId");
+CREATE INDEX IF NOT EXISTS "ChatMessage_chatId_idx" ON "ChatMessage"("chatId");
 
 -- CreateIndex
-CREATE INDEX "ChatMessage_createdAt_idx" ON "ChatMessage"("createdAt");
+CREATE INDEX IF NOT EXISTS "ChatMessage_createdAt_idx" ON "ChatMessage"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "PhoneVerification_phone_idx" ON "PhoneVerification"("phone");
+CREATE INDEX IF NOT EXISTS "PhoneVerification_phone_idx" ON "PhoneVerification"("phone");
 
 -- CreateIndex
-CREATE INDEX "PhoneVerification_expiresAt_idx" ON "PhoneVerification"("expiresAt");
+CREATE INDEX IF NOT EXISTS "PhoneVerification_expiresAt_idx" ON "PhoneVerification"("expiresAt");
 
 -- CreateIndex
-CREATE INDEX "PhoneVerification_verified_idx" ON "PhoneVerification"("verified");
+CREATE INDEX IF NOT EXISTS "PhoneVerification_verified_idx" ON "PhoneVerification"("verified");
 
 -- CreateIndex
-CREATE INDEX "Referral_referrerId_idx" ON "Referral"("referrerId");
+CREATE INDEX IF NOT EXISTS "Referral_referrerId_idx" ON "Referral"("referrerId");
 
 -- CreateIndex
-CREATE INDEX "Referral_refereeId_idx" ON "Referral"("refereeId");
+CREATE INDEX IF NOT EXISTS "Referral_refereeId_idx" ON "Referral"("refereeId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Referral_referrerId_refereeId_key" ON "Referral"("referrerId", "refereeId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Referral_referrerId_refereeId_key" ON "Referral"("referrerId", "refereeId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "PaymentProvider_name_key" ON "PaymentProvider"("name");
+CREATE UNIQUE INDEX IF NOT EXISTS "PaymentProvider_name_key" ON "PaymentProvider"("name");
 
 -- CreateIndex
-CREATE INDEX "Payout_commissionId_idx" ON "Payout"("commissionId");
+CREATE INDEX IF NOT EXISTS "Payout_commissionId_idx" ON "Payout"("commissionId");
 
 -- CreateIndex
-CREATE INDEX "Payout_status_idx" ON "Payout"("status");
+CREATE INDEX IF NOT EXISTS "Payout_status_idx" ON "Payout"("status");
 
 -- AddForeignKey
-ALTER TABLE "ObjectImage" ADD CONSTRAINT "ObjectImage_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'ObjectImage_objectId_fkey'
+      AND conrelid = '"ObjectImage"'::regclass
+  ) THEN
+    ALTER TABLE "ObjectImage" ADD CONSTRAINT "ObjectImage_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Tenant" ADD CONSTRAINT "Tenant_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Tenant_objectId_fkey'
+      AND conrelid = '"Tenant"'::regclass
+  ) THEN
+    ALTER TABLE "Tenant" ADD CONSTRAINT "Tenant_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Lease" ADD CONSTRAINT "Lease_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Lease_objectId_fkey'
+      AND conrelid = '"Lease"'::regclass
+  ) THEN
+    ALTER TABLE "Lease" ADD CONSTRAINT "Lease_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Lease" ADD CONSTRAINT "Lease_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Lease_tenantId_fkey'
+      AND conrelid = '"Lease"'::regclass
+  ) THEN
+    ALTER TABLE "Lease" ADD CONSTRAINT "Lease_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Expense" ADD CONSTRAINT "Expense_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Expense_objectId_fkey'
+      AND conrelid = '"Expense"'::regclass
+  ) THEN
+    ALTER TABLE "Expense" ADD CONSTRAINT "Expense_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "LegalConstraint" ADD CONSTRAINT "LegalConstraint_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'LegalConstraint_objectId_fkey'
+      AND conrelid = '"LegalConstraint"'::regclass
+  ) THEN
+    ALTER TABLE "LegalConstraint" ADD CONSTRAINT "LegalConstraint_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "EngineeringSpec" ADD CONSTRAINT "EngineeringSpec_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'EngineeringSpec_objectId_fkey'
+      AND conrelid = '"EngineeringSpec"'::regclass
+  ) THEN
+    ALTER TABLE "EngineeringSpec" ADD CONSTRAINT "EngineeringSpec_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "VatRate" ADD CONSTRAINT "VatRate_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'VatRate_objectId_fkey'
+      AND conrelid = '"VatRate"'::regclass
+  ) THEN
+    ALTER TABLE "VatRate" ADD CONSTRAINT "VatRate_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Moderation" ADD CONSTRAINT "Moderation_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Moderation_objectId_fkey'
+      AND conrelid = '"Moderation"'::regclass
+  ) THEN
+    ALTER TABLE "Moderation" ADD CONSTRAINT "Moderation_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Placement" ADD CONSTRAINT "Placement_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Placement_objectId_fkey'
+      AND conrelid = '"Placement"'::regclass
+  ) THEN
+    ALTER TABLE "Placement" ADD CONSTRAINT "Placement_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "CommercialOffer" ADD CONSTRAINT "CommercialOffer_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'CommercialOffer_objectId_fkey'
+      AND conrelid = '"CommercialOffer"'::regclass
+  ) THEN
+    ALTER TABLE "CommercialOffer" ADD CONSTRAINT "CommercialOffer_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Lead" ADD CONSTRAINT "Lead_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Lead_userId_fkey'
+      AND conrelid = '"Lead"'::regclass
+  ) THEN
+    ALTER TABLE "Lead" ADD CONSTRAINT "Lead_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Lead" ADD CONSTRAINT "Lead_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Lead_objectId_fkey'
+      AND conrelid = '"Lead"'::regclass
+  ) THEN
+    ALTER TABLE "Lead" ADD CONSTRAINT "Lead_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Favorite" ADD CONSTRAINT "Favorite_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Favorite_objectId_fkey'
+      AND conrelid = '"Favorite"'::regclass
+  ) THEN
+    ALTER TABLE "Favorite" ADD CONSTRAINT "Favorite_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Favorite" ADD CONSTRAINT "Favorite_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Favorite_userId_fkey'
+      AND conrelid = '"Favorite"'::regclass
+  ) THEN
+    ALTER TABLE "Favorite" ADD CONSTRAINT "Favorite_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Consent" ADD CONSTRAINT "Consent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Consent_userId_fkey'
+      AND conrelid = '"Consent"'::regclass
+  ) THEN
+    ALTER TABLE "Consent" ADD CONSTRAINT "Consent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Consent" ADD CONSTRAINT "Consent_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Consent_leadId_fkey'
+      AND conrelid = '"Consent"'::regclass
+  ) THEN
+    ALTER TABLE "Consent" ADD CONSTRAINT "Consent_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Payment" ADD CONSTRAINT "Payment_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Payment_dealId_fkey'
+      AND conrelid = '"Payment"'::regclass
+  ) THEN
+    ALTER TABLE "Payment" ADD CONSTRAINT "Payment_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Deal" ADD CONSTRAINT "Deal_buyerId_fkey" FOREIGN KEY ("buyerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Deal_buyerId_fkey'
+      AND conrelid = '"Deal"'::regclass
+  ) THEN
+    ALTER TABLE "Deal" ADD CONSTRAINT "Deal_buyerId_fkey" FOREIGN KEY ("buyerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Deal" ADD CONSTRAINT "Deal_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Deal_sellerId_fkey'
+      AND conrelid = '"Deal"'::regclass
+  ) THEN
+    ALTER TABLE "Deal" ADD CONSTRAINT "Deal_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Deal" ADD CONSTRAINT "Deal_agentId_fkey" FOREIGN KEY ("agentId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Deal_agentId_fkey'
+      AND conrelid = '"Deal"'::regclass
+  ) THEN
+    ALTER TABLE "Deal" ADD CONSTRAINT "Deal_agentId_fkey" FOREIGN KEY ("agentId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Deal" ADD CONSTRAINT "Deal_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Deal_objectId_fkey'
+      AND conrelid = '"Deal"'::regclass
+  ) THEN
+    ALTER TABLE "Deal" ADD CONSTRAINT "Deal_objectId_fkey" FOREIGN KEY ("objectId") REFERENCES "Object"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "DealStageLog" ADD CONSTRAINT "DealStageLog_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'DealStageLog_dealId_fkey'
+      AND conrelid = '"DealStageLog"'::regclass
+  ) THEN
+    ALTER TABLE "DealStageLog" ADD CONSTRAINT "DealStageLog_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Commission" ADD CONSTRAINT "Commission_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Commission_dealId_fkey'
+      AND conrelid = '"Commission"'::regclass
+  ) THEN
+    ALTER TABLE "Commission" ADD CONSTRAINT "Commission_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'AuditEvent_userId_fkey'
+      AND conrelid = '"AuditEvent"'::regclass
+  ) THEN
+    ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'AuditEvent_dealId_fkey'
+      AND conrelid = '"AuditEvent"'::regclass
+  ) THEN
+    ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Chat" ADD CONSTRAINT "Chat_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Chat_dealId_fkey'
+      AND conrelid = '"Chat"'::regclass
+  ) THEN
+    ALTER TABLE "Chat" ADD CONSTRAINT "Chat_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "ChatMessage" ADD CONSTRAINT "ChatMessage_chatId_fkey" FOREIGN KEY ("chatId") REFERENCES "Chat"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'ChatMessage_chatId_fkey'
+      AND conrelid = '"ChatMessage"'::regclass
+  ) THEN
+    ALTER TABLE "ChatMessage" ADD CONSTRAINT "ChatMessage_chatId_fkey" FOREIGN KEY ("chatId") REFERENCES "Chat"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "PhoneVerification" ADD CONSTRAINT "PhoneVerification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'PhoneVerification_userId_fkey'
+      AND conrelid = '"PhoneVerification"'::regclass
+  ) THEN
+    ALTER TABLE "PhoneVerification" ADD CONSTRAINT "PhoneVerification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Referral" ADD CONSTRAINT "Referral_referrerId_fkey" FOREIGN KEY ("referrerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Referral_referrerId_fkey'
+      AND conrelid = '"Referral"'::regclass
+  ) THEN
+    ALTER TABLE "Referral" ADD CONSTRAINT "Referral_referrerId_fkey" FOREIGN KEY ("referrerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Referral" ADD CONSTRAINT "Referral_refereeId_fkey" FOREIGN KEY ("refereeId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Referral_refereeId_fkey'
+      AND conrelid = '"Referral"'::regclass
+  ) THEN
+    ALTER TABLE "Referral" ADD CONSTRAINT "Referral_refereeId_fkey" FOREIGN KEY ("refereeId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
 -- AddForeignKey
-ALTER TABLE "Payout" ADD CONSTRAINT "Payout_commissionId_fkey" FOREIGN KEY ("commissionId") REFERENCES "Commission"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Payout_commissionId_fkey'
+      AND conrelid = '"Payout"'::regclass
+  ) THEN
+    ALTER TABLE "Payout" ADD CONSTRAINT "Payout_commissionId_fkey" FOREIGN KEY ("commissionId") REFERENCES "Commission"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 

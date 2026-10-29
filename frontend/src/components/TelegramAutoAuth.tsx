@@ -7,13 +7,13 @@ type Status = 'idle' | 'loading' | 'done' | 'error';
 
 export default function TelegramAutoAuth() {
   const navigate = useNavigate();
-  const { login: authLogin } = useAuth();
+  const { login: authLogin, user } = useAuth();
   const [status, setStatus] = useState<Status>('idle');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!window.Telegram?.WebApp) return;
-    if (localStorage.getItem('token')) return;
+    if (user) return;
 
     const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
     if (!tgUser?.id) return;
@@ -29,7 +29,7 @@ export default function TelegramAutoAuth() {
       .then((res) => {
         if (cancelled) return;
         const user = res.data.user;
-        authLogin(user, res.data.token);
+        authLogin(user);
         setStatus('done');
         if (user.phone) {
           navigate('/', { replace: true });

@@ -28,6 +28,7 @@ services:
       MANAGER_CHAT_ID: "${MANAGER_CHAT_ID}"
       PORT: 3001
       JWT_SECRET: "${JWT_SECRET}"
+      GUEST_JWT_SECRET: "${GUEST_JWT_SECRET:-${JWT_SECRET}}"
       ADMIN_JWT_SECRET: "${ADMIN_JWT_SECRET}"
       ADMIN_TOKEN: "${ADMIN_TOKEN}"
     depends_on:
@@ -64,6 +65,9 @@ services:
       BACKEND_URL: "${BACKEND_URL:-http://localhost:3001}"
       ADMIN_TELEGRAM_IDS: "${ADMIN_TELEGRAM_IDS:-}"
       BOT_SYNC_SECRET: "${BOT_SYNC_SECRET:?Set BOT_SYNC_SECRET in .env}"
+      BOT_WEBHOOK_SECRET: "${BOT_WEBHOOK_SECRET:?Set BOT_WEBHOOK_SECRET in .env}"
+      BOT_WEBHOOK_SECRET_PREVIOUS: "${BOT_WEBHOOK_SECRET_PREVIOUS:-}"
+      BOT_WEBHOOK_ALLOWED_IPS: "${BOT_WEBHOOK_ALLOWED_IPS:-}"
     volumes:
       - ./bot:/app
     command: python bot.py

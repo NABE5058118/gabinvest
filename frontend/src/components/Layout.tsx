@@ -1,6 +1,7 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { LayoutGrid, Heart, FileText, User, LogOut } from 'lucide-react';
 import { useAuth } from '@context/AuthContext';
+import { adminApi } from '@utils/adminApi';
 import styles from '@styles/Layout.module.css';
 
 export default function Layout() {
@@ -8,12 +9,16 @@ export default function Layout() {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
 
-  const handleAdminLogout = () => {
-    localStorage.removeItem('adminToken');
+  const handleAdminLogout = async () => {
+    try {
+      await adminApi.post('/api/admin/auth/logout');
+    } catch {
+      // Best-effort
+    }
     localStorage.removeItem('adminUser');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/';
+    window.location.href = '/admin-login';
   };
 
   return (

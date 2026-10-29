@@ -109,10 +109,15 @@ describe('FavoritesContext', () => {
 
   it('should use API when user is present', async () => {
     const mockUser = { id: 'user-1', email: 'anna@test.com', firstName: 'Anna' };
-    localStorage.setItem('token', 'fake-token');
     localStorage.setItem('user', JSON.stringify(mockUser));
 
-    (api.get as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue({ data: [] });
+    (api.get as unknown as { mockImplementation: (fn: (url: string) => Promise<unknown>) => void }).mockImplementation(
+      (url: string) => {
+        if (url.includes('/api/auth/me')) return Promise.resolve({ data: mockUser });
+        if (url.includes('/api/favorites')) return Promise.resolve({ data: [] });
+        return Promise.resolve({ data: { data: [] } });
+      },
+    );
     (api.post as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue({ data: {} });
 
     await act(async () => {

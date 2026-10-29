@@ -1,32 +1,34 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import { prisma } from '../lib/prisma.js';
 import { z } from 'zod';
 import { createLogger } from '../utils/logger.js';
+import { prisma } from '../lib/prisma.js';
+import { adminAuthMiddleware } from '../middleware/jwt.js';
+import {
+  signAccessToken,
+  signRefreshToken,
+  storeRefreshToken,
+  revokeRefreshToken,
+  clearAuthCookies,
+  setAuthCookies,
+  verifyStoredRefreshToken,
+  ACCESS_TOKEN_EXPIRY_SECONDS,
+} from '../lib/tokens.js';
 
 const router = Router();
 const logger = createLogger('admin-auth');
-
-const JWT_SECRET = process.env.JWT_SECRET;
-const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET;
-
-if (process.env.NODE_ENV !== 'test') {
-  if (!JWT_SECRET) {
-    logger.fatal('JWT_SECRET is not set');
-    process.exit(1);
-  }
-
-  if (!ADMIN_JWT_SECRET) {
-    logger.fatal('ADMIN_JWT_SECRET is not set');
-    process.exit(1);
-  }
-}
 
 const adminLoginSchema = z.object({
   login: z.string().min(1, 'Введите логин'),
   password: z.string().min(1, 'Введите пароль'),
 });
+
+async function issueAdminTokens(res: Response, userId: string): Promise<void> {
+  const accessToken = signAccessToken(userId, 'admin');
+  const refreshToken = signRefreshToken(userId, 'admin');
+  await storeRefreshToken(userId, refreshToken, res.req);
+  setAuthCookies(res, accessToken, refreshToken);
+}
 
 router.post('/login', async (req: Request, res: Response) => {
   try {
@@ -56,11 +58,7 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Неверный логин или пароль' });
     }
 
-    const token = jwt.sign(
-      { userId: admin.id, role: 'admin' },
-      ADMIN_JWT_SECRET as string,
-      { expiresIn: '12h', algorithm: 'HS256' }
-    );
+    await issueAdminTokens(res, admin.id);
 
     logger.info('Admin login success', { userId: admin.id, login });
     res.json({
@@ -72,11 +70,85 @@ router.post('/login', async (req: Request, res: Response) => {
         lastName: admin.lastName,
         role: 'admin',
       },
-      token,
     });
   } catch (error) {
     logger.error('Error in admin login', error);
     res.status(500).json({ error: 'Failed to login' });
+  }
+});
+
+router.post('/refresh', async (req: Request, res: Response) => {
+  try {
+    const refreshToken = req.cookies?.refresh_token;
+    if (!refreshToken) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const verified = await verifyStoredRefreshToken(refreshToken, 'admin');
+    if (!verified) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const accessToken = signAccessToken(verified.userId, 'admin');
+    const newRefreshToken = signRefreshToken(verified.userId, 'admin');
+
+    await revokeRefreshToken(refreshToken);
+    await storeRefreshToken(verified.userId, newRefreshToken, req);
+
+    setAuthCookies(res, accessToken, newRefreshToken);
+    res.json({ ok: true });
+  } catch (error) {
+    logger.error('Error refreshing admin token:', error);
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+});
+
+router.post('/logout', async (req: Request, res: Response) => {
+  try {
+    const refreshToken = req.cookies?.refresh_token;
+    if (refreshToken) {
+      await revokeRefreshToken(refreshToken);
+    }
+    clearAuthCookies(res);
+    res.json({ ok: true });
+  } catch (error) {
+    logger.error('Error during admin logout:', error);
+    clearAuthCookies(res);
+    res.json({ ok: true });
+  }
+});
+
+router.get('/me', adminAuthMiddleware, async (req: Request, res: Response) => {
+  try {
+    if (!req.userId && !req.adminActor) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const userId = req.userId || req.adminActor;
+    if (userId && userId !== 'static-admin-token') {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+        },
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: 'Admin not found' });
+      }
+
+      return res.json({ user });
+    }
+
+    return res.status(401).json({ error: 'Unauthorized' });
+  } catch (error) {
+    logger.error('Error fetching admin profile:', error);
+    res.status(500).json({ error: 'Failed to fetch profile' });
   }
 });
 

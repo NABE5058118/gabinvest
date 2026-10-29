@@ -1,18 +1,22 @@
 import { Navigate } from 'react-router-dom';
-
-function getAdminUser() {
-  try {
-    const stored = localStorage.getItem('adminUser');
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
+import { useEffect, useState } from 'react';
+import { adminApi } from '../utils/adminApi';
 
 export default function AdminRoute({ children }: { children: React.ReactNode }) {
-  const adminUser = getAdminUser();
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
 
-  if (!adminUser || adminUser.role !== 'admin') {
+  useEffect(() => {
+    adminApi
+      .get('/api/admin/auth/me')
+      .then(() => setAuthorized(true))
+      .catch(() => setAuthorized(false));
+  }, []);
+
+  if (authorized === null) {
+    return null;
+  }
+
+  if (!authorized) {
     return <Navigate to="/admin-login" replace />;
   }
 

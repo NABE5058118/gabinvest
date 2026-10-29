@@ -22,6 +22,7 @@ import auditRouter from './routes/audit.js';
 import commissionsRouter from './routes/commissions.js';
 import { createLogger } from './utils/logger.js';
 import { PrismaRateLimitStore } from './utils/prismaRateLimitStore.js';
+import { validateBotWebhookConfig } from './lib/botWebhook.js';
 
 dotenv.config();
 
@@ -55,6 +56,12 @@ if (!isTest) {
   }
 }
 
+const botWebhookProblems = validateBotWebhookConfig();
+if (botWebhookProblems.length > 0) {
+  logger[isTest ? 'warn' : 'fatal'](`Invalid bot webhook configuration: ${botWebhookProblems.join('; ')}`);
+  if (!isTest) process.exit(1);
+}
+
 async function validateSchema() {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -66,7 +73,7 @@ async function validateSchema() {
       'User', 'Object', 'Favorite', 'Lead', 'CommercialOffer', 'Consent', 'Tenant', 'Lease', 'Expense',
       'LegalConstraint', 'EngineeringSpec', 'VatRate', 'Moderation', 'Placement', 'Payment', 'Attribution',
       'Deal', 'DealStageLog', 'Commission', 'AuditEvent', 'Chat', 'ChatMessage', 'PhoneVerification',
-      'Referral', 'AntiBypassRule', 'PaymentProvider', 'Payout', 'RateLimitCounter',
+      'Referral', 'AntiBypassRule', 'PaymentProvider', 'Payout', 'RateLimitCounter', 'RefreshToken',
     ];
     const missingTables = requiredTables.filter((table) => !tableNames.includes(table));
     if (missingTables.length > 0) {
@@ -99,11 +106,35 @@ const app = express();
 const PORT = Number(process.env.PORT || 3001);
 app.set('trust proxy', 1);
 
+process.on('unhandledRejection', (reason: unknown) => {
+  logger.error('Unhandled Rejection', reason instanceof Error ? { error: reason.message, stack: reason.stack } : { reason });
+});
+
+process.on('uncaughtException', (error: Error) => {
+  logger.error('Uncaught Exception', { error: error.message, stack: error.stack });
+});
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.resolve(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 app.disable('x-powered-by');
+app.use((req: express.Request, _res: express.Response, next: express.NextFunction) => {
+  const cookieHeader = req.headers.cookie;
+  (req as any).cookies = cookieHeader
+    ? Object.fromEntries(
+        cookieHeader
+          .split(';')
+          .map((c) => c.trim())
+          .filter((c) => c.length > 0)
+          .map((c) => {
+            const idx = c.indexOf('=');
+            return idx === -1 ? [c, ''] : [c.slice(0, idx), decodeURIComponent(c.slice(idx + 1))];
+          }),
+      )
+    : {};
+  next();
+});
 app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
   const requestId = req.headers['x-request-id']?.toString().slice(0, 100) || crypto.randomUUID();
   res.setHeader('X-Request-ID', requestId);
@@ -120,7 +151,14 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
   next();
 });
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      frameAncestors: ["'self'", "https://*.telegram.org", "https://*.t.me"],
+    },
+  },
+}));
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || (isTest ? 'http://localhost:5173' : ''))
   .split(',').map((origin) => origin.trim()).filter(Boolean);
 app.use(cors({
@@ -128,6 +166,7 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error('Not allowed by CORS'));
   },
+  credentials: true,
 }));
 app.use(compression());
 app.use(express.json({ limit: '100kb' }));
@@ -135,7 +174,7 @@ app.use(express.json({ limit: '100kb' }));
 function limiter(windowMs: number, max: number, namespace: string) {
   return rateLimit({
     windowMs,
-    max,
+    max: isTest ? max * 100 : max,
     standardHeaders: true,
     legacyHeaders: false,
     message: 'Too many requests',
@@ -152,7 +191,10 @@ app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', registerLimiter);
 app.use('/api/auth/telegram', telegramLimiter);
 app.use('/api/admin/auth/login', authLimiter);
-app.use('/api/leads', leadsLimiter);
+app.use('/api/leads', (req, res, next) => {
+  if (req.method === 'POST') return leadsLimiter(req, res, next);
+  return next();
+});
 
 app.use('/api/objects', objectsRouter);
 app.use('/api/cities', citiesRouter);

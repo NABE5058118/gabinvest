@@ -4,32 +4,29 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { prisma } from '../lib/prisma.js';
-import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import axios from 'axios';
 import { fileTypeFromFile } from 'file-type';
 import { z } from 'zod';
 import { createLogger } from '../utils/logger.js';
 import { processImage } from '../utils/imageProcessor.js';
 import { normalizeOfferFileName } from '../utils/filename.js';
+import { matchesBotSyncSecret } from '../lib/botSync.js';
+import { sendBotWebhook } from '../lib/botWebhook.js';
+import { adminAuthMiddleware } from '../middleware/jwt.js';
+const requireAdmin = adminAuthMiddleware;
 
 const router = Router();
 const logger = createLogger('admin');
 
-const BOT_WEBHOOK_URL = (process.env.BOT_WEBHOOK_URL || '').trim();
-const BOT_SYNC_SECRET = process.env.BOT_SYNC_SECRET || '';
-
 async function notifyBotOfObject(objectId: string, object: { title: string; location: string; price: number; priceIndicator?: string | null; image?: string | null }): Promise<void> {
-  if (!BOT_WEBHOOK_URL) return;
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (BOT_SYNC_SECRET) headers['x-bot-sync-secret'] = BOT_SYNC_SECRET;
   try {
-    const res = await axios.post(
-      BOT_WEBHOOK_URL.replace('/lead-notify', '/object-notify'),
+    const status = await sendBotWebhook(
+      'object',
       { objectId, ...object },
-      { headers, timeout: 3000 }
+      3000
     );
-    logger.info('Bot object notify sent', { objectId, status: res.status });
+    if (status === null) return;
+    logger.info('Bot object notify sent', { objectId, status });
   } catch (err: any) {
     logger.warn('Bot object notify failed', { objectId, status: err?.response?.status, message: err?.message });
     // Don't throw - notification failure should not block object creation
@@ -69,19 +66,6 @@ const createObjectSchema = z.object({
 
 const updateObjectSchema = createObjectSchema.partial();
 
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
-const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET;
-
-function timingSafeStringEqual(a: string, b: string): boolean {
-  const aBuffer = Buffer.from(a);
-  const bBuffer = Buffer.from(b);
-  const length = Math.max(aBuffer.length, bBuffer.length, 1);
-  const paddedA = Buffer.alloc(length);
-  const paddedB = Buffer.alloc(length);
-  aBuffer.copy(paddedA);
-  bBuffer.copy(paddedB);
-  return crypto.timingSafeEqual(paddedA, paddedB) && aBuffer.length === bBuffer.length;
-}
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
 
@@ -113,31 +97,6 @@ async function verifyFileType(filePath: string, expectedMime: string): Promise<b
     // Failure to inspect file bytes is a hard rejection, never a successful type check.
     return false;
   }
-}
-
-function requireAdmin(req: Request, res: Response, next: Function) {
-  const header = req.headers.authorization;
-  if (header?.startsWith('Bearer ')) {
-    const token = header.slice(7);
-    try {
-      const payload = jwt.verify(token, ADMIN_JWT_SECRET!, { algorithms: ['HS256'] }) as { role?: string; userId?: string };
-      if (payload.role !== 'admin') {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-      req.adminActor = payload.userId || 'admin-jwt';
-      next();
-      return;
-    } catch {
-      // fall through to token check
-    }
-  }
-
-  const token = req.headers['x-admin-token'];
-  if (typeof token !== 'string' || !ADMIN_TOKEN || !timingSafeStringEqual(token, ADMIN_TOKEN)) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  req.adminActor = 'static-admin-token';
-  next();
 }
 
 const storage = multer.diskStorage({
@@ -232,14 +191,8 @@ router.get('/objects', requireAdmin, async (req: Request, res: Response) => {
   }
 });
 
-router.get('/objects/:id', async (req: Request, res: Response) => {
+router.get('/objects/:id', requireAdminOrBot, async (req: Request, res: Response) => {
   try {
-    if (!allowBotSync(req)) {
-      requireAdmin(req, res, () => {});
-      if (!req.adminActor) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-    }
     const id = String(req.params.id);
     const obj = await prisma.object.findUnique({
       where: { id },
@@ -321,24 +274,25 @@ router.put('/objects/:id', requireAdmin, async (req: Request, res: Response) => 
     }
 
     const data = parsed.data;
+    const updateData: Record<string, unknown> = {};
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.type !== undefined) updateData.type = data.type;
+    if (data.price !== undefined) updateData.price = data.price;
+    if (data.yieldPercent !== undefined) updateData.yieldPercent = data.yieldPercent;
+    if (data.location !== undefined) updateData.location = data.location;
+    if (data.city !== undefined) updateData.city = data.city;
+    if (data.area !== undefined) updateData.area = data.area;
+    if (data.monthlyRent !== undefined) updateData.monthlyRent = data.monthlyRent;
+    if (data.annualRevenue !== undefined) updateData.annualRevenue = data.annualRevenue;
+    if (data.leaseEndDate !== undefined) updateData.leaseEndDate = data.leaseEndDate;
+    if (data.anchorTenantName !== undefined) updateData.anchorTenantName = data.anchorTenantName;
+    if (data.priceIndicator !== undefined) updateData.priceIndicator = data.priceIndicator;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.image !== undefined) updateData.image = data.image;
+
     const obj = await prisma.object.update({
       where: { id },
-      data: {
-        title: data.title,
-        type: data.type,
-        price: data.price,
-        yieldPercent: data.yieldPercent,
-        location: data.location,
-        city: data.city || null,
-        area: data.area,
-        monthlyRent: data.monthlyRent || null,
-        annualRevenue: data.annualRevenue || null,
-        leaseEndDate: data.leaseEndDate || null,
-        anchorTenantName: data.anchorTenantName || null,
-        priceIndicator: data.priceIndicator || null,
-        description: data.description || null,
-        image: data.image || null,
-      },
+      data: updateData,
     });
     res.json(obj);
   } catch (error) {
@@ -700,33 +654,21 @@ router.delete('/objects/:id/images/:imageId', requireAdmin, async (req: Request,
   }
 });
 
-function safeSecretEquals(expected: string | undefined, actual: string | undefined): boolean {
-  if (!expected || !actual) return false;
-  const a = Buffer.from(expected);
-  const b = Buffer.from(actual);
-  const size = Math.max(a.length, b.length, 1);
-  const paddedA = Buffer.alloc(size);
-  const paddedB = Buffer.alloc(size);
-  a.copy(paddedA);
-  b.copy(paddedB);
-  return crypto.timingSafeEqual(paddedA, paddedB) && a.length === b.length;
-}
-
 function allowBotSync(req: Request): boolean {
-  const configured = process.env.BOT_SYNC_SECRET;
   const supplied = req.get('x-bot-sync-secret') || '';
-  return Boolean(configured) && Boolean(supplied) && safeSecretEquals(configured, supplied);
+  return matchesBotSyncSecret(supplied);
 }
 
-router.get('/users/notify-subscribers', async (req: Request, res: Response) => {
+function requireAdminOrBot(req: Request, res: Response, next: NextFunction) {
+  if (allowBotSync(req)) {
+    next();
+    return;
+  }
+  void adminAuthMiddleware(req, res, next);
+}
+
+router.get('/users/notify-subscribers', requireAdminOrBot, async (req: Request, res: Response) => {
   try {
-    if (!allowBotSync(req)) {
-      requireAdmin(req, res, () => {});
-      // requireAdmin sends a 401 response on failure; if it didn't, continue.
-      if (!req.adminActor) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-    }
     const users = await prisma.user.findMany({
       where: { notifyNewObjects: true, telegramId: { not: null } },
       select: { telegramId: true },
@@ -1218,5 +1160,5 @@ router.get('/moderation/queue', requireAdmin, async (req: Request, res: Response
   }
 });
 
-export { requireAdmin };
+export { adminAuthMiddleware as requireAdmin };
 export default router;

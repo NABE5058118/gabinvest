@@ -159,26 +159,28 @@ router.get('/:id', async (req: Request, res: Response) => {
   try {
     const object = await prisma.object.findFirst({
       where: { id: String(req.params.id), moderation: { is: { status: 'approved' } } },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        price: true,
+        yieldPercent: true,
+        location: true,
+        city: true,
+        area: true,
+        image: true,
+        description: true,
+        anchorTenantName: true,
+        priceIndicator: true,
+        createdAt: true,
+        updatedAt: true,
         images: { orderBy: { sort: 'asc' } },
-        tenants: true,
-        expenses: true,
-        legalConstraints: true,
-        engineeringSpec: true,
-        vatRate: true,
         moderation: { select: { status: true } },
-        placement: { select: { id: true, type: true, isExclusive: true, createdAt: true, updatedAt: true } },
-        leases: { include: { tenant: true } },
-        commercialOffer: true,
       },
     });
 
     if (!object) {
       return res.status(404).json({ error: 'Object not found' });
-    }
-
-    if (object.offerFileName) {
-      object.offerFileName = normalizeOfferFileName(object.offerFileName);
     }
 
     res.set('Cache-Control', 'public, max-age=120, stale-while-revalidate=30');

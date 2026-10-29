@@ -1,47 +1,48 @@
 import { Router, Request, Response } from 'express';
-import crypto from 'crypto';
 import { prisma } from '../lib/prisma.js';
 import { validateTelegramInitData, parseInitData } from '../utils/telegram.js';
 import bcrypt from 'bcrypt';
-import { signToken, authMiddleware } from '../middleware/jwt.js';
 import { z } from 'zod';
 import { createLogger } from '../utils/logger.js';
+import { matchesBotSyncSecret } from '../lib/botSync.js';
+import { authMiddleware } from '../middleware/jwt.js';
+import {
+  signAccessToken,
+  signRefreshToken,
+  storeRefreshToken,
+  revokeRefreshToken,
+  clearAuthCookies,
+  setAuthCookies,
+  verifyStoredRefreshToken,
+  ACCESS_TOKEN_EXPIRY_SECONDS,
+} from '../lib/tokens.js';
 
 const router = Router();
 const logger = createLogger('auth');
-
-function safeSecretEquals(expected: string, actual: string): boolean {
-  const a = Buffer.from(expected);
-  const b = Buffer.from(actual);
-  const size = Math.max(a.length, b.length, 1);
-  const aa = Buffer.alloc(size);
-  const bb = Buffer.alloc(size);
-  a.copy(aa);
-  b.copy(bb);
-  return requireTimingSafeEqual(aa, bb) && a.length === b.length;
-}
-
-function requireTimingSafeEqual(a: Buffer, b: Buffer): boolean {
-  // crypto is imported as a module below for this constant-time check.
-  return crypto.timingSafeEqual(a, b);
-}
 
 function isUniqueViolation(error: unknown): boolean {
   return typeof error === 'object' && error !== null && (error as { code?: string }).code === 'P2002';
 }
 
 const registerSchema = z.object({
-  phone: z.string().min(10, 'Некорректный номер телефона'),
+  phone: z.string().min(10, 'Некорректный номер телефона').max(40),
   email: z.string().email('Некорректный email'),
   password: z.string().min(8, 'Пароль должен быть не менее 8 символов'),
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
+  firstName: z.string().max(200).optional(),
+  lastName: z.string().max(200).optional(),
 });
 
 const loginSchema = z.object({
   login: z.string().min(1, 'Введите номер телефона или email'),
   password: z.string().min(1, 'Введите пароль'),
 });
+
+async function issueTokens(res: Response, userId: string, telegramId?: string, role?: string): Promise<void> {
+  const accessToken = signAccessToken(userId, 'user', telegramId, role);
+  const refreshToken = signRefreshToken(userId, 'user');
+  await storeRefreshToken(userId, refreshToken, res.req);
+  setAuthCookies(res, accessToken, refreshToken);
+}
 
 router.post('/register', async (req: Request, res: Response) => {
   try {
@@ -74,7 +75,7 @@ router.post('/register', async (req: Request, res: Response) => {
       },
     });
 
-    const token = signToken(null, user.id);
+    await issueTokens(res, user.id, user.telegramId || undefined, user.role || undefined);
     logger.info('User registered', { userId: user.id });
     res.status(201).json({
       user: {
@@ -85,7 +86,6 @@ router.post('/register', async (req: Request, res: Response) => {
         lastName: user.lastName,
         role: user.role || 'user',
       },
-      token,
     });
   } catch (error) {
     if (isUniqueViolation(error)) {
@@ -120,7 +120,7 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Неверный логин или пароль' });
     }
 
-    const token = signToken(null, user.id);
+    await issueTokens(res, user.id, user.telegramId || undefined, user.role || undefined);
     logger.info('User logged in', { userId: user.id });
     res.json({
       user: {
@@ -131,11 +131,51 @@ router.post('/login', async (req: Request, res: Response) => {
         lastName: user.lastName,
         role: user.role || 'user',
       },
-      token,
     });
   } catch (error) {
     logger.error('Error logging in:', error);
     res.status(500).json({ error: 'Failed to login' });
+  }
+});
+
+router.post('/refresh', async (req: Request, res: Response) => {
+  try {
+    const refreshToken = req.cookies?.refresh_token;
+    if (!refreshToken) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const verified = await verifyStoredRefreshToken(refreshToken, 'user');
+    if (!verified) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const accessToken = signAccessToken(verified.userId, 'user', verified.telegramId, verified.role);
+    const newRefreshToken = signRefreshToken(verified.userId, 'user');
+
+    await revokeRefreshToken(refreshToken);
+    await storeRefreshToken(verified.userId, newRefreshToken, req);
+
+    setAuthCookies(res, accessToken, newRefreshToken);
+    res.json({ ok: true });
+  } catch (error) {
+    logger.error('Error refreshing token:', error);
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+});
+
+router.post('/logout', async (req: Request, res: Response) => {
+  try {
+    const refreshToken = req.cookies?.refresh_token;
+    if (refreshToken) {
+      await revokeRefreshToken(refreshToken);
+    }
+    clearAuthCookies(res);
+    res.json({ ok: true });
+  } catch (error) {
+    logger.error('Error during logout:', error);
+    clearAuthCookies(res);
+    res.json({ ok: true });
   }
 });
 
@@ -194,30 +234,61 @@ router.post('/telegram', async (req: Request, res: Response) => {
 
     if (dbUser) {
       await prisma.attribution.updateMany({ where: { telegramId, userId: null }, data: { userId: dbUser.id } });
-      logger.info('Telegram auth: user already exists, skipping profile overwrite', {
+
+      const updateData: any = {
+        firstName: user.first_name || user.username || dbUser.firstName,
+        lastName: user.last_name || dbUser.lastName,
+        username: user.username || dbUser.username,
+        telegramPhotoUrl: user.photo_url || dbUser.telegramPhotoUrl,
+        telegramLang: user.language_code || dbUser.telegramLang,
+        telegramPremium: user.is_premium !== undefined ? user.is_premium : dbUser.telegramPremium,
+        telegramAllowsPm: user.allows_write_to_pm !== undefined ? user.allows_write_to_pm : dbUser.telegramAllowsPm,
+      };
+
+      await prisma.user.update({
+        where: { id: dbUser.id },
+        data: updateData,
+      });
+
+      logger.info('Telegram auth: user already exists, profile updated', {
         telegramId: dbUser.telegramId,
         userId: dbUser.id,
-        firstName: dbUser.firstName,
-        lastName: dbUser.lastName,
-        username: dbUser.username,
       });
-      const token = signToken(dbUser.telegramId || dbUser.id);
+
+      const updatedUser = await prisma.user.findUnique({
+        where: { telegramId },
+        select: {
+          id: true,
+          phone: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          username: true,
+          telegramId: true,
+          telegramPhotoUrl: true,
+          telegramLang: true,
+          telegramPremium: true,
+          telegramAllowsPm: true,
+          role: true,
+        },
+      });
+
+      await issueTokens(res, dbUser.id, dbUser.telegramId || undefined, dbUser.role || undefined);
       return res.json({
         user: {
-          id: dbUser.id,
-          phone: dbUser.phone,
-          email: dbUser.email,
-          firstName: dbUser.firstName,
-          lastName: dbUser.lastName,
-          username: dbUser.username,
-          telegramId: dbUser.telegramId,
-          telegramPhotoUrl: dbUser.telegramPhotoUrl,
-          telegramLang: dbUser.telegramLang,
-          telegramPremium: dbUser.telegramPremium,
-          telegramAllowsPm: dbUser.telegramAllowsPm,
-          role: dbUser.role || 'user',
+          id: updatedUser!.id,
+          phone: updatedUser!.phone,
+          email: updatedUser!.email,
+          firstName: updatedUser!.firstName,
+          lastName: updatedUser!.lastName,
+          username: updatedUser!.username,
+          telegramId: updatedUser!.telegramId,
+          telegramPhotoUrl: updatedUser!.telegramPhotoUrl,
+          telegramLang: updatedUser!.telegramLang,
+          telegramPremium: updatedUser!.telegramPremium,
+          telegramAllowsPm: updatedUser!.telegramAllowsPm,
+          role: updatedUser!.role || 'user',
         },
-        token,
       });
     }
 
@@ -245,7 +316,7 @@ router.post('/telegram', async (req: Request, res: Response) => {
       username: newUser.username,
     });
 
-    const token = signToken(newUser.telegramId || newUser.id);
+    await issueTokens(res, newUser.id, newUser.telegramId || undefined, newUser.role || undefined);
 
     res.json({
       user: {
@@ -262,18 +333,19 @@ router.post('/telegram', async (req: Request, res: Response) => {
         telegramAllowsPm: newUser.telegramAllowsPm,
         role: newUser.role || 'user',
       },
-      token,
     });
   } catch (error) {
+    if (isUniqueViolation(error)) {
+      return res.status(409).json({ error: 'Пользователь уже существует' });
+    }
     logger.error('Error in telegram auth:', error);
     res.status(500).json({ error: 'Failed to authenticate' });
   }
 });
 
 router.post('/telegram/bot-sync', async (req: Request, res: Response) => {
-  const configuredSecret = process.env.BOT_SYNC_SECRET;
   const suppliedSecret = req.get('x-bot-sync-secret') || '';
-  if (!configuredSecret || !suppliedSecret || !safeSecretEquals(configuredSecret, suppliedSecret)) {
+  if (!matchesBotSyncSecret(suppliedSecret)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   try {
@@ -329,31 +401,61 @@ router.post('/telegram/bot-sync', async (req: Request, res: Response) => {
       telegramAllowsPm: allowsWriteToPm || undefined,
     };
 
-    const dbUser = await prisma.user.upsert({
-      where: { telegramId: String(telegramId) },
-      update: Object.keys(updateData).length > 0 ? updateData : {},
-      create: createData,
-    });
+    try {
+      const dbUser = await prisma.user.upsert({
+        where: { telegramId: String(telegramId) },
+        update: Object.keys(updateData).length > 0 ? updateData : {},
+        create: createData,
+      });
 
-    logger.info('Telegram bot-sync: result', {
-      telegramId: dbUser.telegramId,
-      userId: dbUser.id,
-      firstName: dbUser.firstName,
-      lastName: dbUser.lastName,
-      username: dbUser.username,
-      updated: Object.keys(updateData).length > 0,
-    });
+      logger.info('Telegram bot-sync: result', {
+        telegramId: dbUser.telegramId,
+        userId: dbUser.id,
+        firstName: dbUser.firstName,
+        lastName: dbUser.lastName,
+        username: dbUser.username,
+        updated: Object.keys(updateData).length > 0,
+      });
 
-    res.json({
-      id: dbUser.id,
-      telegramId: dbUser.telegramId,
-      firstName: dbUser.firstName,
-      lastName: dbUser.lastName,
-      username: dbUser.username,
-      phone: dbUser.phone,
-      email: dbUser.email,
-      createdAt: dbUser.createdAt,
-    });
+      res.json({
+        id: dbUser.id,
+        telegramId: dbUser.telegramId,
+        firstName: dbUser.firstName,
+        lastName: dbUser.lastName,
+        username: dbUser.username,
+        phone: dbUser.phone,
+        email: dbUser.email,
+        createdAt: dbUser.createdAt,
+      });
+    } catch (err: any) {
+      if (isUniqueViolation(err)) {
+        const dbUser = await prisma.user.findUnique({
+          where: { telegramId: String(telegramId) },
+        });
+        if (!dbUser) {
+          return res.status(500).json({ error: 'Failed to sync user' });
+        }
+        if (Object.keys(updateData).length > 0) {
+          await prisma.user.update({ where: { id: dbUser.id }, data: updateData });
+        }
+        logger.info('Telegram bot-sync: resolved race, returned existing user', {
+          telegramId: dbUser.telegramId,
+          userId: dbUser.id,
+        });
+        res.json({
+          id: dbUser.id,
+          telegramId: dbUser.telegramId,
+          firstName: dbUser.firstName,
+          lastName: dbUser.lastName,
+          username: dbUser.username,
+          phone: dbUser.phone,
+          email: dbUser.email,
+          createdAt: dbUser.createdAt,
+        });
+      } else {
+        throw err;
+      }
+    }
   } catch (error) {
     logger.error('Error in telegram bot sync:', error);
     res.status(500).json({ error: 'Failed to sync user' });
@@ -361,9 +463,8 @@ router.post('/telegram/bot-sync', async (req: Request, res: Response) => {
 });
 
 router.post('/telegram/notify-toggle', async (req: Request, res: Response) => {
-  const configuredSecret = process.env.BOT_SYNC_SECRET;
   const suppliedSecret = req.get('x-bot-sync-secret') || '';
-  if (!configuredSecret || !suppliedSecret || !safeSecretEquals(configuredSecret, suppliedSecret)) {
+  if (!matchesBotSyncSecret(suppliedSecret)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   try {
@@ -412,12 +513,9 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    logger.info('Telegram auth: /me returned user', {
+    logger.info('Auth /me returned user', {
       userId: dbUser.id,
       telegramId: dbUser.telegramId,
-      firstName: dbUser.firstName,
-      lastName: dbUser.lastName,
-      username: dbUser.username,
     });
 
     res.json(dbUser);
@@ -436,7 +534,7 @@ router.put('/profile', authMiddleware, async (req: Request, res: Response) => {
 
     const { firstName, lastName, username, phone, email } = req.body;
 
-    logger.info('Telegram auth: profile update request', {
+    logger.info('Profile update request', {
       userId,
       firstName,
       lastName,
@@ -469,7 +567,6 @@ router.put('/profile', authMiddleware, async (req: Request, res: Response) => {
       }
     }
 
-    // An empty string means "clear the value"; undefined means "leave unchanged".
     const cleared = (value: string | undefined | null) => {
       if (value === undefined || value === null) return value === null ? null : undefined;
       return value.trim() || null;

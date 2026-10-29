@@ -20,7 +20,7 @@ export default function LoginPage() {
 
     try {
       const res = await api.post('/api/auth/login', { login, password });
-      authLogin(res.data.user, res.data.token);
+      authLogin(res.data.user);
       if (res.data.user.role === 'admin') {
         navigate('/admin');
       } else {

@@ -1,5 +1,5 @@
 """GAB Invest Telegram Bot — deals, attribution, commissions."""
-import os, asyncio, logging, sys, re, hashlib, hmac
+import os, asyncio, logging, sys, re, hashlib, hmac, ipaddress, ssl
 from aiogram import Bot, Dispatcher, types, Router, F
 from aiogram.types import WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
@@ -15,11 +15,63 @@ WEB_APP_URL = os.getenv('WEB_APP_URL', 'https://gabinvest.cloud-ip.cc')
 BACKEND_URL = os.getenv('BACKEND_URL', 'https://gabinvest.cloud-ip.cc')
 ADMIN_TELEGRAM_IDS = os.getenv('ADMIN_TELEGRAM_IDS', '')
 BOT_SYNC_SECRET = os.getenv('BOT_SYNC_SECRET', '')
+# Inbound webhook secret is deliberately separate from BOT_SYNC_SECRET:
+# leaking the webhook secret must not grant access to the backend API.
+BOT_WEBHOOK_SECRET = os.getenv('BOT_WEBHOOK_SECRET', '')
+BOT_WEBHOOK_SECRET_PREVIOUS = os.getenv('BOT_WEBHOOK_SECRET_PREVIOUS', '')
+BOT_WEBHOOK_ALLOWED_IPS = os.getenv('BOT_WEBHOOK_ALLOWED_IPS', '')
+BOT_WEBHOOK_HOST = os.getenv('BOT_WEBHOOK_HOST', '0.0.0.0')
+BOT_WEBHOOK_PORT = int(os.getenv('BOT_WEBHOOK_PORT', '8080'))
+BOT_WEBHOOK_TLS_CERT = os.getenv('BOT_WEBHOOK_TLS_CERT', '')
+BOT_WEBHOOK_TLS_KEY = os.getenv('BOT_WEBHOOK_TLS_KEY', '')
+BOT_WEBHOOK_CLIENT_CA = os.getenv('BOT_WEBHOOK_CLIENT_CA', '')
 
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN is not set")
 if not BOT_SYNC_SECRET:
     raise RuntimeError("BOT_SYNC_SECRET is not set")
+if not BOT_WEBHOOK_SECRET:
+    raise RuntimeError("BOT_WEBHOOK_SECRET is not set")
+
+ALLOWED_WEBHOOK_NETWORKS = []
+for _entry in BOT_WEBHOOK_ALLOWED_IPS.split(','):
+    _entry = _entry.strip()
+    if not _entry:
+        continue
+    try:
+        ALLOWED_WEBHOOK_NETWORKS.append(ipaddress.ip_network(_entry, strict=False))
+    except ValueError as exc:
+        raise RuntimeError(f"Invalid BOT_WEBHOOK_ALLOWED_IPS entry {_entry!r}: {exc}") from exc
+
+
+def webhook_secret_valid(supplied: str) -> bool:
+    candidates = [s for s in (BOT_WEBHOOK_SECRET, BOT_WEBHOOK_SECRET_PREVIOUS) if s]
+    return bool(supplied) and any(hmac.compare_digest(supplied, s) for s in candidates)
+
+
+def webhook_ip_allowed(remote: str | None) -> bool:
+    if not ALLOWED_WEBHOOK_NETWORKS:
+        return True
+    if not remote:
+        return False
+    try:
+        address = ipaddress.ip_address(remote)
+    except ValueError:
+        return False
+    return any(address in network for network in ALLOWED_WEBHOOK_NETWORKS)
+
+
+@web.middleware
+async def webhook_guard(request: web.Request, handler):
+    if request.path.startswith('/webhook/'):
+        if not webhook_ip_allowed(request.remote):
+            logging.warning('Webhook rejected by IP allowlist: %s', request.remote)
+            return web.json_response({'error': 'Forbidden'}, status=403)
+        supplied = request.headers.get('x-bot-webhook-secret', '')
+        if not webhook_secret_valid(supplied):
+            logging.warning('Webhook rejected: invalid shared secret from %s', request.remote)
+            return web.json_response({'error': 'Unauthorized'}, status=401)
+    return await handler(request)
 
 dp = Dispatcher()
 router = Router()
@@ -31,9 +83,6 @@ bot_instance = Bot(token=BOT_TOKEN)
 
 # ---- Вебхук от бэкенда: новая заявка -> уведомить админов ----
 async def handle_lead_notify(request: web.Request) -> web.Response:
-    supplied = request.headers.get('x-bot-sync-secret', '')
-    if not BOT_SYNC_SECRET or not supplied or not hmac.compare_digest(supplied, BOT_SYNC_SECRET):
-        return web.json_response({'error': 'Unauthorized'}, status=401)
     try:
         data = await request.json()
     except Exception:
@@ -60,9 +109,6 @@ async def handle_lead_notify(request: web.Request) -> web.Response:
 
 # ---- Вебхук от бэкенда: новый объект -> рассылка подписчикам ----
 async def handle_object_notify(request: web.Request) -> web.Response:
-    supplied = request.headers.get('x-bot-sync-secret', '')
-    if not BOT_SYNC_SECRET or not supplied or not hmac.compare_digest(supplied, BOT_SYNC_SECRET):
-        return web.json_response({'error': 'Unauthorized'}, status=401)
     try:
         data = await request.json()
     except Exception as exc:
@@ -176,9 +222,6 @@ async def handle_object_notify(request: web.Request) -> web.Response:
 
 # ---- Вебхук от бэкенда: смена статуса заявки -> уведомить клиента ----
 async def handle_status_notify(request: web.Request) -> web.Response:
-    supplied = request.headers.get('x-bot-sync-secret', '')
-    if not BOT_SYNC_SECRET or not supplied or not hmac.compare_digest(supplied, BOT_SYNC_SECRET):
-        return web.json_response({'error': 'Unauthorized'}, status=401)
     try:
         data = await request.json()
     except Exception:
@@ -199,19 +242,47 @@ async def handle_status_notify(request: web.Request) -> web.Response:
 
 
 def build_web_app() -> web.Application:
-    app = web.Application()
+    app = web.Application(middlewares=[webhook_guard])
     app.router.add_post('/webhook/lead-notify', handle_lead_notify)
     app.router.add_post('/webhook/notify-status', handle_status_notify)
     app.router.add_post('/webhook/object-notify', handle_object_notify)
     return app
 
 
+def build_ssl_context() -> ssl.SSLContext | None:
+    if not BOT_WEBHOOK_TLS_CERT and not BOT_WEBHOOK_TLS_KEY:
+        return None
+    if not (BOT_WEBHOOK_TLS_CERT and BOT_WEBHOOK_TLS_KEY):
+        raise RuntimeError("BOT_WEBHOOK_TLS_CERT and BOT_WEBHOOK_TLS_KEY must be set together")
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
+    context.load_cert_chain(BOT_WEBHOOK_TLS_CERT, BOT_WEBHOOK_TLS_KEY)
+    if BOT_WEBHOOK_CLIENT_CA:
+        context.load_verify_locations(BOT_WEBHOOK_CLIENT_CA)
+        context.verify_mode = ssl.CERT_REQUIRED
+    return context
+
+
 async def start_web_server() -> web.AppRunner:
     runner = web.AppRunner(build_web_app())
     await runner.setup()
-    site = web.TCPSite(runner, host='0.0.0.0', port=8080)
+    ssl_context = build_ssl_context()
+    site = web.TCPSite(
+        runner,
+        host=BOT_WEBHOOK_HOST,
+        port=BOT_WEBHOOK_PORT,
+        ssl_context=ssl_context,
+    )
     await site.start()
-    logging.info("Lead-notify webhook listening on :8080 (/webhook/lead-notify)")
+    scheme = 'https' if ssl_context else 'http'
+    logging.info(
+        "Bot webhook listening on %s://%s:%s (allowlist=%s, mTLS=%s)",
+        scheme,
+        BOT_WEBHOOK_HOST,
+        BOT_WEBHOOK_PORT,
+        BOT_WEBHOOK_ALLOWED_IPS or 'any',
+        bool(BOT_WEBHOOK_CLIENT_CA),
+    )
     return runner
 
 DEAL_STAGES = ['offer', 'counter_offer', 'deposit', 'verification', 'contract', 'registration', 'closed']

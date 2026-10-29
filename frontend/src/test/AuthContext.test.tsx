@@ -20,7 +20,7 @@ function TestComponent() {
     <div>
       <div data-testid="loading">{loading ? 'loading' : 'ready'}</div>
       <div data-testid="user">{user ? user.firstName || user.email || 'user' : 'no-user'}</div>
-      <button onClick={() => login({ id: '1', firstName: 'Logged' }, 'token')}>Login</button>
+      <button onClick={() => login({ id: '1', firstName: 'Logged' })}>Login</button>
       <button onClick={() => logout()}>Logout</button>
       <button onClick={() => updateUser({ id: '1', firstName: 'Updated' })}>Update</button>
     </div>
@@ -33,7 +33,9 @@ describe('AuthContext', () => {
     localStorage.clear();
   });
 
-  it('should show no user when no token', async () => {
+  it('should show no user when no auth', async () => {
+    (api.get as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue({ data: null });
+
     await act(async () => {
       render(
         <BrowserRouter>
@@ -63,15 +65,16 @@ describe('AuthContext', () => {
     });
 
     expect(screen.getByTestId('user').textContent).toBe('Logged');
-    expect(localStorage.getItem('token')).toBe('token');
+    expect(localStorage.getItem('user')).toBeTruthy();
+    expect(localStorage.getItem('token')).toBeNull();
   });
 
   it('should logout and clear user', async () => {
     const mockUser = { id: '1', firstName: 'Test' };
-    localStorage.setItem('token', 'fake-token');
     localStorage.setItem('user', JSON.stringify(mockUser));
 
     (api.get as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue({ data: mockUser });
+    (api.post as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue({ data: { ok: true } });
 
     await act(async () => {
       render(
@@ -92,12 +95,11 @@ describe('AuthContext', () => {
     });
 
     expect(screen.getByTestId('user').textContent).toBe('no-user');
-    expect(localStorage.getItem('token')).toBeNull();
+    expect(localStorage.getItem('user')).toBeNull();
   });
 
   it('should update user state and localStorage', async () => {
     const mockUser = { id: '1', firstName: 'Old' };
-    localStorage.setItem('token', 'fake-token');
     localStorage.setItem('user', JSON.stringify(mockUser));
 
     (api.get as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue({ data: mockUser });

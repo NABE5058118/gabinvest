@@ -15,7 +15,7 @@ type User = {
 type AuthContextValue = {
   user: User | null;
   loading: boolean;
-  login: (user: User, token: string) => void;
+  login: (user: User) => void;
   logout: () => void;
   updateUser: (user: User) => void;
 };
@@ -26,16 +26,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const login = (userData: User, token: string) => {
+  const login = (userData: User) => {
     setUser(userData);
-    localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
-  const logout = () => {
+  const logout = async () => {
     setUser(null);
-    localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('favorites');
+    try {
+      await api.post('/api/auth/logout', {});
+    } catch {
+      // Best-effort: cookies are cleared by backend regardless
+    }
   };
 
   const updateUser = (updated: User) => {
@@ -52,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           if (tgUser?.id && initData) {
             const res = await api.post('/api/auth/telegram', { initData });
-            login(res.data.user, res.data.token);
+            login(res.data.user);
           } else {
             logout();
           }
@@ -60,18 +64,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const token = localStorage.getItem('token');
         const stored = localStorage.getItem('user');
-        if (token && stored) {
+        if (stored) {
           try {
-            const parsed = JSON.parse(stored);
-            setUser(parsed as User);
-            const res = await api.get<User>('/api/auth/me');
-            setUser(res.data);
-            localStorage.setItem('user', JSON.stringify(res.data));
+            setUser(JSON.parse(stored) as User);
           } catch {
-            logout();
+            localStorage.removeItem('user');
           }
+        }
+
+        try {
+          const res = await api.get<User>('/api/auth/me');
+          login(res.data);
+        } catch {
+          logout();
         }
       } finally {
         setLoading(false);
@@ -88,7 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) {

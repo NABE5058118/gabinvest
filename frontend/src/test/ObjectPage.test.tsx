@@ -37,8 +37,11 @@ describe('ObjectPage', () => {
   });
 
   it('should show loading state initially', async () => {
-    (api.get as unknown as { mockImplementation: (fn: () => Promise<unknown>) => void }).mockImplementation(
-      () => new Promise(() => {})
+    (api.get as unknown as { mockImplementation: (fn: (url: string) => Promise<unknown>) => void }).mockImplementation(
+      (url: string) => {
+        if (url.includes('/api/auth/me')) return Promise.reject(new Error('unauthorized'));
+        return new Promise(() => {});
+      },
     );
 
     await act(async () => {
@@ -49,7 +52,14 @@ describe('ObjectPage', () => {
   });
 
   it('should show error when object not found', async () => {
-    (api.get as unknown as { mockRejectedValue: (err: Error) => void }).mockRejectedValue(new Error('Not found'));
+    (api.get as unknown as { mockImplementation: (fn: (url: string) => Promise<unknown>) => void }).mockImplementation(
+      (url: string) => {
+        if (url.includes('/api/auth/me')) return Promise.reject(new Error('unauthorized'));
+        if (url.includes('/api/objects/obj-1')) return Promise.reject(new Error('Not found'));
+        return Promise.resolve({ data: {} });
+      },
+    );
+    (api.post as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue({ data: { ok: true } });
 
     await act(async () => {
       renderWithProviders(<ObjectPage />);
@@ -87,7 +97,13 @@ describe('ObjectPage', () => {
       updatedAt: '2024-01-01',
     };
 
-    (api.get as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue({ data: mockObject });
+    (api.get as unknown as { mockImplementation: (fn: (url: string) => Promise<unknown>) => void }).mockImplementation(
+      (url: string) => {
+        if (url.includes('/api/auth/me')) return Promise.reject(new Error('unauthorized'));
+        if (url.includes('/api/objects/obj-1')) return Promise.resolve({ data: mockObject });
+        return Promise.resolve({ data: {} });
+      },
+    );
 
     await act(async () => {
       renderWithProviders(<ObjectPage />);

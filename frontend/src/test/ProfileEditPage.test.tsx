@@ -32,7 +32,6 @@ describe('ProfileEditPage', () => {
 
   it('should render email and phone fields', async () => {
     const mockUser = { id: '1', firstName: 'Ivan', lastName: 'Ivanov', email: 'ivan@test.com', phone: '+79000000001' };
-    localStorage.setItem('token', 'fake-token');
     localStorage.setItem('user', JSON.stringify(mockUser));
 
     (api.get as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue({ data: mockUser });
@@ -52,7 +51,6 @@ describe('ProfileEditPage', () => {
 
   it('should submit email and phone on save', async () => {
     const mockUser = { id: '1', firstName: 'Ivan', lastName: 'Ivanov', email: 'ivan@test.com', phone: '+79000000001' };
-    localStorage.setItem('token', 'fake-token');
     localStorage.setItem('user', JSON.stringify(mockUser));
 
     (api.get as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue({ data: mockUser });

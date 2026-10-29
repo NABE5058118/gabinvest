@@ -1,128 +1,112 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { prisma } from '../lib/prisma.js';
+import crypto from 'crypto';
+import { verifyAccessToken, verifyStoredRefreshToken, signAccessToken, ACCESS_TOKEN_EXPIRY_SECONDS, TokenScope } from '../lib/tokens.js';
 import { createLogger } from '../utils/logger.js';
-import { validateTelegramInitData, parseInitData } from '../utils/telegram.js';
 
-const logger = createLogger('jwt');
+const logger = createLogger('auth');
 
-const JWT_SECRET = process.env.JWT_SECRET as string;
-
-if (process.env.NODE_ENV !== 'test' && !JWT_SECRET) {
-  logger.fatal('JWT_SECRET is not set');
-  process.exit(1);
-}
-
-export function signToken(telegramId: string): string;
-export function signToken(telegramId: string | null, userId: string): string;
-export function signToken(telegramIdOrUser: string | null, userId?: string): string {
-  if (telegramIdOrUser && !userId) {
-    return jwt.sign({ telegramId: telegramIdOrUser }, JWT_SECRET, { expiresIn: '1h', algorithm: 'HS256' });
-  }
-
-  const payload: Record<string, string> = {};
-  if (telegramIdOrUser) payload.telegramId = telegramIdOrUser;
-  if (userId) payload.userId = userId;
-
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '1h', algorithm: 'HS256' });
-}
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
-  const header = req.headers.authorization;
-  if (header?.startsWith('Bearer ')) {
-    const token = header.slice(7);
-    try {
-      const payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as { telegramId?: string; userId?: string };
-      const telegramId = payload.telegramId;
-      const userId = payload.userId;
+  const accessToken = req.cookies?.access_token;
+  const authHeader = req.headers.authorization;
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
 
-      if (!telegramId && !userId) {
-        return res.status(401).json({ error: 'Invalid token' });
-      }
-
-      let user;
-      if (telegramId) {
-        user = await prisma.user.findUnique({
-          where: { telegramId },
-          select: { id: true },
-        });
-      }
-
-      if (!user && userId) {
-        user = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { id: true },
-        });
-      }
-
-      if (!user) {
-        return res.status(401).json({ error: 'User not found' });
-      }
-
-      req.userId = user.id;
+  const token = accessToken || bearerToken;
+  if (token) {
+    const payload = verifyAccessToken(token, 'user');
+    if (payload) {
+      req.userId = payload.userId;
       return next();
-    } catch {
-      // fallback to telegram init data below
     }
   }
 
-  const initData = req.headers['x-telegram-init-data'] as string | undefined;
-  if (!initData) {
+  const refreshToken = req.cookies?.refresh_token;
+  if (!refreshToken) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  if (!botToken) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const refreshed = await tryRefresh(refreshToken, req, res);
+    if (refreshed) {
+      req.userId = refreshed.userId;
+      return next();
+    }
+  } catch (error) {
+    logger.warn('Token refresh failed during auth', { error: error instanceof Error ? error.message : 'unknown' });
   }
 
-  const isValid = validateTelegramInitData(initData, botToken);
-  if (!isValid) {
-    return res.status(401).json({ error: 'Invalid token' });
-  }
+  return res.status(401).json({ error: 'Unauthorized' });
+}
 
-  const tgUser = parseInitData(initData);
-  if (!tgUser) {
-    return res.status(401).json({ error: 'Invalid token' });
-  }
+async function tryRefresh(refreshToken: string, req: Request, res: Response): Promise<{ userId: string } | null> {
+  const verified = await verifyStoredRefreshToken(refreshToken, 'user');
+  if (!verified) return null;
 
-  const telegramId = String(tgUser.id);
-  const user = await prisma.user.findUnique({
-    where: { telegramId },
-    select: { id: true },
+  const newAccessToken = signAccessToken(verified.userId, 'user', verified.telegramId, verified.role);
+  const isProd = process.env.NODE_ENV === 'production';
+
+  res.cookie('access_token', newAccessToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: ACCESS_TOKEN_EXPIRY_SECONDS * 1000,
   });
 
-  if (!user) {
-    return res.status(401).json({ error: 'User not found' });
-  }
-
-  req.userId = user.id;
-  next();
+  return { userId: verified.userId };
 }
 
 export async function optionalAuth(req: Request, _res: Response, next: NextFunction) {
-  const header = req.headers.authorization;
-  if (header?.startsWith('Bearer ')) {
-    const token = header.slice(7);
-    try {
-      const payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as { telegramId?: string; userId?: string };
-      const user = payload.telegramId
-        ? await prisma.user.findUnique({ where: { telegramId: payload.telegramId }, select: { id: true } })
-        : payload.userId
-          ? await prisma.user.findUnique({ where: { id: payload.userId }, select: { id: true } })
-          : null;
-      if (user) req.userId = user.id;
-    } catch {
-      // Optional authentication must not turn a public endpoint into an authentication oracle.
+  const accessToken = req.cookies?.access_token;
+  const authHeader = req.headers.authorization;
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+
+  const token = accessToken || bearerToken;
+  if (!token) {
+    return next();
+  }
+
+  const payload = verifyAccessToken(token, 'user');
+  if (payload) {
+    req.userId = payload.userId;
+  }
+
+  next();
+}
+
+export async function adminAuthMiddleware(req: Request, res: Response, next: NextFunction) {
+  const accessToken = req.cookies?.access_token;
+  const authHeader = req.headers.authorization;
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+
+  const token = accessToken || bearerToken;
+  if (token) {
+    const payload = verifyAccessToken(token, 'admin');
+    if (payload) {
+      req.userId = payload.userId;
+      req.adminActor = payload.userId;
+      return next();
     }
   }
-  next();
+
+  const adminTokenHeader = req.headers['x-admin-token'];
+  if (typeof adminTokenHeader === 'string' && ADMIN_TOKEN && adminTokenHeader.length === ADMIN_TOKEN.length) {
+    if (crypto.timingSafeEqual(Buffer.from(adminTokenHeader), Buffer.from(ADMIN_TOKEN))) {
+      req.adminActor = 'static-admin-token';
+      return next();
+    }
+  }
+
+  return res.status(401).json({ error: 'Unauthorized' });
 }
 
 declare global {
   namespace Express {
     interface Request {
       userId?: string;
+      cookies?: Record<string, string>;
+      adminActor?: string;
     }
   }
 }

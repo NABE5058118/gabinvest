@@ -26,7 +26,7 @@ export default function RegisterPage() {
 
     try {
       const res = await api.post('/api/auth/register', form);
-      authLogin(res.data.user, res.data.token);
+      authLogin(res.data.user);
       navigate('/');
     } catch (err: unknown) {
       setError((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Ошибка регистрации');

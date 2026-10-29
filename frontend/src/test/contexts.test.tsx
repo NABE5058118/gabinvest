@@ -53,9 +53,8 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('user').textContent).toBe('no-user');
   });
 
-  it('should show user from localStorage when token exists', async () => {
+  it('should show user from localStorage when user exists', async () => {
     const mockUser = { id: 'user-1', email: 'anna@test.com', firstName: 'Anna' };
-    localStorage.setItem('token', 'fake-token');
     localStorage.setItem('user', JSON.stringify(mockUser));
 
     (api.get as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue({ data: mockUser });
@@ -117,7 +116,6 @@ describe('FavoritesContext', () => {
 
   it('should use API when user is present', async () => {
     const mockUser = { id: 'user-1', email: 'anna@test.com', firstName: 'Anna' };
-    localStorage.setItem('token', 'fake-token');
     localStorage.setItem('user', JSON.stringify(mockUser));
 
     (api.get as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue({ data: [] });

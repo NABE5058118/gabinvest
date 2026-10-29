@@ -40,7 +40,7 @@ export default function TelegramAuthPage() {
       }
 
       const res = await api.post('/api/auth/telegram', { initData });
-      authLogin(res.data.user, res.data.token);
+      authLogin(res.data.user);
 
       await api.put('/api/auth/profile', { phone });
 
