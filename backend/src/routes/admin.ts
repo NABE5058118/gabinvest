@@ -57,8 +57,22 @@ const objectBaseSchema = z.object({
   area: z.coerce.number().int().positive().max(1_000_000, 'Площадь слишком большая'),
   monthlyRent: z.coerce.number().int().positive().nullable().optional(),
   annualRevenue: z.coerce.number().int().positive().nullable().optional(),
-  leaseStartDate: z.coerce.date().nullable().optional(),
-  leaseEndDate: z.coerce.date().nullable().optional(),
+  leaseStartDate: z.preprocess(
+    (val: unknown) => {
+      if (val === null || val === undefined || val === '') return null;
+      const date = new Date(val as string | number | Date);
+      return Number.isNaN(date.getTime()) ? null : date;
+    },
+    z.date().nullable().optional(),
+  ),
+  leaseEndDate: z.preprocess(
+    (val: unknown) => {
+      if (val === null || val === undefined || val === '') return null;
+      const date = new Date(val as string | number | Date);
+      return Number.isNaN(date.getTime()) ? null : date;
+    },
+    z.date().nullable().optional(),
+  ),
   anchorTenantName: z.string().max(200).nullable().optional(),
   priceIndicator: z.enum(priceIndicatorEnum).nullable().optional(),
   description: z.string().max(5000).nullable().optional(),
