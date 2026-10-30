@@ -1,3 +1,4 @@
+import { Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Header from '@components/Header';
@@ -558,8 +559,9 @@ export default function AdminObjectForm() {
                     }
                     setExistingImages((prev) => prev.filter((i) => i.id !== img.id));
                   }}
+                  aria-label="Удалить фото"
                 >
-                  Удалить
+                  <Trash2 size={16} />
                 </button>
               </div>
             ))}
@@ -573,8 +575,9 @@ export default function AdminObjectForm() {
                     setImageFiles((prev) => prev.filter((_, i) => i !== idx));
                     setImagePreviews((prev) => prev.filter((_, i) => i !== idx));
                   }}
+                  aria-label="Удалить фото"
                 >
-                  Удалить
+                  <Trash2 size={16} />
                 </button>
               </div>
             ))}
