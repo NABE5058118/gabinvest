@@ -101,13 +101,24 @@ export default function AdminObjectForm() {
   }, [id]);
 
   const parseDateInput = (value: string): string => {
-    // Accept DD.MM.YYYY or DD.MM.YYYYYY and normalize to YYYY-MM-DD
+    if (!value) return '';
+    // Normalize any date-like input to YYYY-MM-DD
     const m = value.match(/^(\d{1,2})\.(\d{1,2})\.(\d{1,})$/);
-    if (!m) return value;
-    const day = m[1].padStart(2, '0');
-    const month = m[2].padStart(2, '0');
-    const year = m[3].padStart(4, '0').slice(0, 4);
-    return `${year}-${month}-${day}`;
+    if (m) {
+      const day = m[1].padStart(2, '0');
+      const month = m[2].padStart(2, '0');
+      const year = m[3].padStart(4, '0').slice(0, 4);
+      return `${year}-${month}-${day}`;
+    }
+    // Handle YYYY-MM-DD with possible extra year digits (e.g. 2026-10-292026)
+    const isoMatch = value.match(/^(\d{4,})-(\d{1,2})-(\d{1,2})/);
+    if (isoMatch) {
+      const year = isoMatch[1].slice(0, 4);
+      const month = isoMatch[2].padStart(2, '0');
+      const day = isoMatch[3].padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    return value;
   };
 
   const handleDateChange = (field: 'leaseStartDate' | 'leaseEndDate') => (e: React.ChangeEvent<HTMLInputElement>) => {
