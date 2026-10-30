@@ -150,7 +150,9 @@ export default function AdminObjectForm() {
     if (!form.title.trim()) errors.title = 'Укажите название';
     if (!form.type) errors.type = 'Укажите тип';
     if (form.price === '' || Number(form.price) <= 0) errors.price = 'Укажите корректную цену';
-    if (form.yieldPercent === '' || Number(form.yieldPercent) < 0) errors.yieldPercent = 'Укажите доходность';
+    if (form.yieldPercent === '' || Number(form.yieldPercent) < 0 || Number(form.yieldPercent) > 100) {
+      errors.yieldPercent = 'Укажите доходность (0-100%)';
+    }
     if (!form.location.trim()) errors.location = 'Укажите локацию';
     if (form.area === '' || Number(form.area) <= 0) errors.area = 'Укажите площадь';
     if (form.leaseStartDate && form.leaseEndDate && form.leaseStartDate > form.leaseEndDate) {
@@ -338,9 +340,17 @@ export default function AdminObjectForm() {
             id="yieldPercent"
             className={styles.input}
             type="number"
+            min="0"
+            max="100"
+            maxLength={3}
             value={form.yieldPercent}
-            onChange={(e) => setForm({ ...form, yieldPercent: e.target.value })}
-            required
+            onChange={(e) => {
+              const val = e.target.value.replace(/[^\d]/g, '');
+              const numVal = val ? parseInt(val, 10) : NaN;
+              if (val === '' || (numVal >= 0 && numVal <= 100 && val.length <= 3)) {
+                setForm({ ...form, yieldPercent: val });
+              }
+            }}
             aria-invalid={!!fieldErrors.yieldPercent}
             aria-describedby={fieldErrors.yieldPercent ? 'field-error-yieldPercent' : undefined}
           />
