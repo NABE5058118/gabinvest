@@ -33,6 +33,48 @@ async function notifyBotOfObject(objectId: string, object: { title: string; loca
   }
 }
 
+/**
+ * After an image is uploaded, ensure `object.image` points at it and notify the bot.
+ * The bot delivers the photo in the new-object notification; calling it here (after
+ * the image exists) guarantees the webhook payload carries a usable image URL.
+ *
+ * Only notifies when the object had no main image before the upload, so re-uploading
+ * images on an existing object does not trigger a duplicate notification.
+ */
+async function maybeNotifyObjectImage(objectId: string): Promise<void> {
+  try {
+    const obj = await prisma.object.findUnique({
+      where: { id: objectId },
+      select: { id: true, title: true, location: true, price: true, priceIndicator: true, image: true },
+    });
+    if (!obj) return;
+
+    // Re-upload on an already-published object: do not re-notify subscribers.
+    if (obj.image) return;
+
+    const firstImage = await prisma.objectImage.findFirst({
+      where: { objectId },
+      orderBy: { sort: 'asc' },
+    });
+    if (!firstImage) return;
+
+    await prisma.object.update({
+      where: { id: objectId },
+      data: { image: firstImage.url },
+    });
+
+    await notifyBotOfObject(obj.id, {
+      title: obj.title,
+      location: obj.location,
+      price: obj.price,
+      priceIndicator: obj.priceIndicator,
+      image: firstImage.url,
+    });
+  } catch (err: any) {
+    logger.warn('Object image notify failed', { objectId, err: err?.message });
+  }
+}
+
 declare global { namespace Express { interface Request { adminActor?: string } } }
 
 const objectTypeEnum = ['Офис', 'Склад', 'Торговое помещение', 'Другое'] as const;
@@ -274,15 +316,6 @@ router.post('/objects', requireAdmin, async (req: Request, res: Response) => {
         moderation: { create: { status: 'pending' } },
         placement: { create: { type: 'standard' } },
       },
-    });
-    notifyBotOfObject(obj.id, {
-      title: obj.title,
-      location: obj.location,
-      price: obj.price,
-      priceIndicator: obj.priceIndicator,
-      image: obj.image || (await prisma.objectImage.findFirst({ where: { objectId: obj.id }, orderBy: { sort: 'asc' } }).then(img => img?.url) || null),
-    }).catch((err) => {
-      logger.warn('Object notify failed (non-blocking)', { err: err?.message });
     });
     res.status(201).json(obj);
   } catch (error) {
@@ -594,6 +627,8 @@ router.post('/objects/:id/images', requireAdmin, imageUpload.single('image'), as
         },
       });
 
+      await maybeNotifyObjectImage(id);
+
       res.status(201).json(img);
   } catch (error: any) {
     logger.error('Error uploading image:', error);
@@ -638,6 +673,10 @@ router.post('/objects/:id/images/bulk', requireAdmin, bulkImageUpload.array('ima
         })
       )
     );
+
+    if (created.length > 0) {
+      await maybeNotifyObjectImage(id);
+    }
 
     res.status(201).json(created);
   } catch (error: any) {
