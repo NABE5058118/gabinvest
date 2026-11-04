@@ -46,8 +46,8 @@ export default function ProfileEditPage() {
       const res = await api.put('/api/auth/profile', {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim() || undefined,
-        email: form.email.trim() || undefined,
-        phone: form.phone.trim() || undefined,
+        email: form.email.trim() || null,
+        phone: form.phone.trim() || null,
       });
       updateUser(res.data);
       setSuccess(true);

@@ -1,7 +1,7 @@
 export function formatPhone(value: string): string {
   const numbers = value.replace(/\D/g, '').replace(/^[78]/, '').slice(0, 10);
 
-  if (!numbers) return '+7';
+  if (!numbers) return '';
 
   const p1 = numbers.slice(0, 3);
   const p2 = numbers.slice(3, 6);
