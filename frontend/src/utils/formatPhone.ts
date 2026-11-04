@@ -10,7 +10,7 @@ export function formatPhone(value: string): string {
 
   let result = '+7';
   if (p1) result += ` (${p1}`;
-  if (p1.length === 3) result += ')';
+  if (p1.length === 3 && p2) result += ')';
   if (p2) result += ` ${p2}`;
   if (p3) result += `-${p3}`;
   if (p4) result += `-${p4}`;
