@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@context/AuthContext';
 import { api } from '@utils/api';
@@ -15,6 +15,28 @@ export default function LinkTelegramPage() {
   const [success, setSuccess] = useState(false);
 
   const isLinked = Boolean(user?.telegramId);
+
+  useEffect(() => {
+    if (isLinked) return;
+
+    let cancelled = false;
+    const loadExistingCode = async () => {
+      try {
+        const res = await api.post('/api/auth/link-code/generate');
+        if (!cancelled) {
+          setCode(res.data.code);
+          setSuccess(true);
+        }
+      } catch {
+        // silently ignore: no code yet or server error, user can press "Получить код"
+      }
+    };
+
+    loadExistingCode();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLinked]);
 
   const handleGenerate = async () => {
     setLoading(true);
