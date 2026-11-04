@@ -30,9 +30,29 @@ router.post('/generate', authMiddleware, async (req: Request, res: Response) => 
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Удалить все непроиспользованные коды для этого пользователя
+    // Если есть активный неиспользованный неистекший код — вернуть его
+    const existing = await prisma.linkCode.findFirst({
+      where: {
+        userId,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (existing) {
+      logger.info('Link code reused', { userId, code: existing.code });
+      const ttlMinutes = Math.max(0, Math.round((existing.expiresAt.getTime() - Date.now()) / 1000 / 60));
+      return res.json({
+        code: existing.code,
+        expiresInMinutes: ttlMinutes,
+        reused: true,
+      });
+    }
+
+    // Удалить все истекшие непроиспользованные коды
     await prisma.linkCode.deleteMany({
-      where: { userId, usedAt: null },
+      where: { userId, usedAt: null, expiresAt: { lte: new Date() } },
     });
 
     const code = generateLinkCode();
