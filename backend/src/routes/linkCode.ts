@@ -4,7 +4,6 @@ import { authMiddleware } from '../middleware/jwt.js';
 import { matchesBotSyncSecret } from '../lib/botSync.js';
 import { createLogger } from '../utils/logger.js';
 import { z } from 'zod';
-import crypto from 'crypto';
 
 const router = Router();
 const logger = createLogger('link-code');
@@ -117,19 +116,19 @@ router.post('/verify', async (req: Request, res: Response) => {
     // Проверить, не привязан ли этот telegramId уже к другому пользователю
     const existingTelegramUser = await prisma.user.findUnique({
       where: { telegramId },
-      select: { id: true },
+      select: { id: true, phone: true, email: true, passwordHash: true },
     });
 
     if (existingTelegramUser && existingTelegramUser.id !== linkCode.userId) {
       // Если существующий пользователь с таким telegramId — "пустой" (создан ботом,
-      // нет телефона/email/пароля), можно безопасно перепривязать к веб-пользователю
-      const existingUser = await prisma.user.findUnique({
-        where: { id: existingTelegramUser.id },
-        select: { id: true, phone: true, email: true, passwordHash: true },
-      });
+      // нет телефона и email), можно безопасно перепривязать к веб-пользователю
+      const isEmptyBotUser =
+        !existingTelegramUser.phone &&
+        !existingTelegramUser.email &&
+        !existingTelegramUser.passwordHash;
 
-      if (existingUser && !existingUser.phone && !existingUser.email && !existingUser.passwordHash) {
-        // Обнуляем telegramId у пустого пользователя бота
+      if (isEmptyBotUser) {
+        // Обнуляем telegramId у пустого пользователя бота, чтобы освободить его для привязки
         await prisma.user.update({
           where: { id: existingTelegramUser.id },
           data: { telegramId: null },
