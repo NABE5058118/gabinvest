@@ -1,4 +1,4 @@
-import { User, ChevronRight, Settings, LogOut, FileText } from 'lucide-react';
+import { User, ChevronRight, Settings, LogOut, FileText, Smartphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@context/AuthContext';
 import Header from '@components/Header';
@@ -43,6 +43,13 @@ export default function ProfilePage() {
             <div className={styles.menuItemLeft}>
               <FileText size={20} strokeWidth={2} />
               <span>Мои заявки</span>
+            </div>
+            <ChevronRight size={20} strokeWidth={2} className={styles.menuItemRight} />
+          </button>
+          <button className={styles.menuItem} onClick={() => navigate('/profile/link-telegram')}>
+            <div className={styles.menuItemLeft}>
+              <Smartphone size={20} strokeWidth={2} />
+              <span>{user?.telegramId ? 'Telegram привязан' : 'Привязать Telegram'}</span>
             </div>
             <ChevronRight size={20} strokeWidth={2} className={styles.menuItemRight} />
           </button>

@@ -16,6 +16,7 @@ import favoritesRouter from './routes/favorites.js';
 import adminRouter from './routes/admin.js';
 import adminAuthRouter from './routes/admin-auth.js';
 import authRouter from './routes/auth.js';
+import linkCodeRouter from './routes/linkCode.js';
 import attributionRouter from './routes/attribution.js';
 import dealsRouter from './routes/deals.js';
 import auditRouter from './routes/audit.js';
@@ -185,11 +186,13 @@ function limiter(windowMs: number, max: number, namespace: string) {
 const authLimiter = limiter(15 * 60 * 1000, 20, 'auth');
 const registerLimiter = limiter(60 * 60 * 1000, 10, 'register');
 const telegramLimiter = limiter(60 * 1000, 20, 'telegram');
+const linkCodeLimiter = limiter(60 * 1000, 5, 'link-code');
 const leadsLimiter = limiter(60 * 1000, 10, 'leads');
 
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', registerLimiter);
 app.use('/api/auth/telegram', telegramLimiter);
+app.use('/api/auth/link-code/generate', linkCodeLimiter);
 app.use('/api/admin/auth/login', authLimiter);
 app.use('/api/leads', (req, res, next) => {
   if (req.method === 'POST') return leadsLimiter(req, res, next);
@@ -203,6 +206,7 @@ app.use('/api/favorites', favoritesRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/admin/auth', adminAuthRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/auth/link-code', linkCodeRouter);
 app.use('/api/attribution', attributionRouter);
 app.use('/api/deals', dealsRouter);
 app.use('/api/audit', auditRouter);

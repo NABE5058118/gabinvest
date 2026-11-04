@@ -1,0 +1,266 @@
+.page {
+  min-height: 100vh;
+  padding: 76px 16px calc(36px + env(safe-area-inset-bottom, 0px));
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(219, 234, 254, 0.45), transparent 55%),
+    var(--color-page, #f5f7fb);
+}
+
+.content {
+  width: min(100%, 460px);
+  margin-inline: auto;
+  padding: 16px 0 0;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px 24px;
+  background: #fff;
+  border: 1px solid #e7eaf0;
+  border-radius: 20px;
+  box-shadow: 0 18px 50px rgba(16, 24, 40, 0.075);
+  text-align: center;
+}
+
+.iconWrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #f0f4ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #171717;
+  margin: 0;
+}
+
+.description {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.backBtn {
+  margin-top: 8px;
+  padding: 12px 24px;
+  background: none;
+  border: 1px solid #333;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #171717;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.backBtn:hover {
+  background: #171717;
+  color: #fff;
+}
+
+/* Error alert */
+.errorAlert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fff1f1;
+  color: #b42318;
+  border: 1px solid #ffd9d9;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Code card */
+.codeCard {
+  padding: 32px 24px;
+  background: #fff;
+  border: 1px solid #e7eaf0;
+  border-radius: 20px;
+  box-shadow: 0 18px 50px rgba(16, 24, 40, 0.075);
+}
+
+.codeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.codeTitle {
+  font-size: 17px;
+  font-weight: 700;
+  color: #171717;
+  margin: 0;
+}
+
+.copyBtn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: #f5f7fb;
+  border: 1px solid #e7eaf0;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.copyBtn:hover {
+  background: #e7eaf0;
+}
+
+.codeValue {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #171717;
+  text-align: center;
+  margin: 0 0 16px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.codeHint {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+  margin: 0 0 12px 0;
+}
+
+.codeCommand {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: #f0f4ff;
+  border: 1px solid #e0e8ff;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #14213d;
+  font-family: monospace;
+}
+
+.codeSteps {
+  font-size: 13px;
+  color: #888;
+  line-height: 1.8;
+  margin: 16px 0 0 0;
+  text-align: left;
+}
+
+/* Generate card */
+.generateCard {
+  padding: 32px 24px;
+  background: #fff;
+  border: 1px solid #e7eaf0;
+  border-radius: 20px;
+  box-shadow: 0 18px 50px rgba(16, 24, 40, 0.075);
+}
+
+.generateTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #171717;
+  margin: 0 0 8px 0;
+}
+
+.generateDescription {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+}
+
+.telegramInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f0f4ff;
+  border: 1px solid #e0e8ff;
+  border-radius: 12px;
+  font-size: 13px;
+  color: #14213d;
+  margin-bottom: 20px;
+}
+
+.generateBtn {
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 14px 18px;
+  background: #14213d;
+  color: #fff;
+  border: 1px solid #14213d;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.generateBtn:hover:not(:disabled) {
+  background: #20365b;
+}
+
+.generateBtn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.generateBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  .page {
+    padding-top: 100px;
+    padding-bottom: 48px;
+  }
+
+  .content {
+    padding-top: 20px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .codeValue {
+    font-size: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page {
+    padding-top: 78px;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .card,
+  .codeCard,
+  .generateCard {
+    padding: 24px 18px;
+    border-radius: 16px;
+  }
+
+  .codeValue {
+    font-size: 28px;
+  }
+}

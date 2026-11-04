@@ -376,6 +376,53 @@ async def admin(message: types.Message):
     )
 
 
+@router.message(Command('link'))
+async def link_command(message: types.Message):
+    """Привязать Telegram-аккаунт к веб-аккаунту через код."""
+    parts = (message.text or '').split()
+    if len(parts) < 2:
+        await message.answer(
+            'Использование: /link <код>\n'
+            'Код можно получить в профиле на сайте в разделе «Привязать Telegram».'
+        )
+        return
+    code = parts[1].strip()
+    tg_user = message.from_user
+    try:
+        result = await backend.link_telegram(code, tg_user.id)
+    except Exception as exc:
+        logging.warning('Link-telegram failed: %s', exc)
+        await message.answer('Ошибка при привязке. Попробуйте позже.')
+        return
+
+    if result.get('_error'):
+        status = result.get('_error')
+        text = result.get('_text', '')
+        if status == 409:
+            await message.answer(
+                'Этот Telegram уже привязан к другому аккаунту на сайте.\n'
+                'Если вы считаете, что это ошибка — обратитесь в поддержку.'
+            )
+        elif status == 400:
+            if 'истёк' in text:
+                await message.answer('Код истёк. Получите новый код на сайте.')
+            elif 'уже использован' in text:
+                await message.answer('Код уже использован. Получите новый код на сайте.')
+            else:
+                await message.answer('Неверный код. Проверьте и попробуйте снова.')
+        else:
+            await message.answer(f'Ошибка при привязке (код {status}).')
+        return
+
+    if result.get('ok'):
+        await message.answer(
+            '✅ Telegram аккаунт привязан к вашему профилю на сайте.\n'
+            'Теперь вы можете входить в Mini App и на сайт — это один и тот же аккаунт.'
+        )
+    else:
+        await message.answer('Не удалось привязать аккаунт. Попробуйте снова.')
+
+
 @router.message(F.text)
 async def handle_message(message: types.Message):
     if not is_allowed(message.text or ''):

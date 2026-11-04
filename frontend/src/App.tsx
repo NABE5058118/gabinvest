@@ -4,6 +4,7 @@ import CatalogPage from './pages/CatalogPage';
 import FavoritesPage from './pages/FavoritesPage';
 import ProfilePage from './pages/ProfilePage';
 import MyLeadsPage from './pages/MyLeadsPage';
+import LinkTelegramPage from './pages/LinkTelegramPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminLoginPage from './pages/AdminLoginPage';
@@ -43,8 +44,9 @@ export default function App() {
                 <Route path="lead-success" element={<LeadSuccessPage />} />
                 <Route path="favorites" element={<FavoritesPage />} />
                 <Route path="profile/leads" element={<MyLeadsPage />} />
-                <Route path="profile" element={<ProfilePage />} />
-                <Route path="profile/edit" element={<ProfileEditPage />} />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="profile/link-telegram" element={<LinkTelegramPage />} />
+              <Route path="profile/edit" element={<ProfileEditPage />} />
               </Route>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />

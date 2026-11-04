@@ -9,6 +9,7 @@ type User = {
   firstName?: string;
   lastName?: string;
   username?: string;
+  telegramId?: string;
   role?: string;
 };
 

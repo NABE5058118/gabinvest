@@ -101,3 +101,14 @@ class BackendClient:
             {'telegramId': str(telegram_id)},
             headers=headers,
         )
+
+    async def link_telegram(self, code: str, telegram_id: int) -> dict:
+        """Привязать Telegram-аккаунт к веб-аккаунту через код."""
+        headers = {}
+        if self.bot_sync_secret:
+            headers['x-bot-sync-secret'] = self.bot_sync_secret
+        return await self.post(
+            '/api/auth/link-code/verify',
+            {'code': code, 'telegramId': str(telegram_id)},
+            headers=headers,
+        )

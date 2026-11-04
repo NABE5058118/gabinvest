@@ -307,6 +307,7 @@ model User {
    favorites        Favorite[]
    consents         Consent[]
    refreshTokens    RefreshToken[]
+  linkCodes        LinkCode[]
   leads            Lead[]
   dealsAsBuyer     Deal[]  @relation("dealBuyer")
   dealsAsSeller    Deal[]  @relation("dealSeller")
@@ -577,6 +578,21 @@ model RateLimitCounter {
   resetAt DateTime
 
   @@index([resetAt])
+}
+
+model LinkCode {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  telegramId String?
+  usedAt    DateTime?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([code])
+  @@index([expiresAt])
 }
 
 model RefreshToken {
