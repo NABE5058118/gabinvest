@@ -43,11 +43,19 @@ export default function ProfileEditPage() {
     setSuccess(false);
 
     try {
+      const phoneValue = form.phone.trim();
+      const isEmptyPhone =
+        !phoneValue ||
+        phoneValue === '+7' ||
+        phoneValue === '+7 (' ||
+        phoneValue === '+7 ()' ||
+        phoneValue === '+7 () ';
+
       const res = await api.put('/api/auth/profile', {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim() || undefined,
         email: form.email.trim() || null,
-        phone: form.phone.trim() || null,
+        phone: isEmptyPhone ? null : phoneValue,
       });
       updateUser(res.data);
       setSuccess(true);
