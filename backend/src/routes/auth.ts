@@ -236,9 +236,6 @@ router.post('/telegram', async (req: Request, res: Response) => {
       await prisma.attribution.updateMany({ where: { telegramId, userId: null }, data: { userId: dbUser.id } });
 
       const updateData: any = {
-        firstName: user.first_name || user.username || dbUser.firstName,
-        lastName: user.last_name || dbUser.lastName,
-        username: user.username || dbUser.username,
         telegramPhotoUrl: user.photo_url || dbUser.telegramPhotoUrl,
         telegramLang: user.language_code || dbUser.telegramLang,
         telegramPremium: user.is_premium !== undefined ? user.is_premium : dbUser.telegramPremium,
@@ -367,7 +364,7 @@ router.post('/telegram/bot-sync', async (req: Request, res: Response) => {
 
     const existing = await prisma.user.findUnique({
       where: { telegramId: String(telegramId) },
-      select: { id: true, firstName: true, lastName: true },
+      select: { id: true, firstName: true, lastName: true, username: true },
     });
 
     logger.info('Telegram bot-sync: existing user', {
@@ -384,7 +381,9 @@ router.post('/telegram/bot-sync', async (req: Request, res: Response) => {
     if (!existing?.lastName && lastName !== undefined && lastName !== '') {
       updateData.lastName = lastName.trim();
     }
-    if (username !== undefined) updateData.username = username || undefined;
+    if (!existing?.username && username !== undefined && username !== '') {
+      updateData.username = username.trim();
+    }
     if (photoUrl !== undefined) updateData.telegramPhotoUrl = photoUrl || undefined;
     if (languageCode !== undefined) updateData.telegramLang = languageCode || undefined;
     if (isPremium !== undefined) updateData.telegramPremium = isPremium;
