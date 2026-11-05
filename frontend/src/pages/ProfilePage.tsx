@@ -1,5 +1,7 @@
-import { User, ChevronRight, Settings, LogOut, FileText, Smartphone } from 'lucide-react';
+import { User, ChevronRight, Settings, LogOut, FileText, Smartphone, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { api, getErrorMessage } from '@utils/api';
 import { useAuth } from '@context/AuthContext';
 import Header from '@components/Header';
 import styles from '@styles/ProfilePage.module.css';
@@ -7,6 +9,10 @@ import styles from '@styles/ProfilePage.module.css';
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteConfirmed, setDeleteConfirmed] = useState(false);
 
   const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Пользователь';
   const displayUsername = user?.username ? `@${user.username}` : '';
@@ -14,6 +20,24 @@ export default function ProfilePage() {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleDeleteAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDeleteError(null);
+    setDeleteLoading(true);
+
+    try {
+      await api.delete('/api/auth/delete-account');
+      logout();
+      localStorage.removeItem('lead_client_id');
+      setDeleteModalOpen(false);
+      navigate('/');
+    } catch (err: unknown) {
+      setDeleteError(getErrorMessage(err, 'Не удалось удалить аккаунт. Попробуйте ещё раз.'));
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   return (
@@ -53,6 +77,13 @@ export default function ProfilePage() {
             </div>
             <ChevronRight size={20} strokeWidth={2} className={styles.menuItemRight} />
           </button>
+          <button className={styles.menuItem} onClick={() => setDeleteModalOpen(true)}>
+            <div className={styles.menuItemLeft}>
+              <Trash2 size={20} strokeWidth={2} />
+              <span>Удалить аккаунт</span>
+            </div>
+            <ChevronRight size={20} strokeWidth={2} className={styles.menuItemRight} />
+          </button>
           <button className={styles.menuItem} onClick={handleLogout}>
             <div className={styles.menuItemLeft}>
               <LogOut size={20} strokeWidth={2} />
@@ -62,6 +93,46 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
+
+      {deleteModalOpen && (
+        <div className={styles.deleteModalOverlay} onClick={() => setDeleteModalOpen(false)}>
+          <div className={styles.deleteModal} onClick={(e) => e.stopPropagation()}>
+            <h2>Удалить аккаунт</h2>
+            <p>После удаления все ваши персональные данные, заявки, история просмотров и привязанные данные будут безвозвратно удалены. Восстановить аккаунт будет невозможно.</p>
+            <p>Это действие неотвратимо.</p>
+
+            {deleteError && <div className={styles.deleteError}>{deleteError}</div>}
+
+            <form className={styles.deleteForm} onSubmit={handleDeleteAccount}>
+              <label className={styles.deleteCheckbox}>
+                <input
+                  type="checkbox"
+                  checked={deleteConfirmed}
+                  onChange={(e) => setDeleteConfirmed(e.target.checked)}
+                  required
+                />
+                <span>Я понимаю, что удаление необратимо и все мои данные будут удалены без возможности восстановления</span>
+              </label>
+
+              <button
+                type="submit"
+                className={styles.deleteSubmitBtn}
+                disabled={deleteLoading || !deleteConfirmed}
+              >
+                {deleteLoading ? 'Удаление...' : 'Удалить аккаунт'}
+              </button>
+
+              <button
+                type="button"
+                className={styles.deleteCancelBtn}
+                onClick={() => setDeleteModalOpen(false)}
+              >
+                Отмена
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

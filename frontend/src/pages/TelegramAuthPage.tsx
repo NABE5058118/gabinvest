@@ -15,6 +15,7 @@ export default function TelegramAuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
     if (!isTelegramWebApp()) {
@@ -32,6 +33,12 @@ export default function TelegramAuthPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    if (!agreed) {
+      setError('Необходимо согласие на обработку персональных данных');
+      setLoading(false);
+      return;
+    }
 
     try {
       const initData = window.Telegram?.WebApp?.initData;
@@ -91,6 +98,26 @@ export default function TelegramAuthPage() {
         <button type="submit" className={styles.submitBtn} disabled={loading}>
           {loading ? 'Сохраняем...' : 'Сохранить'}
         </button>
+
+        <label className={styles.checkbox} style={{ marginTop: 16, display: 'flex', alignItems: 'flexStart', gap: 8 }}>
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            required
+          />
+          <span style={{ fontSize: 14, lineHeight: 1.4 }}>
+            Я даю согласие на обработку моих персональных данных в соответствии с{' '}
+            <a
+              href="/privacy-policy"
+              onClick={(e) => { e.preventDefault(); navigate('/privacy-policy'); }}
+              style={{ color: '#3b82f6', textDecoration: 'underline', cursor: 'pointer' }}
+            >
+              Политикой конфиденциальности
+            </a>
+            .
+          </span>
+        </label>
       </form>
     </div>
   );

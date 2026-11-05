@@ -24,6 +24,8 @@ const LinkTelegramPage = lazy(() => import('./pages/LinkTelegramPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const AdminLoginPage = lazy(() => import('./pages/AdminLoginPage'));
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
+const TermsOfUsePage = lazy(() => import('./pages/TermsOfUsePage'));
 
 const RouteLoading = () => (
   <div style={{ padding: 24 }}>Загрузка...</div>
@@ -50,6 +52,8 @@ export default function App() {
               </Route>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+              <Route path="/terms-of-use" element={<TermsOfUsePage />} />
               <Route path="/admin-login" element={<AdminLoginPage />} />
               <Route path="/admin" element={<AdminRoute><Layout /></AdminRoute>}>
                 <Route index element={<AdminObjectsPage />} />

@@ -146,3 +146,118 @@
     padding-top: 104px;
   }
 }
+
+/* Delete account modal */
+.deleteModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.deleteModal {
+  width: min(100%, 440px);
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12);
+  animation: modalSlide 0.2s ease-out;
+}
+
+@keyframes modalSlide {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.deleteModal h2 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #171717;
+}
+
+.deleteModal p {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #555;
+}
+
+.deleteModal p:last-child {
+  margin-bottom: 16px;
+}
+
+.deleteError {
+  margin: 0 0 16px 0;
+  padding: 10px 12px;
+  background: #fff1f1;
+  color: #b42318;
+  border: 1px solid #ffd9d9;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.deleteForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.deleteCheckbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #333;
+}
+
+.deleteCheckbox input {
+  margin-top: 2px;
+  accent-color: #171717;
+}
+
+.deleteSubmitBtn {
+  width: 100%;
+  min-height: 46px;
+  background: #b42318;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.deleteSubmitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.deleteSubmitBtn:not(:disabled):hover {
+  opacity: 0.9;
+}
+
+.deleteCancelBtn {
+  width: 100%;
+  min-height: 46px;
+  background: transparent;
+  border: 1px solid #dedede;
+  border-radius: 10px;
+  color: #171717;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.deleteCancelBtn:hover {
+  background: #f5f5f5;
+}

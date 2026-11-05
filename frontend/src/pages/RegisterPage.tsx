@@ -22,6 +22,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const { login: authLogin } = useAuth();
 
   const validate = (): boolean => {
@@ -59,6 +60,11 @@ export default function RegisterPage() {
       valid = false;
     }
 
+    if (!agreed) {
+      next.general = 'Необходимо согласие на обработку персональных данных';
+      valid = false;
+    }
+
     setFieldError(next);
     return valid;
   };
@@ -78,6 +84,7 @@ export default function RegisterPage() {
         phone: form.phone.trim(),
         email: form.email.trim(),
         password: form.password,
+        consent: agreed,
       });
       authLogin(res.data.user);
       navigate('/');
@@ -207,14 +214,33 @@ export default function RegisterPage() {
             {fieldError.confirmPassword && <div className={styles.fieldError}>{fieldError.confirmPassword}</div>}
           </div>
 
-          <button type="submit" className={styles.submitBtn} disabled={loading}>
+          <button type="submit" className={styles.submitBtn} disabled={loading || !agreed}>
             {loading ? 'Регистрация...' : 'Зарегистрироваться'}
           </button>
-        </form>
 
-        <p className={styles.footer}>
-          Уже есть аккаунт? <Link to="/login">Войти</Link>
-        </p>
+          <label className={styles.checkbox} style={{ marginTop: 16, display: 'flex', alignItems: 'flexStart', gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              required
+            />
+            <span style={{ fontSize: 14, lineHeight: 1.4 }}>
+              Я даю согласие на обработку моих персональных данных в соответствии с{' '}
+              <a
+                href="/privacy-policy"
+                onClick={(e) => { e.preventDefault(); navigate('/privacy-policy'); }}
+                style={{ color: '#3b82f6', textDecoration: 'underline', cursor: 'pointer' }}
+              >
+                Политикой конфиденциальности
+              </a>
+            </span>
+          </label>
+
+          <p className={styles.footer}>
+            Уже есть аккаунт? <Link to="/login">Войти</Link>
+          </p>
+        </form>
       </div>
     </div>
   );

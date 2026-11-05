@@ -79,7 +79,7 @@ export default function ProfileEditPage() {
 
   return (
     <main className={styles.page}>
-      <Header onBack={() => navigate(-1)} title="Редактировать профиль" />
+      <Header onBack={() => navigate(-1)} title="Редактирование профиля" />
 
       <div className={styles.content}>
         {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}

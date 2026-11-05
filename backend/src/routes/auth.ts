@@ -30,6 +30,9 @@ const registerSchema = z.object({
   password: z.string().min(8, 'Пароль должен быть не менее 8 символов'),
   firstName: z.string().max(200).optional(),
   lastName: z.string().max(200).optional(),
+  consent: z.boolean().refine((v) => v === true, {
+    message: 'Необходимо согласие на обработку персональных данных',
+  }),
 });
 
 const loginSchema = z.object({
@@ -51,7 +54,11 @@ router.post('/register', async (req: Request, res: Response) => {
       return res.status(400).json({ error: parsed.error.errors[0].message });
     }
 
-    const { phone, email, password, firstName, lastName } = parsed.data;
+    const { phone, email, password, firstName, lastName, consent } = parsed.data;
+
+    if (!consent) {
+      return res.status(400).json({ error: 'Необходимо согласие на обработку персональных данных' });
+    }
 
     const existing = await prisma.user.findFirst({
       where: {
@@ -72,6 +79,14 @@ router.post('/register', async (req: Request, res: Response) => {
         passwordHash,
         firstName: firstName || null,
         lastName: lastName || null,
+        consents: {
+          create: {
+            consentType: 'pd_processing',
+            version: '1.0',
+            ipAddress: req.ip || req.socket.remoteAddress || undefined,
+            userAgent: req.get('User-Agent') || undefined,
+          },
+        },
       },
     });
 
@@ -111,13 +126,17 @@ router.post('/login', async (req: Request, res: Response) => {
       },
     });
 
-    if (!user || !user.passwordHash) {
-      return res.status(401).json({ error: 'Неверный логин или пароль' });
+    if (!user) {
+      return res.status(401).json({ error: 'Аккаунт с таким номером телефона или email не существует' });
+    }
+
+    if (!user.passwordHash) {
+      return res.status(401).json({ error: 'Аккаунт не имеет пароля. Войдите через Telegram' });
     }
 
     const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) {
-      return res.status(401).json({ error: 'Неверный логин или пароль' });
+      return res.status(401).json({ error: 'Неверные учетные записи' });
     }
 
     await issueTokens(res, user.id, user.telegramId || undefined, user.role || undefined);
@@ -176,6 +195,52 @@ router.post('/logout', async (req: Request, res: Response) => {
     logger.error('Error during logout:', error);
     clearAuthCookies(res);
     res.json({ ok: true });
+  }
+});
+
+router.delete('/delete-account', authMiddleware, async (req: Request, res: Response) => {
+  const userId = req.userId;
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.consent.deleteMany({ where: { userId } });
+      await tx.lead.deleteMany({ where: { userId } });
+      await tx.favorite.deleteMany({ where: { userId } });
+      await tx.attribution.deleteMany({ where: { userId } });
+      await tx.phoneVerification.deleteMany({ where: { userId } });
+      await tx.refreshToken.deleteMany({ where: { userId } });
+      await tx.linkCode.deleteMany({ where: { userId } });
+
+      const dealsAsBuyer = await tx.deal.findMany({ where: { buyerId: userId }, select: { id: true } });
+      const dealsAsSeller = await tx.deal.findMany({ where: { sellerId: userId }, select: { id: true } });
+      const dealsAsAgent = await tx.deal.findMany({ where: { agentId: userId }, select: { id: true } });
+
+      const allDealIds = new Set([...dealsAsBuyer, ...dealsAsSeller, ...dealsAsAgent].map((d) => d.id));
+      if (allDealIds.size > 0) {
+        await tx.payment.deleteMany({ where: { dealId: { in: [...allDealIds] } } });
+        await tx.commission.deleteMany({ where: { dealId: { in: [...allDealIds] } } });
+        await tx.auditEvent.deleteMany({ where: { dealId: { in: [...allDealIds] } } });
+        await tx.chatMessage.deleteMany({ where: { chat: { dealId: { in: [...allDealIds] } } } });
+        await tx.chat.deleteMany({ where: { dealId: { in: [...allDealIds] } } });
+        await tx.dealStageLog.deleteMany({ where: { dealId: { in: [...allDealIds] } } });
+        await tx.deal.deleteMany({ where: { id: { in: [...allDealIds] } } });
+      }
+
+      await tx.referral.deleteMany({ where: { OR: [{ referrerId: userId }, { refereeId: userId }] } });
+      await tx.auditEvent.deleteMany({ where: { userId } });
+
+      await tx.user.delete({ where: { id: userId } });
+    });
+
+    clearAuthCookies(res);
+    logger.info('Account deleted', { userId });
+    res.json({ ok: true });
+  } catch (error) {
+    logger.error('Error deleting account:', error);
+    res.status(500).json({ error: 'Failed to delete account' });
   }
 });
 
