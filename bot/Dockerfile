@@ -3,7 +3,8 @@ FROM python:3.12-slim
 WORKDIR /app
 
 COPY pyproject.toml .
-RUN pip install --no-cache-dir aiogram aiohttp
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY *.py .
 
@@ -12,4 +13,4 @@ USER appuser
 
 EXPOSE 8080
 
-CMD ["python", "bot.py"]
+CMD ["python", "app.py"]

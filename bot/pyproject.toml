@@ -6,10 +6,16 @@ requires-python = ">=3.12"
 dependencies = [
     "aiogram>=3.4,<4",
     "aiohttp>=3.9",
-    "redis>=5.0",
     "pydantic>=2.5",
     "bcrypt>=4.1",
     "pyjwt>=2.8",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
 ]
 
 [build-system]
