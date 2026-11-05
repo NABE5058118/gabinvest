@@ -145,6 +145,28 @@ class BackendClient:
             headers=headers,
         )
 
+    async def notify_subscribe(self, telegram_id: int) -> dict:
+        """Подписать на новые объекты. Вернёт {subscribed: bool}."""
+        headers = {}
+        if self.bot_sync_secret:
+            headers["x-bot-sync-secret"] = self.bot_sync_secret
+        return await self.post(
+            "/api/auth/telegram/notify-subscribe",
+            {"telegramId": str(telegram_id)},
+            headers=headers,
+        )
+
+    async def notify_unsubscribe(self, telegram_id: int) -> dict:
+        """Отписать от новых объектов. Вернёт {subscribed: bool}."""
+        headers = {}
+        if self.bot_sync_secret:
+            headers["x-bot-sync-secret"] = self.bot_sync_secret
+        return await self.post(
+            "/api/auth/telegram/notify-unsubscribe",
+            {"telegramId": str(telegram_id)},
+            headers=headers,
+        )
+
     async def link_telegram(self, code: str, telegram_id: int) -> dict:
         """Привязать Telegram-аккаунт к веб-аккаунту через код."""
         headers = {}

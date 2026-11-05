@@ -201,7 +201,7 @@ def setup(router, backend) -> None:
             await message.answer("Не удалось оформить подписку. Попробуйте позже.")
             return
         try:
-            result = await backend.toggle_notify(tg_user.id)
+            result = await backend.notify_subscribe(tg_user.id)
             subscribed = (
                 bool(result.get("subscribed", False))
                 if isinstance(result, dict)
@@ -224,7 +224,7 @@ def setup(router, backend) -> None:
             await message.answer("Не удалось отписаться. Попробуйте позже.")
             return
         try:
-            result = await backend.toggle_notify(tg_user.id)
+            result = await backend.notify_unsubscribe(tg_user.id)
             subscribed = (
                 bool(result.get("subscribed", False))
                 if isinstance(result, dict)
@@ -245,7 +245,7 @@ def setup(router, backend) -> None:
             await query.answer("Не удалось оформить подписку. Попробуйте позже.")
             return
         try:
-            result = await backend.toggle_notify(tg_user.id)
+            result = await backend.notify_subscribe(tg_user.id)
             subscribed = (
                 bool(result.get("subscribed", False))
                 if isinstance(result, dict)

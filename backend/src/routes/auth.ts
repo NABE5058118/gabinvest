@@ -552,6 +552,58 @@ router.post('/telegram/notify-toggle', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/telegram/notify-subscribe', async (req: Request, res: Response) => {
+  const suppliedSecret = req.get('x-bot-sync-secret') || '';
+  if (!matchesBotSyncSecret(suppliedSecret)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const { telegramId } = req.body;
+    if (!telegramId) {
+      return res.status(400).json({ error: 'telegramId is required' });
+    }
+    const user = await prisma.user.findUnique({ where: { telegramId: String(telegramId) } });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const updated = await prisma.user.update({
+      where: { telegramId: String(telegramId) },
+      data: { notifyNewObjects: true },
+      select: { id: true, telegramId: true, notifyNewObjects: true },
+    });
+    res.json({ subscribed: updated.notifyNewObjects ?? false });
+  } catch (error) {
+    logger.error('Error subscribing to notifications:', error);
+    res.status(500).json({ error: 'Failed to subscribe' });
+  }
+});
+
+router.post('/telegram/notify-unsubscribe', async (req: Request, res: Response) => {
+  const suppliedSecret = req.get('x-bot-sync-secret') || '';
+  if (!matchesBotSyncSecret(suppliedSecret)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const { telegramId } = req.body;
+    if (!telegramId) {
+      return res.status(400).json({ error: 'telegramId is required' });
+    }
+    const user = await prisma.user.findUnique({ where: { telegramId: String(telegramId) } });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const updated = await prisma.user.update({
+      where: { telegramId: String(telegramId) },
+      data: { notifyNewObjects: false },
+      select: { id: true, telegramId: true, notifyNewObjects: true },
+    });
+    res.json({ subscribed: updated.notifyNewObjects ?? false });
+  } catch (error) {
+    logger.error('Error unsubscribing from notifications:', error);
+    res.status(500).json({ error: 'Failed to unsubscribe' });
+  }
+});
+
 router.get('/me', authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.userId;
