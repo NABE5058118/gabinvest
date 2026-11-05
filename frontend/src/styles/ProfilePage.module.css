@@ -261,3 +261,32 @@
 .deleteCancelBtn:hover {
   background: #f5f5f5;
 }
+
+/* Legal footer links */
+.legalFooter {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid #e8ebf0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #666;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.legalLink {
+  color: #3b82f6;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.legalLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.legalSeparator {
+  color: #ccc;
+}

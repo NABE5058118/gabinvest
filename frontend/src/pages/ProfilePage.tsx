@@ -133,6 +133,24 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
+      <div className={styles.legalFooter}>
+        <a
+          href="/privacy-policy"
+          onClick={(e) => { e.preventDefault(); navigate('/privacy-policy'); }}
+          className={styles.legalLink}
+        >
+          Политика конфиденциальности
+        </a>
+        <span className={styles.legalSeparator}>|</span>
+        <a
+          href="/terms-of-use"
+          onClick={(e) => { e.preventDefault(); navigate('/terms-of-use'); }}
+          className={styles.legalLink}
+        >
+          Условия использования
+        </a>
+      </div>
     </div>
   );
 }
