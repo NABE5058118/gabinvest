@@ -56,8 +56,8 @@ export default function LeadsPage() {
     try {
       await adminApi.patch(`/api/leads/${leadId}/status`, { status });
       setLeads(leads.map((l) => (l.id === leadId ? { ...l, status } : l)));
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Не удалось сменить статус'));
     }
   };
 
@@ -66,8 +66,8 @@ export default function LeadsPage() {
     try {
       await adminApi.delete(`/api/leads/${leadId}`);
       setLeads(leads.filter((l) => l.id !== leadId));
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Не удалось удалить заявку'));
     }
   };
 
@@ -116,7 +116,7 @@ export default function LeadsPage() {
 
       <div className={styles.content}>
         {loading && <div className={styles.empty}>Загрузка...</div>}
-        {error && <ErrorState title="Не удалось загрузить заявки" onRetry={fetchLeads} />}
+        {error && <ErrorState title="Ошибка" description={error} onRetry={fetchLeads} />}
         {!loading && !error && leads.length === 0 && (
           <div className={styles.empty}>Нет заявок</div>
         )}

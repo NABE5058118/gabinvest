@@ -50,7 +50,7 @@ export default function FavoritesPage() {
     return (
       <div className={styles.page}>
         <Header title="Избранное" />
-        <ErrorState title="Не удалось загрузить избранное" onRetry={refetch} />
+        <ErrorState title="Не удалось загрузить избранное" description={error} onRetry={refetch} />
       </div>
     );
   }

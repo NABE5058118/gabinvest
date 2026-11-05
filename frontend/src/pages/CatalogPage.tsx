@@ -76,7 +76,7 @@ export default function CatalogPage() {
           lastRotation={lastRotation}
           loading={loading}
         />
-        <ErrorState title="Не удалось загрузить объекты" onRetry={refetch} />
+        <ErrorState title="Не удалось загрузить объекты" description={error} onRetry={refetch} />
       </main>
     );
   }

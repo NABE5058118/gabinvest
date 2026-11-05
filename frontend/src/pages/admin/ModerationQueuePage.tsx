@@ -55,8 +55,8 @@ export default function ModerationQueuePage() {
       await adminApi.patch(`/api/admin/objects/${objectId}/moderation`, { status: newStatus });
       setItems(items.filter((i) => i.objectId !== objectId));
       window.dispatchEvent(new Event('objects:refresh'));
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Не удалось обновить статус'));
     }
   };
 
@@ -78,7 +78,7 @@ export default function ModerationQueuePage() {
 
       <div className={styles.content}>
         {loading && <div className={styles.empty}>Загрузка...</div>}
-        {error && <ErrorState title="Не удалось загрузить очередь модерации" onRetry={load} />}
+        {error && <ErrorState title="Ошибка" description={error} onRetry={load} />}
         {!loading && !error && items.length === 0 && (
           <div className={styles.empty}>Нет объектов в очереди</div>
         )}

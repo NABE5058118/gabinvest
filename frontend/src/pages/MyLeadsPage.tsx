@@ -57,8 +57,8 @@ export default function MyLeadsPage() {
         headers: { 'x-client-id': clientId },
       });
       setLeads((prev) => prev.filter((l) => l.id !== leadId));
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Не удалось удалить заявку'));
     }
   };
 
@@ -121,7 +121,7 @@ export default function MyLeadsPage() {
             ))}
           </div>
         )}
-        {error && <ErrorState title="Не удалось загрузить заявки" onRetry={fetchLeads} />}
+        {error && <ErrorState title="Ошибка" description={error} onRetry={fetchLeads} />}
         {!loading && !error && leads.length === 0 && (
           <div className={styles.empty}>У вас пока нет заявок</div>
         )}
