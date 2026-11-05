@@ -5,7 +5,6 @@ type CatalogHeaderProps = {
   styles: Record<string, string>;
   refetch: () => void;
   setShowFilters: (value: boolean) => void;
-  lastRotation: string | null;
   loading: boolean;
 };
 

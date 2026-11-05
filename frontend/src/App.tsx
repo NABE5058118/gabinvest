@@ -1,13 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import CatalogPage from './pages/CatalogPage';
-import FavoritesPage from './pages/FavoritesPage';
-import ProfilePage from './pages/ProfilePage';
-import MyLeadsPage from './pages/MyLeadsPage';
-import LinkTelegramPage from './pages/LinkTelegramPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import AdminLoginPage from './pages/AdminLoginPage';
 import Layout from './components/Layout';
 import AdminRoute from './components/AdminRoute';
 import { FavoritesProvider } from './context/FavoritesContext';
@@ -24,6 +17,13 @@ const AdminOfferUpload = lazy(() => import('./pages/admin/AdminOfferUpload'));
 const ModerationQueuePage = lazy(() => import('./pages/admin/ModerationQueuePage'));
 const LeadsPage = lazy(() => import('./pages/LeadsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const MyLeadsPage = lazy(() => import('./pages/MyLeadsPage'));
+const LinkTelegramPage = lazy(() => import('./pages/LinkTelegramPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const AdminLoginPage = lazy(() => import('./pages/AdminLoginPage'));
 
 const RouteLoading = () => (
   <div style={{ padding: 24 }}>Загрузка...</div>

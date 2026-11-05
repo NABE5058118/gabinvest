@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, MapPin, BuildingComplex, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useFavorites } from '@context/FavoritesContext';
@@ -29,16 +29,7 @@ export default function CatalogPage() {
     leaseEndBefore: '',
     leaseEndAfter: '',
   });
-  const [lastRotation, setLastRotation] = useState<string | null>(null);
   const { objects, loading, error, refetch } = useObjects(filters);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      refetch();
-      setLastRotation(new Date().toLocaleTimeString('ru-RU'));
-    }, 10 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [refetch]);
 
   if (loading) {
     return (
@@ -47,7 +38,6 @@ export default function CatalogPage() {
           styles={styles}
           refetch={refetch}
           setShowFilters={setShowFilters}
-          lastRotation={lastRotation}
           loading={loading}
         />
         <div className={styles.list}>
@@ -73,7 +63,6 @@ export default function CatalogPage() {
           styles={styles}
           refetch={refetch}
           setShowFilters={setShowFilters}
-          lastRotation={lastRotation}
           loading={loading}
         />
         <ErrorState title="Не удалось загрузить объекты" description={error} onRetry={refetch} />
@@ -111,7 +100,6 @@ export default function CatalogPage() {
         styles={styles}
         refetch={refetch}
         setShowFilters={setShowFilters}
-        lastRotation={lastRotation}
         loading={loading}
       />
 
@@ -157,6 +145,8 @@ export default function CatalogPage() {
                     src={obj.images[0].url}
                     alt={obj.title}
                     className={styles.cardImg}
+                    width={300}
+                    height={200}
                     {...(idx === 0 ? { fetchpriority: 'high' } : { loading: 'lazy' })}
                     decoding="async"
                     onError={(e) => {
@@ -168,6 +158,8 @@ export default function CatalogPage() {
                     src={obj.image}
                     alt={obj.title}
                     className={styles.cardImg}
+                    width={300}
+                    height={200}
                     {...(idx === 0 ? { fetchpriority: 'high' } : { loading: 'lazy' })}
                     decoding="async"
                     onError={(e) => {
