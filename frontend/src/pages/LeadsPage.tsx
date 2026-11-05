@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
-import { adminApi } from '@utils/adminApi';
+import { adminApi, getErrorMessage } from '@utils/adminApi';
 import { Lead } from '@utils/types';
 import ErrorState from '@components/ErrorState';
 import Header from '@components/Header';
@@ -40,8 +40,8 @@ export default function LeadsPage() {
         if (data.length < 50) break;
       }
       setLeads(all);
-    } catch {
-      setError('Ошибка загрузки');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Ошибка загрузки'));
     } finally {
       setLoading(false);
     }

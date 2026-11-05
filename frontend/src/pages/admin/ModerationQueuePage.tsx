@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Eye } from 'lucide-react';
-import { adminApi } from '@utils/adminApi';
+import { adminApi, getErrorMessage } from '@utils/adminApi';
 import ErrorState from '@components/ErrorState';
 import styles from '@styles/ModerationQueue.module.css';
 import Header from '@components/Header';
@@ -39,8 +39,8 @@ export default function ModerationQueuePage() {
         if (data.length < 50) break;
       }
       setItems(all);
-    } catch {
-      setError('Ошибка загрузки');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Ошибка загрузки'));
     } finally {
       setLoading(false);
     }

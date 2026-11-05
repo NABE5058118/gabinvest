@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Upload } from 'lucide-react';
-import { adminApi } from '@utils/adminApi';
+import { adminApi, getErrorMessage } from '@utils/adminApi';
 import { normalizeOfferFileName } from '@utils/filename';
 import Header from '@components/Header';
 import styles from '@styles/AdminOfferUpload.module.css';
@@ -26,7 +26,7 @@ export default function AdminOfferUpload() {
     adminApi.get(`/api/admin/objects/${id}`)
       .then((r) => r.data)
       .then(setObject)
-      .catch(() => setError('Ошибка загрузки'));
+      .catch((err: unknown) => setError(getErrorMessage(err, 'Ошибка загрузки')));
   }, [id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,8 +45,8 @@ export default function AdminOfferUpload() {
       });
       window.dispatchEvent(new Event('objects:refresh'));
       navigate(`/admin/objects/${data.id}`);
-    } catch {
-      setError('Ошибка загрузки файла');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Ошибка загрузки файла'));
     } finally {
       setLoading(false);
     }

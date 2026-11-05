@@ -3,7 +3,7 @@ import { useState, useEffect, memo, useRef, useMemo, useCallback } from 'react';
 import { Heart, MapPin, LayoutGrid, Users, Calendar, FileText, Wrench, Percent, TrendingUp } from 'lucide-react';
 import { useFavorites } from '@context/FavoritesContext';
 import { ObjectType } from '@utils/types';
-import { api } from '@utils/api';
+import { api, getErrorMessage } from '@utils/api';
 import Header from '@components/Header';
 import ErrorState from '@components/ErrorState';
 import styles from '@styles/ObjectPage.module.css';
@@ -44,8 +44,8 @@ const ObjectPage = () => {
     try {
       const res = await api.get<ObjectType>(`/api/objects/${id}`);
       setObject(res.data);
-    } catch {
-      setError('Объект не найден');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Объект не найден'));
     } finally {
       setLoading(false);
     }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, ChevronDown, Download } from 'lucide-react';
 import { ObjectType } from '@utils/types';
-import { api } from '@utils/api';
+import { api, getErrorMessage } from '@utils/api';
 import Header from '@components/Header';
 import ErrorState from '@components/ErrorState';
 import { normalizeOfferFileName } from '@utils/filename';
@@ -44,8 +44,8 @@ export default function OfferPage() {
     try {
       const res = await api.get<ObjectType>(`/api/objects/${id}`);
       setObject(res.data);
-    } catch {
-      setError('Объект не найден');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Объект не найден'));
     } finally {
       setLoading(false);
     }

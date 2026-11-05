@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@context/AuthContext';
-import { api } from '@utils/api';
+import { api, getErrorMessage } from '@utils/api';
 import Header from '@components/Header';
 import { formatPhone } from '@utils/formatPhone';
 import styles from '@styles/ProfileEditPage.module.css';
@@ -61,8 +61,8 @@ export default function ProfileEditPage() {
       await refreshUser();
       setSuccess(true);
       setTimeout(() => navigate('/profile'), 1000);
-    } catch {
-      setError('Не удалось обновить профиль');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Не удалось обновить профиль'));
     } finally {
       setLoading(false);
     }

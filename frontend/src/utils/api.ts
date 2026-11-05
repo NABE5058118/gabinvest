@@ -48,6 +48,15 @@ api.interceptors.response.use(
   },
 );
 
+export function getErrorMessage(err: unknown, fallback: string): string {
+  return (
+    (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data?.error ??
+    (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+    (err as Error)?.message ??
+    fallback
+  );
+}
+
 export type ObjectType = {
   id: string;
   title: string;

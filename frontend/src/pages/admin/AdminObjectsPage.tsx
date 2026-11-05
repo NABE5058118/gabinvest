@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Upload } from 'lucide-react';
-import { adminApi } from '@utils/adminApi';
+import { adminApi, getErrorMessage } from '@utils/adminApi';
 import { normalizeOfferFileName } from '@utils/filename';
 import ErrorState from '@components/ErrorState';
 import Header from '@components/Header';
@@ -44,8 +44,8 @@ export default function AdminObjectsPage() {
         if (data.length < 50) break;
       }
       setItems(all);
-    } catch {
-      setError('Ошибка загрузки');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Ошибка загрузки'));
     } finally {
       setLoading(false);
     }
@@ -70,8 +70,8 @@ export default function AdminObjectsPage() {
       setItems((prev) => prev.filter((i) => i.id !== id));
       setToast({ type: 'success', message: 'Объект удалён' });
       window.dispatchEvent(new Event('objects:refresh'));
-    } catch {
-      setError('Ошибка удаления');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Ошибка удаления'));
       setToast({ type: 'error', message: 'Ошибка удаления' });
     } finally {
       setDeleteLoading(false);

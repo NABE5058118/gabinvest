@@ -14,6 +14,8 @@ vi.mock('@utils/api', () => ({
     delete: vi.fn(),
   },
   API_URL: 'http://localhost:3001',
+  getErrorMessage: (err: unknown, fallback: string) =>
+    (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? fallback,
 }));
 
 function renderWithProviders(ui: React.ReactElement) {
@@ -55,7 +57,7 @@ describe('ObjectPage', () => {
     (api.get as unknown as { mockImplementation: (fn: (url: string) => Promise<unknown>) => void }).mockImplementation(
       (url: string) => {
         if (url.includes('/api/auth/me')) return Promise.reject(new Error('unauthorized'));
-        if (url.includes('/api/objects/obj-1')) return Promise.reject(new Error('Not found'));
+        if (url.includes('/api/objects/obj-1')) return Promise.reject({ response: { data: { error: 'Объект не найден' } } });
         return Promise.resolve({ data: {} });
       },
     );

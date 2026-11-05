@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ObjectType } from '@utils/types';
-import { api } from '@utils/api';
+import { api, getErrorMessage } from '@utils/api';
 import { getLeadClientId } from '@utils/types';
 import { useAuth } from '@context/AuthContext';
 import { formatPhone } from '@utils/formatPhone';
@@ -77,8 +77,8 @@ export default function LeadFormPage() {
     try {
       const res = await api.get<ObjectType>(`/api/objects/${id}`);
       setObject(res.data);
-    } catch {
-      setError('Объект не найден');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Объект не найден'));
     } finally {
       setLoading(false);
     }
@@ -124,8 +124,8 @@ export default function LeadFormPage() {
       if (response.data?.guestToken) localStorage.setItem('lead_client_id', response.data.guestToken);
       setSubmitted(true);
       setTimeout(() => navigate('/lead-success'), 800);
-    } catch {
-      setSubmitError('Не удалось отправить заявку. Попробуйте ещё раз.');
+    } catch (err: unknown) {
+      setSubmitError(getErrorMessage(err, 'Не удалось отправить заявку. Попробуйте ещё раз.'));
     }
   };
 

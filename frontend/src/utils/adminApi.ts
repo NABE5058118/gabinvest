@@ -1,5 +1,7 @@
 import axios from 'axios';
-import { API_URL } from './api';
+import { API_URL, getErrorMessage } from './api';
+
+export { getErrorMessage };
 
 export const adminApi = axios.create({
   baseURL: API_URL,
