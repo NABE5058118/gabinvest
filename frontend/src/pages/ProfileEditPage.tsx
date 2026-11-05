@@ -8,7 +8,7 @@ import styles from '@styles/ProfileEditPage.module.css';
 
 export default function ProfileEditPage() {
   const navigate = useNavigate();
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, refreshUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -58,6 +58,7 @@ export default function ProfileEditPage() {
         phone: isEmptyPhone ? null : phoneValue,
       });
       updateUser(res.data);
+      await refreshUser();
       setSuccess(true);
       setTimeout(() => navigate('/profile'), 1000);
     } catch {

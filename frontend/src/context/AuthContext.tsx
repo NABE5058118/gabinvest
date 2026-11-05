@@ -19,6 +19,7 @@ type AuthContextValue = {
   login: (user: User) => void;
   logout: () => void;
   updateUser: (user: User) => void;
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -46,6 +47,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUser = (updated: User) => {
     setUser(updated);
     localStorage.setItem('user', JSON.stringify(updated));
+  };
+
+  const refreshUser = async () => {
+    try {
+      const res = await api.get<User>('/api/auth/me');
+      login(res.data);
+    } catch {
+      logout();
+    }
+  };
+
+  const syncFromStorage = () => {
+    const stored = localStorage.getItem('user');
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored) as User;
+      if (parsed?.id && parsed.id !== user?.id) {
+        setUser(parsed);
+      }
+    } catch {
+      // ignore malformed storage
+    }
   };
 
   useEffect(() => {
@@ -78,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const res = await api.get<User>('/api/auth/me');
           login(res.data);
         } catch {
-          logout();
+          if (!user) logout();
         }
       } finally {
         setLoading(false);
@@ -88,8 +111,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     run();
   }, []);
 
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'user' && e.newValue) {
+        syncFromStorage();
+      }
+    };
+
+    const handleVisibility = () => {
+      if (!document.hidden) {
+        refreshUser();
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [user?.id, refreshUser]);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, updateUser, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
