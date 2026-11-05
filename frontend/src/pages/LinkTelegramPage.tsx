@@ -8,7 +8,7 @@ import styles from '@styles/LinkTelegramPage.module.css';
 
 export default function LinkTelegramPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   const CODE_STORAGE_KEY = 'link_code_expires_at';
   const CODE_STORAGE_CODE = 'link_code_value';
@@ -37,6 +37,7 @@ export default function LinkTelegramPage() {
   });
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const linkCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isLinked = Boolean(user?.telegramId);
 
@@ -59,11 +60,24 @@ export default function LinkTelegramPage() {
     return interval;
   }, [getRemainingSeconds]);
 
+  const checkLinkStatus = useCallback(async () => {
+    try {
+      const res = await api.get('/api/auth/me');
+      if (res.data?.telegramId && !isLinked) {
+        refreshUser();
+        navigate('/profile');
+      }
+    } catch {
+      // ignore
+    }
+  }, [isLinked, refreshUser, navigate]);
+
   useEffect(() => {
     if (isLinked) {
       localStorage.removeItem(CODE_STORAGE_KEY);
       localStorage.removeItem(CODE_STORAGE_CODE);
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (linkCheckRef.current) clearInterval(linkCheckRef.current);
       return;
     }
 
@@ -83,10 +97,15 @@ export default function LinkTelegramPage() {
       }
     }
 
+    // Проверяем привязку каждые 3 секунды, чтобы сразу отреагировать на привязку через бота
+    if (linkCheckRef.current) clearInterval(linkCheckRef.current);
+    linkCheckRef.current = setInterval(checkLinkStatus, 3000);
+
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (linkCheckRef.current) clearInterval(linkCheckRef.current);
     };
-  }, [isLinked, startTimer, getRemainingSeconds]);
+  }, [isLinked, startTimer, getRemainingSeconds, checkLinkStatus]);
 
   const handleGenerate = async () => {
     setLoading(true);

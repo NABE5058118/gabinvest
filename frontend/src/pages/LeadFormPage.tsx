@@ -112,6 +112,12 @@ export default function LeadFormPage() {
 
     setSubmitError(null);
 
+    const phoneDigits = form.phone.replace(/\D/g, '');
+    if (phoneDigits.length < 11 || !/^[78]/.test(phoneDigits)) {
+      setSubmitError('Введите полный номер телефона');
+      return;
+    }
+
     try {
       const response = await api.post('/api/leads', {
         objectId: id,
