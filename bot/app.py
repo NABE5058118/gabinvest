@@ -7,6 +7,7 @@ from aiohttp import ClientSession
 
 from backend_client import BackendClient
 from bot_http import close_first_touch_session, close_http_session
+from commands import setup
 from config import BACKEND_URL, BOT_SYNC_SECRET, BOT_TOKEN, logger
 
 assert BOT_TOKEN is not None, "BOT_TOKEN must be set"
@@ -18,9 +19,9 @@ backend = BackendClient(BACKEND_URL, bot_sync_secret=BOT_SYNC_SECRET or None)
 
 # Единый объект Bot — нужен и для polling, и для отправки уведомлений из вебхука.
 
-_first_touch_session: ClientSession | None = None
+setup(router, backend)
 
-dp.include_router(router)
+_first_touch_session: ClientSession | None = None
 
 
 async def run_bot():
