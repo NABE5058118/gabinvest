@@ -1,41 +1,60 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@context/AuthContext';
 import { api } from '@utils/api';
 import Header from '@components/Header';
-import { Copy, CheckCircle2, AlertCircle, Smartphone } from 'lucide-react';
+import { Copy, CheckCircle2, AlertCircle } from 'lucide-react';
 import styles from '@styles/LinkTelegramPage.module.css';
 
 export default function LinkTelegramPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const CODE_STORAGE_KEY = 'link_code_expires_at';
+  const CODE_STORAGE_CODE = 'link_code_value';
+
   const [code, setCode] = useState<string | null>(() => {
-    const stored = localStorage.getItem('link_code_value');
-    return stored || null;
+    const stored = localStorage.getItem(CODE_STORAGE_CODE);
+    const expiresAt = localStorage.getItem(CODE_STORAGE_KEY);
+    if (stored && expiresAt && Number(expiresAt) > Date.now()) {
+      return stored;
+    }
+    localStorage.removeItem(CODE_STORAGE_KEY);
+    localStorage.removeItem(CODE_STORAGE_CODE);
+    return null;
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(() => {
-    const stored = localStorage.getItem('link_code_value');
-    const expiresAt = localStorage.getItem('link_code_expires_at');
+    const stored = localStorage.getItem(CODE_STORAGE_CODE);
+    const expiresAt = localStorage.getItem(CODE_STORAGE_KEY);
     return Boolean(stored && expiresAt && Number(expiresAt) > Date.now());
   });
   const [secondsLeft, setSecondsLeft] = useState(() => {
-    const stored = localStorage.getItem('link_code_expires_at');
+    const stored = localStorage.getItem(CODE_STORAGE_KEY);
     if (!stored) return 0;
     return Math.max(0, Math.floor((Number(stored) - Date.now()) / 1000));
   });
 
-  const isLinked = Boolean(user?.telegramId);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const CODE_STORAGE_KEY = 'link_code_expires_at';
-  const CODE_STORAGE_CODE = 'link_code_value';
+  const isLinked = Boolean(user?.telegramId);
 
   const getRemainingSeconds = useCallback((expiresAt: number) => Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)), []);
 
   const startTimer = useCallback((expiresAt: number) => {
     const interval = setInterval(() => {
-      setSecondsLeft(getRemainingSeconds(expiresAt));
+      const next = getRemainingSeconds(expiresAt);
+      setSecondsLeft(next);
+      if (next === 0) {
+        clearInterval(interval);
+        intervalRef.current = null;
+        setCode(null);
+        setSuccess(false);
+        setSecondsLeft(0);
+        localStorage.removeItem(CODE_STORAGE_KEY);
+        localStorage.removeItem(CODE_STORAGE_CODE);
+      }
     }, 1000);
     return interval;
   }, [getRemainingSeconds]);
@@ -44,11 +63,11 @@ export default function LinkTelegramPage() {
     if (isLinked) {
       localStorage.removeItem(CODE_STORAGE_KEY);
       localStorage.removeItem(CODE_STORAGE_CODE);
+      if (intervalRef.current) clearInterval(intervalRef.current);
       return;
     }
 
-    let cancelled = false;
-    let interval: ReturnType<typeof setInterval> | null = null;
+    if (intervalRef.current) clearInterval(intervalRef.current);
 
     const storedCode = localStorage.getItem(CODE_STORAGE_CODE);
     const storedExpiresAt = localStorage.getItem(CODE_STORAGE_KEY);
@@ -56,8 +75,8 @@ export default function LinkTelegramPage() {
     if (storedCode && storedExpiresAt) {
       const expiresAt = Number(storedExpiresAt);
       const remaining = getRemainingSeconds(expiresAt);
-      if (remaining > 0 && !cancelled) {
-        interval = startTimer(expiresAt);
+      if (remaining > 0) {
+        intervalRef.current = startTimer(expiresAt);
       } else {
         localStorage.removeItem(CODE_STORAGE_KEY);
         localStorage.removeItem(CODE_STORAGE_CODE);
@@ -65,8 +84,7 @@ export default function LinkTelegramPage() {
     }
 
     return () => {
-      cancelled = true;
-      if (interval) clearInterval(interval);
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [isLinked, startTimer, getRemainingSeconds]);
 
@@ -76,6 +94,7 @@ export default function LinkTelegramPage() {
     setSuccess(false);
     setCode(null);
     setSecondsLeft(0);
+    if (intervalRef.current) clearInterval(intervalRef.current);
     localStorage.removeItem(CODE_STORAGE_KEY);
     localStorage.removeItem(CODE_STORAGE_CODE);
 
@@ -89,6 +108,7 @@ export default function LinkTelegramPage() {
       setCode(fetchedCode);
       setSuccess(true);
       setSecondsLeft(getRemainingSeconds(expiresAt));
+      intervalRef.current = startTimer(expiresAt);
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
       if (status === 429) {
@@ -179,10 +199,6 @@ export default function LinkTelegramPage() {
               Чтобы входить на сайт и в Mini App под одним аккаунтом,
               привяжите свой Telegram. Код будет действителен 5 минут.
             </p>
-            <div className={styles.telegramInfo}>
-              <Smartphone size={20} strokeWidth={2} color="#0088cc" />
-              <span>Телефон из профиля Telegram не требуется</span>
-            </div>
             <button
               className={styles.generateBtn}
               onClick={handleGenerate}
