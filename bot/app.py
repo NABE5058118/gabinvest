@@ -20,6 +20,7 @@ backend = BackendClient(BACKEND_URL, bot_sync_secret=BOT_SYNC_SECRET or None)
 # Единый объект Bot — нужен и для polling, и для отправки уведомлений из вебхука.
 
 setup(router, backend)
+dp.include_router(router)
 
 _first_touch_session: ClientSession | None = None
 
