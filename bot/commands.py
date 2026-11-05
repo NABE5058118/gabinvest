@@ -201,6 +201,17 @@ def setup(router, backend) -> None:
             await message.answer("Не удалось оформить подписку. Попробуйте позже.")
             return
         try:
+            status = await backend.notify_status(tg_user.id)
+            already = (
+                bool(status.get("subscribed", False))
+                if isinstance(status, dict)
+                else False
+            )
+            if already:
+                await message.answer(
+                    "ℹ️ Вы уже подписаны на уведомления о новых объектах."
+                )
+                return
             result = await backend.notify_subscribe(tg_user.id)
             subscribed = (
                 bool(result.get("subscribed", False))
@@ -224,6 +235,17 @@ def setup(router, backend) -> None:
             await message.answer("Не удалось отписаться. Попробуйте позже.")
             return
         try:
+            status = await backend.notify_status(tg_user.id)
+            already = (
+                bool(status.get("subscribed", False))
+                if isinstance(status, dict)
+                else False
+            )
+            if not already:
+                await message.answer(
+                    "ℹ️ Вы не были подписаны на уведомления о новых объектах."
+                )
+                return
             result = await backend.notify_unsubscribe(tg_user.id)
             subscribed = (
                 bool(result.get("subscribed", False))
@@ -245,6 +267,20 @@ def setup(router, backend) -> None:
             await query.answer("Не удалось оформить подписку. Попробуйте позже.")
             return
         try:
+            status = await backend.notify_status(tg_user.id)
+            already = (
+                bool(status.get("subscribed", False))
+                if isinstance(status, dict)
+                else False
+            )
+            if already:
+                await query.answer("ℹ️ Вы уже подписаны")
+                if query.message is not None:
+                    try:
+                        await query.message.edit_reply_markup(reply_markup=None)
+                    except Exception:  # noqa: BLE001, S110
+                        pass
+                return
             result = await backend.notify_subscribe(tg_user.id)
             subscribed = (
                 bool(result.get("subscribed", False))

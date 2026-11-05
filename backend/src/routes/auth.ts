@@ -604,6 +604,27 @@ router.post('/telegram/notify-unsubscribe', async (req: Request, res: Response) 
   }
 });
 
+router.get('/telegram/notify-status', async (req: Request, res: Response) => {
+  const suppliedSecret = req.get('x-bot-sync-secret') || '';
+  if (!matchesBotSyncSecret(suppliedSecret)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const { telegramId } = req.query;
+    if (!telegramId || Array.isArray(telegramId)) {
+      return res.status(400).json({ error: 'telegramId is required' });
+    }
+    const user = await prisma.user.findUnique({ where: { telegramId: String(telegramId) } });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json({ subscribed: user.notifyNewObjects ?? false });
+  } catch (error) {
+    logger.error('Error getting notify status:', error);
+    res.status(500).json({ error: 'Failed to get notification status' });
+  }
+});
+
 router.get('/me', authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.userId;

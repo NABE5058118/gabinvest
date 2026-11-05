@@ -167,6 +167,17 @@ class BackendClient:
             headers=headers,
         )
 
+    async def notify_status(self, telegram_id: int) -> dict:
+        """Получить статус подписки на новые объекты. Вернёт {subscribed: bool}."""
+        headers = {}
+        if self.bot_sync_secret:
+            headers["x-bot-sync-secret"] = self.bot_sync_secret
+        return await self.get(
+            "/api/auth/telegram/notify-status",
+            headers=headers,
+            params={"telegramId": str(telegram_id)},
+        )
+
     async def link_telegram(self, code: str, telegram_id: int) -> dict:
         """Привязать Telegram-аккаунт к веб-аккаунту через код."""
         headers = {}
