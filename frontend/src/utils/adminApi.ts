@@ -15,7 +15,12 @@ adminApi.interceptors.response.use(
   (response) => response,
   async (error) => {
     const { config, response } = error;
-    if (!response || (response.status !== 401 && response.status !== 403)) {
+    const isAuthEndpoint = Boolean(
+      config?.url &&
+      (config.url.includes('/api/admin/auth/login') ||
+        config.url.includes('/api/admin/auth/refresh'))
+    );
+    if (!response || isAuthEndpoint || (response.status !== 401 && response.status !== 403)) {
       return Promise.reject(error);
     }
 

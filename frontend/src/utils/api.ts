@@ -20,7 +20,14 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const { config, response } = error;
-    if (!response || (response.status !== 401 && response.status !== 403)) {
+    const isAuthEndpoint = Boolean(
+      config?.url &&
+      (config.url.includes('/api/auth/login') ||
+        config.url.includes('/api/auth/register') ||
+        config.url.includes('/api/auth/me') ||
+        config.url.includes('/api/auth/refresh'))
+    );
+    if (!response || isAuthEndpoint || (response.status !== 401 && response.status !== 403)) {
       return Promise.reject(error);
     }
 

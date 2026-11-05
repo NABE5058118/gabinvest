@@ -8,7 +8,7 @@ import { z } from 'zod';
 const router = Router();
 const logger = createLogger('link-code');
 
-const LINK_CODE_TTL_MINUTES = 15;
+const LINK_CODE_TTL_MINUTES = 5;
 const LINK_CODE_LENGTH = 6;
 
 function generateLinkCode(): string {

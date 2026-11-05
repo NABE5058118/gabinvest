@@ -133,6 +133,19 @@
   font-variant-numeric: tabular-nums;
 }
 
+.timer {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 12px 0;
+}
+
+.timerExpired {
+  font-size: 14px;
+  color: #b42318;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
 .codeHint {
   font-size: 14px;
   color: #666;

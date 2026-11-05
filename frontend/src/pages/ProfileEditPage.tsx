@@ -11,7 +11,7 @@ export default function ProfileEditPage() {
   const { user, updateUser, refreshUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -40,7 +40,7 @@ export default function ProfileEditPage() {
 
     setLoading(true);
     setError(null);
-    setSuccess(false);
+    setToast(null);
 
     try {
       const phoneValue = form.phone.trim();
@@ -51,6 +51,15 @@ export default function ProfileEditPage() {
         phoneValue === '+7 ()' ||
         phoneValue === '+7 () ';
 
+      if (!isEmptyPhone) {
+        const digits = phoneValue.replace(/\D/g, '');
+        if (digits.length < 11 || !/^[78]/.test(digits)) {
+          setToast({ type: 'error', message: 'Введите полный номер телефона' });
+          setLoading(false);
+          return;
+        }
+      }
+
       const res = await api.put('/api/auth/profile', {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim() || undefined,
@@ -59,7 +68,7 @@ export default function ProfileEditPage() {
       });
       updateUser(res.data);
       await refreshUser();
-      setSuccess(true);
+      setToast({ type: 'success', message: 'Профиль обновлён' });
       setTimeout(() => navigate('/profile'), 1000);
     } catch (err: unknown) {
       setError(getErrorMessage(err, 'Не удалось обновить профиль'));
@@ -74,7 +83,11 @@ export default function ProfileEditPage() {
 
       <div className={styles.content}>
         {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}
-        {success && <div className={styles.success} role="status" aria-live="polite">Профиль обновлён</div>}
+        {toast && (
+          <div className={toast.type === 'success' ? styles.toastSuccess : styles.toastError} role="status" aria-live="polite">
+            {toast.message}
+          </div>
+        )}
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.field}>

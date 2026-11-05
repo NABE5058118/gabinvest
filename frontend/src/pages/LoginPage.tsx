@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '@utils/api';
 import { useAuth } from '@context/AuthContext';
+import { Eye, EyeOff } from 'lucide-react';
 import Header from '@components/Header';
 import styles from '@styles/Auth.module.css';
 
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const { login: authLogin } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,23 +52,35 @@ export default function LoginPage() {
             <label className={styles.label} htmlFor="login">Телефон или email</label>
             <input
               id="login"
-              className={styles.input}
+              className={`${styles.input} ${error ? styles.inputError : ''}`}
               value={login}
               onChange={(e) => setLogin(e.target.value)}
               required
             />
+            {error && <div className={styles.fieldError}>{error}</div>}
           </div>
 
           <div className={styles.field}>
             <label className={styles.label} htmlFor="password">Пароль</label>
-            <input
-              id="password"
-              className={styles.input}
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div className={styles.inputWrapper}>
+              <input
+                id="password"
+                className={`${styles.input} ${error ? styles.inputError : ''}`}
+                type={passwordVisible ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className={styles.togglePassword}
+                onClick={() => setPasswordVisible(!passwordVisible)}
+                aria-label={passwordVisible ? 'Скрыть пароль' : 'Показать пароль'}
+              >
+                {passwordVisible ? <EyeOff size={18} strokeWidth={2} /> : <Eye size={18} strokeWidth={2} />}
+              </button>
+            </div>
+            {error && <div className={styles.fieldError}>{error}</div>}
           </div>
 
           <button type="submit" className={styles.submitBtn} disabled={loading}>
