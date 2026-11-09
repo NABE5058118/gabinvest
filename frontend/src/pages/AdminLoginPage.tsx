@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminApi } from '@utils/adminApi';
+import { Eye, EyeOff } from 'lucide-react';
 import Header from '@components/Header';
 import styles from '@styles/Auth.module.css';
 
@@ -10,6 +11,7 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,14 +49,24 @@ export default function AdminLoginPage() {
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="admin-password">Пароль</label>
-          <input
-            id="admin-password"
-            className={styles.input}
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <div className={styles.inputWrapper}>
+            <input
+              id="admin-password"
+              className={styles.input}
+              type={passwordVisible ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <button
+              type="button"
+              className={styles.togglePassword}
+              onClick={() => setPasswordVisible(!passwordVisible)}
+              aria-label={passwordVisible ? 'Скрыть пароль' : 'Показать пароль'}
+            >
+              {passwordVisible ? <EyeOff size={18} strokeWidth={2} /> : <Eye size={18} strokeWidth={2} />}
+            </button>
+          </div>
         </div>
 
         <button type="submit" className={styles.submitBtn} disabled={loading}>
