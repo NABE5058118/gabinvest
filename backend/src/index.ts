@@ -11,6 +11,7 @@ import crypto from 'crypto';
 import { prisma } from './lib/prisma.js';
 import objectsRouter from './routes/objects.js';
 import citiesRouter from './routes/cities.js';
+import casesRouter from './routes/cases.js';
 import leadsRouter from './routes/leads.js';
 import favoritesRouter from './routes/favorites.js';
 import adminRouter from './routes/admin.js';
@@ -75,6 +76,7 @@ async function validateSchema() {
       'LegalConstraint', 'EngineeringSpec', 'VatRate', 'Moderation', 'Placement', 'Payment', 'Attribution',
       'Deal', 'DealStageLog', 'Commission', 'AuditEvent', 'Chat', 'ChatMessage', 'PhoneVerification',
       'Referral', 'AntiBypassRule', 'PaymentProvider', 'Payout', 'RateLimitCounter', 'RefreshToken',
+      'Case', 'CaseImage',
     ];
     const missingTables = requiredTables.filter((table) => !tableNames.includes(table));
     if (missingTables.length > 0) {
@@ -201,6 +203,7 @@ app.use('/api/leads', (req, res, next) => {
 
 app.use('/api/objects', objectsRouter);
 app.use('/api/cities', citiesRouter);
+app.use('/api/cases', casesRouter);
 app.use('/api/leads', leadsRouter);
 app.use('/api/favorites', favoritesRouter);
 app.use('/api/admin', adminRouter);

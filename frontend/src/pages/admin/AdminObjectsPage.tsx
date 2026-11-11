@@ -6,6 +6,8 @@ import { normalizeOfferFileName } from '@utils/filename';
 import ErrorState from '@components/ErrorState';
 import Header from '@components/Header';
 import ConfirmModal from '@components/ConfirmModal';
+import StatusBadge from '@components/StatusBadge';
+import StatusFilter from '@components/StatusFilter';
 import styles from '@styles/AdminObjects.module.css';
 
 type ObjectItem = {
@@ -23,6 +25,7 @@ type ObjectItem = {
   offerFileName?: string;
   image?: string;
   images?: Array<{ id: string; url: string; sort: number }>;
+  moderation?: { status: string };
 };
 
 export default function AdminObjectsPage() {
@@ -32,6 +35,7 @@ export default function AdminObjectsPage() {
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('');
   const navigate = useNavigate();
 
   const fetchItems = async () => {
@@ -78,15 +82,37 @@ export default function AdminObjectsPage() {
     }
   };
 
+  const handleStatusChange = async (id: string, status: string) => {
+    try {
+      await adminApi.patch(`/api/admin/objects/${id}/moderation`, { status });
+      setItems((prev) => prev.map((i) => i.id === id ? { ...i, moderation: { ...i.moderation, status } } : i));
+      window.dispatchEvent(new Event('objects:refresh'));
+      setToast({ type: 'success', message: 'Статус обновлён' });
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Не удалось обновить статус'));
+    }
+  };
+
+  const filteredItems = items.filter(
+    (item) => !statusFilter || item.moderation?.status === statusFilter
+  );
+
   return (
     <div className={styles.page}>
       <Header title="Объекты" />
 
       <div className={styles.content}>
-        <button className={styles.addBtn} onClick={() => navigate('/admin/objects/new')}>
-          <Plus size={20} strokeWidth={2} style={{ marginRight: 8 }} />
-          Добавить объект
-        </button>
+        <div className={styles.toolbar}>
+          <button className={styles.addBtn} onClick={() => navigate('/admin/objects/new')}>
+            <Plus size={20} strokeWidth={2} style={{ marginRight: 8 }} />
+            Добавить объект
+          </button>
+          <StatusFilter
+            variant="moderation"
+            value={statusFilter}
+            onChange={setStatusFilter}
+          />
+        </div>
 
         {loading && <div className={styles.empty}>Загрузка...</div>}
         {error && <ErrorState title="Не удалось загрузить объекты" onRetry={fetchItems} />}
@@ -95,13 +121,18 @@ export default function AdminObjectsPage() {
             {toast.message}
           </div>
         )}
-        {!loading && !error && items.length === 0 && (
+        {!loading && !error && filteredItems.length === 0 && (
           <div className={styles.empty}>Нет объектов</div>
         )}
-        {items.map((item) => (
+        {filteredItems.map((item) => (
           <div key={item.id} className={styles.item}>
             <div className={styles.itemHeader}>
               <div className={styles.itemTitle}>{item.title}</div>
+              <StatusBadge
+                status={item.moderation?.status || 'pending'}
+                variant="moderation"
+                onChange={(status) => handleStatusChange(item.id, status)}
+              />
             </div>
             <div className={styles.itemMeta}>
               {item.type} • {item.location} • {item.price.toLocaleString('ru-RU')} ₽

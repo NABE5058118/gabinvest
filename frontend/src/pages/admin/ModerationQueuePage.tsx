@@ -62,7 +62,7 @@ export default function ModerationQueuePage() {
 
   return (
     <div className={styles.page}>
-      <Header onBack={() => navigate('/admin')} title="Модерация" />
+      <Header onBack={() => navigate('/admin/object')} title="Модерация" />
 
       <div className={styles.filterBar}>
         <select

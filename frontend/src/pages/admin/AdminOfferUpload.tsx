@@ -54,7 +54,7 @@ export default function AdminOfferUpload() {
 
   return (
     <main className={styles.page}>
-      <Header onBack={() => navigate('/admin')} title="Коммерческое предложение" />
+      <Header onBack={() => navigate('/admin/object')} title="Коммерческое предложение" />
 
       <div className={styles.form}>
         {object && (

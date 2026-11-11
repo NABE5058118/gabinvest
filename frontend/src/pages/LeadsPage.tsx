@@ -1,25 +1,19 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { adminApi, getErrorMessage } from '@utils/adminApi';
 import { Lead } from '@utils/types';
+import { LEAD_STATUSES } from '@utils/status';
 import ErrorState from '@components/ErrorState';
 import Header from '@components/Header';
+import StatusBadge from '@components/StatusBadge';
 import styles from '@styles/LeadsPage.module.css';
-
-const STATUS_OPTIONS = [
-  { value: 'new', label: 'Новая' },
-  { value: 'in_progress', label: 'В работе' },
-  { value: 'done', label: 'Завершена' },
-  { value: 'cancelled', label: 'Отменена' },
-];
 
 const SORT_OPTIONS = [
   { value: 'createdAt_desc', label: 'Дата создания (сначала новые)' },
   { value: 'createdAt_asc', label: 'Дата создания (сначала старые)' },
   { value: 'name_asc', label: 'Имя клиента (А-Я)' },
   { value: 'name_desc', label: 'Имя клиента (Я-А)' },
-  { value: 'status_asc', label: 'Статус (А-Я)' },
+  { value: 'status_asc', label: 'Статус (новые → отменённые)' },
   { value: 'object_asc', label: 'Объект (А-Я)' },
 ];
 
@@ -28,7 +22,6 @@ export default function LeadsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sort, setSort] = useState('createdAt_desc');
-  const navigate = useNavigate();
 
   const fetchLeads = async () => {
     try {
@@ -71,6 +64,12 @@ export default function LeadsPage() {
     }
   };
 
+  const statusOrder = LEAD_STATUSES.map((o) => o.value);
+  const statusRank = (status: string) => {
+    const rank = statusOrder.indexOf(status);
+    return rank === -1 ? statusOrder.length : rank;
+  };
+
   const sortedLeads = [...leads].sort((a, b) => {
     switch (sort) {
       case 'createdAt_asc':
@@ -79,8 +78,12 @@ export default function LeadsPage() {
         return (a.name || '').localeCompare(b.name || '');
       case 'name_desc':
         return (b.name || '').localeCompare(a.name || '');
-      case 'status_asc':
+      case 'status_asc': {
+        const ra = statusRank(a.status);
+        const rb = statusRank(b.status);
+        if (ra !== rb) return ra - rb;
         return (a.status || '').localeCompare(b.status || '');
+      }
       case 'object_asc':
         return (a.object?.title || '').localeCompare(b.object?.title || '');
       case 'createdAt_desc':
@@ -102,7 +105,7 @@ export default function LeadsPage() {
 
   return (
     <div className={styles.page}>
-      <Header onBack={() => navigate(-1)} title="Заявки">
+      <Header title="Заявки">
         <select
           className={styles.sortSelect}
           value={sort}
@@ -128,17 +131,11 @@ export default function LeadsPage() {
                   {lead.object?.title || `Объект ${lead.objectId}`}
                 </div>
                 <div className={styles.itemActions}>
-                  <div className={styles.itemStatus}>
-                    <select
-                      className={styles.statusSelect}
-                      value={lead.status}
-                      onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                    >
-                      {STATUS_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <StatusBadge
+                    status={lead.status}
+                    variant="lead"
+                    onChange={(status) => handleStatusChange(lead.id, status)}
+                  />
                   <button
                     className={styles.deleteBtn}
                     onClick={() => handleDelete(lead.id)}

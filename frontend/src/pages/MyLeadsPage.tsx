@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { api, getErrorMessage } from '@utils/api';
 import { getLeadClientId } from '@utils/types';
+import { LEAD_STATUSES } from '@utils/status';
 import ErrorState from '@components/ErrorState';
 import Header from '@components/Header';
+import StatusBadge from '@components/StatusBadge';
 import { Lead } from '@utils/types';
 import styles from '@styles/MyLeadsPage.module.css';
 
@@ -62,12 +64,22 @@ export default function MyLeadsPage() {
     }
   };
 
+  const statusOrder = LEAD_STATUSES.map((o) => o.value);
+  const statusRank = (status: string) => {
+    const rank = statusOrder.indexOf(status);
+    return rank === -1 ? statusOrder.length : rank;
+  };
+
   const sortedLeads = [...leads].sort((a, b) => {
     switch (sort) {
       case 'createdAt_asc':
         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      case 'status_asc':
+      case 'status_asc': {
+        const ra = statusRank(a.status);
+        const rb = statusRank(b.status);
+        if (ra !== rb) return ra - rb;
         return (a.status || '').localeCompare(b.status || '');
+      }
       case 'object_asc':
         return (a.object?.title || '').localeCompare(b.object?.title || '');
       case 'createdAt_desc':
@@ -85,13 +97,6 @@ export default function MyLeadsPage() {
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
-
-  const statusLabels: Record<string, string> = {
-    new: 'Новая',
-    in_progress: 'В работе',
-    done: 'Завершена',
-    cancelled: 'Отменена',
   };
 
   return (
@@ -133,7 +138,7 @@ export default function MyLeadsPage() {
                   {lead.object?.title || `Объект ${lead.objectId}`}
                 </div>
                 <div className={styles.itemActions}>
-                  <div className={styles.itemStatus}>{statusLabels[lead.status] || lead.status}</div>
+                  <StatusBadge status={lead.status} variant="lead" />
                   <button
                     className={styles.deleteBtn}
                     onClick={() => handleDelete(lead.id)}

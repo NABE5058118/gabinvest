@@ -506,6 +506,139 @@ describe('API Integration Tests', () => {
       expect(res.status).toBe(204);
     });
 
+    it('GET /api/admin/cases should return cases list', async () => {
+      const res = await request(app)
+        .get('/api/admin/cases')
+        .set('x-admin-token', ADMIN_TOKEN);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.cases)).toBe(true);
+    });
+
+    it('POST /api/admin/cases should create case with admin token', async () => {
+      const res = await request(app)
+        .post('/api/admin/cases')
+        .set('x-admin-token', ADMIN_TOKEN)
+        .send({
+          title: 'Test Case',
+          description: 'Test description',
+          location: 'Test Location',
+          price: 5000000,
+          status: 'pending',
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.title).toBe('Test Case');
+      expect(res.body.status).toBe('pending');
+    });
+
+    it('POST /api/admin/cases should return 400 for missing title', async () => {
+      const res = await request(app)
+        .post('/api/admin/cases')
+        .set('x-admin-token', ADMIN_TOKEN)
+        .send({ price: 1000 });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('POST /api/admin/cases should return 400 for negative price', async () => {
+      const res = await request(app)
+        .post('/api/admin/cases')
+        .set('x-admin-token', ADMIN_TOKEN)
+        .send({ title: 'Bad Price', price: -100 });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('GET /api/admin/cases should return 401 without token', async () => {
+      const res = await request(app).get('/api/admin/cases');
+      expect(res.status).toBe(401);
+    });
+
+    it('GET /api/admin/cases/:id should return single case', async () => {
+      const created = await prisma.case.create({
+        data: { title: 'Single Case', status: 'pending' },
+      });
+
+      const res = await request(app)
+        .get(`/api/admin/cases/${created.id}`)
+        .set('x-admin-token', ADMIN_TOKEN);
+
+      expect(res.status).toBe(200);
+      expect(res.body.title).toBe('Single Case');
+    });
+
+    it('PUT /api/admin/cases/:id should update case', async () => {
+      const created = await prisma.case.create({
+        data: { title: 'Old Title', status: 'pending' },
+      });
+
+      const res = await request(app)
+        .put(`/api/admin/cases/${created.id}`)
+        .set('x-admin-token', ADMIN_TOKEN)
+        .send({ title: 'New Title', status: 'approved' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.title).toBe('New Title');
+      expect(res.body.status).toBe('approved');
+    });
+
+    it('PATCH /api/admin/cases/:id/status should update case status', async () => {
+      const created = await prisma.case.create({
+        data: { title: 'Status Case', status: 'pending' },
+      });
+
+      const res = await request(app)
+        .patch(`/api/admin/cases/${created.id}/status`)
+        .set('x-admin-token', ADMIN_TOKEN)
+        .send({ status: 'rejected' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('rejected');
+    });
+
+    it('DELETE /api/admin/cases/:id should delete case', async () => {
+      const created = await prisma.case.create({
+        data: { title: 'Delete Case', status: 'pending' },
+      });
+
+      const res = await request(app)
+        .delete(`/api/admin/cases/${created.id}`)
+        .set('x-admin-token', ADMIN_TOKEN);
+
+      expect(res.status).toBe(204);
+    });
+
+    it('GET /api/cases should return only approved cases publicly', async () => {
+      await prisma.case.create({ data: { title: 'Public Case', status: 'approved' } });
+      await prisma.case.create({ data: { title: 'Hidden Case', status: 'pending' } });
+
+      const res = await request(app).get('/api/cases');
+
+      expect(res.status).toBe(200);
+      expect(res.body.cases.some((c: any) => c.title === 'Public Case')).toBe(true);
+      expect(res.body.cases.some((c: any) => c.title === 'Hidden Case')).toBe(false);
+    });
+
+    it('GET /api/cases/:id should return 404 for non-approved case publicly', async () => {
+      const pending = await prisma.case.create({
+        data: { title: 'Pending Public', status: 'pending' },
+      });
+
+      const res = await request(app).get(`/api/cases/${pending.id}`);
+      expect(res.status).toBe(404);
+    });
+
+    it('GET /api/cases/:id should return approved case publicly', async () => {
+      const approved = await prisma.case.create({
+        data: { title: 'Approved Public', status: 'approved' },
+      });
+
+      const res = await request(app).get(`/api/cases/${approved.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body.title).toBe('Approved Public');
+    });
+
     it('PATCH /api/leads/:id/status should update lead status', async () => {
       const objects = await prisma.object.findMany({ where: { moderation: { is: { status: 'approved' } } } });
       if (objects.length === 0) return;

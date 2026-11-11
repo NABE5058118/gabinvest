@@ -276,7 +276,7 @@ export default function AdminObjectForm() {
 
   return (
     <div className={styles.page}>
-      <Header onBack={() => navigate('/admin')} title={id && id !== 'new' ? 'Редактировать объект' : 'Новый объект'} />
+      <Header onBack={() => navigate('/admin/object')} title={id && id !== 'new' ? 'Редактировать объект' : 'Новый объект'} />
 
       <form className={styles.form} onSubmit={handleSubmit}>
         {error && <div className={styles.error} role="status" aria-live="polite">{error}</div>}

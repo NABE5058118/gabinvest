@@ -89,6 +89,23 @@ type PlacementType = typeof placementTypeEnum[number];
 const moderationStatusEnum = ['pending', 'approved', 'rejected'] as const;
 type ModerationStatus = typeof moderationStatusEnum[number];
 
+const caseStatusEnum = ['pending', 'approved', 'rejected'] as const;
+type CaseStatus = typeof caseStatusEnum[number];
+
+const caseBaseSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().max(5000).nullable().optional(),
+  location: z.string().max(300).nullable().optional(),
+  price: z.coerce.number().int().positive().max(2_147_483_647).nullable().optional(),
+  imageBefore: z.string().nullable().optional(),
+  imageAfter: z.string().nullable().optional(),
+  status: z.enum(caseStatusEnum).nullable().optional(),
+});
+
+const createCaseSchema = caseBaseSchema.refine((data) => !!data.title, { path: ['title'], message: 'Укажите название' });
+
+const updateCaseSchema = caseBaseSchema.partial();
+
 const objectBaseSchema = z.object({
   title: z.string().min(1).max(200),
   type: z.enum(objectTypeEnum),
@@ -1223,6 +1240,306 @@ router.get('/moderation/queue', requireAdmin, async (req: Request, res: Response
   } catch (error) {
     logger.error('Error fetching moderation queue:', error);
     res.status(500).json({ error: 'Failed to fetch moderation queue' });
+  }
+});
+
+/* ==================== CASES (admin CRUD) ==================== */
+
+router.get('/cases', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const page = Math.max(1, Math.min(1_000_000, Number.parseInt(String(req.query.page || '1'), 10) || 1));
+    const limit = Math.max(1, Math.min(50, Number.parseInt(String(req.query.limit || '50'), 10) || 50));
+    const statusParam = String(req.query.status || '');
+    const where: any = {};
+    if (statusParam && caseStatusEnum.includes(statusParam as CaseStatus)) {
+      where.status = statusParam as CaseStatus;
+    }
+    const [cases, total] = await Promise.all([
+      prisma.case.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          images: { select: { id: true, url: true, sort: true }, orderBy: { sort: 'asc' } },
+        },
+      }),
+      prisma.case.count({ where }),
+    ]);
+    res.json({ cases, total, page, limit, totalPages: Math.ceil(total / limit) });
+  } catch (error) {
+    logger.error('Error fetching admin cases:', error);
+    res.status(500).json({ error: 'Failed to fetch cases' });
+  }
+});
+
+router.get('/cases/:id', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const caseItem = await prisma.case.findUnique({
+      where: { id },
+      include: {
+        images: { select: { id: true, url: true, sort: true }, orderBy: { sort: 'asc' } },
+      },
+    });
+    if (!caseItem) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+    res.json(caseItem);
+  } catch (error) {
+    logger.error('Error fetching admin case:', error);
+    res.status(500).json({ error: 'Failed to fetch case' });
+  }
+});
+
+router.post('/cases', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const parsed = createCaseSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.errors[0].message });
+    }
+    const data = parsed.data;
+    const caseItem = await prisma.case.create({
+      data: {
+        title: data.title,
+        description: data.description || null,
+        location: data.location || null,
+        price: data.price || null,
+        imageBefore: data.imageBefore || null,
+        imageAfter: data.imageAfter || null,
+        status: data.status || 'pending',
+      },
+    });
+    res.status(201).json(caseItem);
+  } catch (error) {
+    logger.error('Error creating case:', error);
+    res.status(500).json({ error: 'Failed to create case' });
+  }
+});
+
+router.put('/cases/:id', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const parsed = updateCaseSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.errors[0].message });
+    }
+    const data = parsed.data;
+    const updateData: Record<string, unknown> = {};
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.location !== undefined) updateData.location = data.location;
+    if (data.price !== undefined) updateData.price = data.price;
+    if (data.imageBefore !== undefined) updateData.imageBefore = data.imageBefore;
+    if (data.imageAfter !== undefined) updateData.imageAfter = data.imageAfter;
+    if (data.status !== undefined) updateData.status = data.status;
+
+    const caseItem = await prisma.case.update({
+      where: { id },
+      data: updateData,
+    });
+    res.json(caseItem);
+  } catch (error) {
+    logger.error('Error updating case:', error);
+    res.status(500).json({ error: 'Failed to update case' });
+  }
+});
+
+router.patch('/cases/:id', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const parsed = updateCaseSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.errors[0].message });
+    }
+    const data = parsed.data;
+    const updateData: Record<string, unknown> = {};
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.location !== undefined) updateData.location = data.location;
+    if (data.price !== undefined) updateData.price = data.price;
+    if (data.imageBefore !== undefined) updateData.imageBefore = data.imageBefore;
+    if (data.imageAfter !== undefined) updateData.imageAfter = data.imageAfter;
+    if (data.status !== undefined) updateData.status = data.status;
+
+    const caseItem = await prisma.case.update({
+      where: { id },
+      data: updateData,
+    });
+    res.json(caseItem);
+  } catch (error) {
+    logger.error('Error patching case:', error);
+    res.status(500).json({ error: 'Failed to update case' });
+  }
+});
+
+router.delete('/cases/:id', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const caseItem = await prisma.case.findUnique({
+      where: { id },
+      select: { imageBefore: true, imageAfter: true },
+    });
+    if (!caseItem) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+    await prisma.case.delete({ where: { id } });
+    [caseItem.imageBefore, caseItem.imageAfter].forEach((filePath) => {
+      if (!filePath) return;
+      try {
+        const filename = path.basename(filePath);
+        const fullPath = path.join(uploadsDir, filename);
+        if (fs.existsSync(fullPath)) {
+          fs.unlinkSync(fullPath);
+        }
+      } catch (fileError: any) {
+        if (fileError?.code !== 'EACCES') {
+          throw fileError;
+        }
+      }
+    });
+    res.status(204).send();
+  } catch (error) {
+    logger.error('Error deleting case:', error);
+    res.status(500).json({ error: 'Failed to delete case' });
+  }
+});
+
+router.post('/cases/:id/images', requireAdmin, imageUpload.single('image'), async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: 'File is required' });
+    }
+    const isValid = await verifyFileType(file.path, file.mimetype);
+    if (!isValid) {
+      try {
+        fs.unlinkSync(file.path);
+      } catch (fileError: any) {
+        if (fileError?.code !== 'EACCES') {
+          throw fileError;
+        }
+      }
+      return res.status(400).json({ error: 'Invalid image content' });
+    }
+    const processedPath = await processImage(file.path);
+    const imageUrl = `/uploads/${path.basename(processedPath)}`;
+    const img = await prisma.caseImage.create({
+      data: { caseId: id, url: imageUrl },
+    });
+    res.status(201).json(img);
+  } catch (error: any) {
+    logger.error('Error uploading case image:', error);
+    res.status(500).json({ error: 'Failed to upload image' });
+  }
+});
+
+router.delete('/cases/:id/images/:imageId', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const imageId = String(req.params.imageId);
+    const img = await prisma.caseImage.findUnique({ where: { id: imageId } });
+    if (!img || img.caseId !== id) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
+    const filename = path.basename(img.url);
+    await prisma.caseImage.delete({ where: { id: imageId } });
+    try {
+      const fullPath = path.join(uploadsDir, filename);
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+      }
+    } catch (fileError: any) {
+      if (fileError?.code !== 'EACCES') {
+        throw fileError;
+      }
+    }
+    res.status(204).send();
+  } catch (error) {
+    logger.error('Error removing case image:', error);
+    res.status(500).json({ error: 'Failed to remove image' });
+  }
+});
+
+router.post('/cases/:id/image-before', requireAdmin, imageUpload.single('image'), async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: 'File is required' });
+    }
+    const isValid = await verifyFileType(file.path, file.mimetype);
+    if (!isValid) {
+      try {
+        fs.unlinkSync(file.path);
+      } catch (fileError: any) {
+        if (fileError?.code !== 'EACCES') {
+          throw fileError;
+        }
+      }
+      return res.status(400).json({ error: 'Invalid image content' });
+    }
+    const processedPath = await processImage(file.path);
+    const imageUrl = `/uploads/${path.basename(processedPath)}`;
+    const caseItem = await prisma.case.update({
+      where: { id },
+      data: { imageBefore: imageUrl },
+    });
+    res.json(caseItem);
+  } catch (error: any) {
+    logger.error('Error uploading before image:', error);
+    res.status(500).json({ error: 'Failed to upload image' });
+  }
+});
+
+router.post('/cases/:id/image-after', requireAdmin, imageUpload.single('image'), async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: 'File is required' });
+    }
+    const isValid = await verifyFileType(file.path, file.mimetype);
+    if (!isValid) {
+      try {
+        fs.unlinkSync(file.path);
+      } catch (fileError: any) {
+        if (fileError?.code !== 'EACCES') {
+          throw fileError;
+        }
+      }
+      return res.status(400).json({ error: 'Invalid image content' });
+    }
+    const processedPath = await processImage(file.path);
+    const imageUrl = `/uploads/${path.basename(processedPath)}`;
+    const caseItem = await prisma.case.update({
+      where: { id },
+      data: { imageAfter: imageUrl },
+    });
+    res.json(caseItem);
+  } catch (error: any) {
+    logger.error('Error uploading after image:', error);
+    res.status(500).json({ error: 'Failed to upload image' });
+  }
+});
+
+router.patch('/cases/:id/status', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const parsed = z.object({ status: z.enum(caseStatusEnum), note: z.string().max(2000).optional().nullable() }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0]?.message || 'Invalid status' });
+    const { status, note } = parsed.data;
+
+    const caseItem = await prisma.case.update({
+      where: { id },
+      data: { status },
+    });
+
+    res.json(caseItem);
+  } catch (error) {
+    logger.error('Error updating case status:', error);
+    res.status(500).json({ error: 'Failed to update case status' });
   }
 });
 

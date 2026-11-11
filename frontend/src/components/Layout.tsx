@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { LayoutGrid, Heart, FileText, User, LogOut } from 'lucide-react';
+import { LayoutGrid, Heart, FileText, User, LogOut, Image } from 'lucide-react';
 import { useAuth } from '@context/AuthContext';
 import { adminApi } from '@utils/adminApi';
 import CookieConsent from './CookieConsent';
@@ -45,6 +45,26 @@ export default function Layout() {
               <span>Заявки</span>
             </NavLink>
 
+            <NavLink
+              to="/admin/object"
+              className={({ isActive }) =>
+                `${styles.navItem} ${isActive ? styles.active : ''}`
+              }
+            >
+              <LayoutGrid size={24} strokeWidth={2} />
+              <span>Объекты</span>
+            </NavLink>
+
+            <NavLink
+              to="/admin/cases"
+              className={({ isActive }) =>
+                `${styles.navItem} ${isActive ? styles.active : ''}`
+              }
+            >
+              <Image size={24} strokeWidth={2} />
+              <span>Кейсы</span>
+            </NavLink>
+
             <button
               type="button"
               className={styles.navItem}
@@ -64,6 +84,16 @@ export default function Layout() {
             >
               <LayoutGrid size={24} strokeWidth={2} />
               <span>Каталог</span>
+            </NavLink>
+
+            <NavLink
+              to="/cases"
+              className={({ isActive }) =>
+                `${styles.navItem} ${isActive ? styles.active : ''}`
+              }
+            >
+              <Image size={24} strokeWidth={2} />
+              <span>Кейсы</span>
             </NavLink>
 
             <NavLink

@@ -71,6 +71,12 @@ enum AuditEventType {
   deal_alert_created
 }
 
+enum CaseStatus {
+  pending
+  approved
+  rejected
+}
+
 enum TouchSource {
   direct
   deep_link
@@ -143,6 +149,34 @@ model ObjectImage {
   object    Object   @relation(fields: [objectId], references: [id], onDelete: Cascade)
 
   @@index([objectId])
+}
+
+model Case {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  location    String?
+  price       Int?
+  imageBefore String?
+  imageAfter  String?
+  status      CaseStatus  @default(pending)
+  images      CaseImage[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model CaseImage {
+  id        String   @id @default(cuid())
+  caseId    String
+  url       String
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
 }
 
 model Tenant {
