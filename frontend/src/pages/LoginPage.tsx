@@ -24,7 +24,7 @@ export default function LoginPage() {
       const res = await api.post('/api/auth/login', { login, password });
       authLogin(res.data.user);
       if (res.data.user.role === 'admin') {
-        navigate('/admin');
+        navigate('/admin/object');
       } else {
         navigate('/');
       }

@@ -262,7 +262,7 @@ export default function AdminObjectForm() {
       await refreshForm(data.id);
 
       setTimeout(() => {
-        navigate('/admin');
+        navigate('/admin/object');
       }, 1000);
     } catch (err: unknown) {
       const backendMessage = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
