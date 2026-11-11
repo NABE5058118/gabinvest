@@ -81,8 +81,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (tgUser?.id && initData) {
             const res = await api.post('/api/auth/telegram', { initData });
             login(res.data.user);
-          } else {
-            logout();
           }
           setLoading(false);
           return;
