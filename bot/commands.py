@@ -294,11 +294,6 @@ def setup(router, backend) -> None:
         except Exception as exc:  # noqa: BLE001
             logger.warning("Notify subscribe callback failed: %s", exc)
             await query.answer("Не удалось оформить подписку. Попробуйте позже.")
-        if query.message is not None:
-            try:
-                await query.message.edit_reply_markup(reply_markup=None)
-            except Exception:  # noqa: BLE001, S110
-                pass
 
     @router.message(F.text)
     async def handle_message(message: types.Message):
