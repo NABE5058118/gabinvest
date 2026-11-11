@@ -642,6 +642,7 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
         lastName: true,
         username: true,
         telegramId: true,
+        notifyNewObjects: true,
         createdAt: true,
       },
     });

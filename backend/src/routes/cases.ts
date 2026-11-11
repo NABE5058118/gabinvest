@@ -21,7 +21,7 @@ router.get('/', async (req: Request, res: Response) => {
     }
 
     const q = parsed.data;
-    const where = { status: 'approved' };
+    const where = { status: 'approved' } as const;
 
     const [cases, total] = await Promise.all([
       prisma.case.findMany({
