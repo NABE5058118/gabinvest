@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await api.get<User>('/api/auth/me');
       login(res.data);
     } catch {
-      logout();
+      // Не ломаем сессию при ошибке /me
     }
   };
 
@@ -101,7 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const res = await api.get<User>('/api/auth/me');
           login(res.data);
         } catch {
-          if (!user) logout();
+          // Не ломаем сессию: 401 может быть админской (другой набор кук).
+          // Просто оставляем user = null.
         }
       } finally {
         setLoading(false);
