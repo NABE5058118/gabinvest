@@ -5,23 +5,6 @@
   max-width: 1200px;
 }
 
-.header {
-  margin-bottom: 28px;
-}
-
-.title {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0 0 6px;
-  letter-spacing: -0.02em;
-}
-
-.subtitle {
-  font-size: 15px;
-  color: #666;
-  margin: 0;
-}
-
 .list {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

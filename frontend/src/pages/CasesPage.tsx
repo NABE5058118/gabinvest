@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { BuildingComplex, ArrowRight, ImageMinus } from 'lucide-react';
 import { useCases } from '@utils/useCases';
 import ErrorState from '@components/ErrorState';
+import Header from '@components/Header';
 import styles from '@styles/CasesPage.module.css';
 
 export default function CasesPage() {
@@ -11,6 +12,7 @@ export default function CasesPage() {
   if (loading) {
     return (
       <main className={styles.page}>
+        <Header title="Кейсы" />
         <div className={styles.skeleton}>
           {Array.from({ length: 6 }).map((_, idx) => (
             <div key={idx} className={styles.skeletonCard}>
@@ -30,6 +32,7 @@ export default function CasesPage() {
   if (error) {
     return (
       <main className={styles.page}>
+        <Header title="Кейсы" />
         <ErrorState title="Не удалось загрузить кейсы" description={error} onRetry={refetch} />
       </main>
     );
@@ -37,12 +40,7 @@ export default function CasesPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Кейсы</h1>
-        <p className={styles.subtitle}>
-          Реализованные объекты &#8212; фото &#171;до&#187; и &#171;после&#187;
-        </p>
-      </header>
+      <Header title="Кейсы" />
 
       <div className={styles.list}>
         {cases.length === 0 ? (
