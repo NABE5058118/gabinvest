@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
-import { verifyAccessToken, verifyStoredRefreshToken, signAccessToken, ACCESS_TOKEN_EXPIRY_SECONDS, TokenScope } from '../lib/tokens.js';
+import { verifyAccessToken, verifyStoredRefreshToken, signAccessToken, signRefreshToken, revokeRefreshToken, storeRefreshToken, ACCESS_TOKEN_EXPIRY_SECONDS, REFRESH_TOKEN_EXPIRY_SECONDS, TokenScope } from '../lib/tokens.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('auth');
@@ -43,7 +43,12 @@ async function tryRefresh(refreshToken: string, req: Request, res: Response): Pr
   const verified = await verifyStoredRefreshToken(refreshToken, 'user');
   if (!verified) return null;
 
+  await revokeRefreshToken(refreshToken);
+
   const newAccessToken = signAccessToken(verified.userId, 'user', verified.telegramId, verified.role);
+  const newRefreshToken = signRefreshToken(verified.userId, 'user');
+  await storeRefreshToken(verified.userId, newRefreshToken, req);
+
   const isProd = process.env.NODE_ENV === 'production';
 
   res.cookie('access_token', newAccessToken, {
@@ -52,6 +57,14 @@ async function tryRefresh(refreshToken: string, req: Request, res: Response): Pr
     sameSite: 'lax',
     path: '/',
     maxAge: ACCESS_TOKEN_EXPIRY_SECONDS * 1000,
+  });
+
+  res.cookie('refresh_token', newRefreshToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: REFRESH_TOKEN_EXPIRY_SECONDS * 1000,
   });
 
   return { userId: verified.userId };
@@ -88,6 +101,48 @@ export async function adminAuthMiddleware(req: Request, res: Response, next: Nex
       req.adminActor = payload.userId;
       return next();
     }
+  }
+
+  const refreshToken = req.cookies?.refresh_token;
+  if (!refreshToken) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const verified = await verifyStoredRefreshToken(refreshToken, 'admin');
+    if (!verified) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    await revokeRefreshToken(refreshToken);
+
+    const newAccessToken = signAccessToken(verified.userId, 'admin');
+    const newRefreshToken = signRefreshToken(verified.userId, 'admin');
+    await storeRefreshToken(verified.userId, newRefreshToken, req);
+
+    const isProd = process.env.NODE_ENV === 'production';
+
+    res.cookie('access_token', newAccessToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: ACCESS_TOKEN_EXPIRY_SECONDS * 1000,
+    });
+
+    res.cookie('refresh_token', newRefreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: REFRESH_TOKEN_EXPIRY_SECONDS * 1000,
+    });
+
+    req.userId = verified.userId;
+    req.adminActor = verified.userId;
+    return next();
+  } catch {
+    // fall through to static admin token check below
   }
 
   const adminTokenHeader = req.headers['x-admin-token'];
