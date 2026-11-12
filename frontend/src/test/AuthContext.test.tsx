@@ -33,6 +33,32 @@ describe('AuthContext', () => {
     localStorage.clear();
   });
 
+  it('restores cached user before the initial /me request completes', async () => {
+    const cachedUser = { id: 'cached-user', firstName: 'Cached' };
+    localStorage.setItem('user', JSON.stringify(cachedUser));
+    let resolveMe: ((value: unknown) => void) | undefined;
+    (api.get as unknown as { mockReturnValue: (value: unknown) => void }).mockReturnValue(
+      new Promise((resolve) => { resolveMe = resolve; }),
+    );
+
+    render(
+      <BrowserRouter>
+        <AuthProvider>
+          <TestComponent />
+        </AuthProvider>
+      </BrowserRouter>,
+    );
+
+    expect(screen.getByTestId('user').textContent).toBe('Cached');
+    expect(screen.getByTestId('loading').textContent).toBe('loading');
+
+    await act(async () => {
+      resolveMe?.({ data: cachedUser });
+    });
+
+    expect(screen.getByTestId('loading').textContent).toBe('ready');
+  });
+
   it('should show no user when no auth', async () => {
     (api.get as unknown as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue({ data: null });
 

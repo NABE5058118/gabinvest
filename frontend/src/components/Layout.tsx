@@ -6,7 +6,7 @@ import CookieConsent from './CookieConsent';
 import styles from '@styles/Layout.module.css';
 
 export default function Layout() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
 
@@ -106,7 +106,12 @@ export default function Layout() {
               <span>Избранное</span>
             </NavLink>
 
-            {user ? (
+            {authLoading ? (
+              <span className={styles.navItem} aria-live="polite">
+                <User size={24} strokeWidth={2} />
+                <span>Проверка…</span>
+              </span>
+            ) : user ? (
               <NavLink
                 to="/profile"
                 className={({ isActive }) =>

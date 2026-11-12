@@ -3,57 +3,67 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  await prisma.object.createMany({
-    data: [
-      {
-        title: 'БЦ «Азинский»',
-        type: 'Офис',
-        price: 125000000,
-        yieldPercent: 8,
-        location: 'Казань, ул. Пушкина, 51',
-        city: 'Казань',
-        area: 3500,
-        description: 'Современный бизнес-центр класса А в центре города. Развитая инфраструктура, удобная транспортная доступность, высокий спрос на аренду.',
-        image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80&fm=webp',
-      },
-      {
-        title: 'ТЦ «Восточный»',
-        type: 'Торговое помещение',
-        price: 250000000,
-        yieldPercent: 10,
-        location: 'Москва, ул. Ленина, 10',
-        city: 'Москва',
-        area: 5000,
-        description: 'Торговый центр высокого класса в центре города. Высокий пешеходный трафик, якорные арендаторы.',
-        image: 'https://images.unsplash.com/photo-1604014237800-1c9106c0b2b3?w=800&q=80&fm=webp',
-      },
-      {
-        title: 'Складской комплекс «Логистик»',
-        type: 'Склад',
-        price: 95000000,
-        yieldPercent: 12,
-        location: 'Казань, ул. Промышленная, 25',
-        city: 'Казань',
-        area: 8000,
-        description: 'Современный складской комплекс с рампой, высокими потолками и удобной транспортной развязкой.',
-        image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80&fm=webp',
-      },
-      {
-        title: 'Офисный центр «Горизонт»',
-        type: 'Офис',
-        price: 180000000,
-        yieldPercent: 9,
-        location: 'Москва, ул. Мира, 45',
-        city: 'Москва',
-        area: 4200,
-        description: 'Офисный центр премиум-класса с панорамным остеклением и собственной инфраструктурой.',
-        image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80&fm=webp',
-      },
-    ],
-    skipDuplicates: true,
-  });
+  const demoObjects = [
+    {
+      title: 'БЦ «Азинский»',
+      type: 'Офис',
+      price: 125000000,
+      yieldPercent: 8,
+      location: 'Казань, ул. Пушкина, 51',
+      city: 'Казань',
+      area: 3500,
+      description: 'Современный бизнес-центр класса А в центре города. Развитая инфраструктура, удобная транспортная доступность, высокий спрос на аренду.',
+      image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80&fm=webp',
+    },
+    {
+      title: 'ТЦ «Восточный»',
+      type: 'Торговое помещение',
+      price: 250000000,
+      yieldPercent: 10,
+      location: 'Москва, ул. Ленина, 10',
+      city: 'Москва',
+      area: 5000,
+      description: 'Торговый центр высокого класса в центре города. Высокий пешеходный трафик, якорные арендаторы.',
+      image: 'https://images.unsplash.com/photo-1604014237800-1c9106c0b2b3?w=800&q=80&fm=webp',
+    },
+    {
+      title: 'Складской комплекс «Логистик»',
+      type: 'Склад',
+      price: 95000000,
+      yieldPercent: 12,
+      location: 'Казань, ул. Промышленная, 25',
+      city: 'Казань',
+      area: 8000,
+      description: 'Современный складской комплекс с рампой, высокими потолками и удобной транспортной развязкой.',
+      image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80&fm=webp',
+    },
+    {
+      title: 'Офисный центр «Горизонт»',
+      type: 'Офис',
+      price: 180000000,
+      yieldPercent: 9,
+      location: 'Москва, ул. Мира, 45',
+      city: 'Москва',
+      area: 4200,
+      description: 'Офисный центр премиум-класса с панорамным остеклением и собственной инфраструктурой.',
+      image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80&fm=webp',
+    },
+  ];
 
-  console.log('Seed completed');
+  // Object.title is not unique in the schema, so createMany({ skipDuplicates })
+  // does not prevent duplicate demo rows. Check titles explicitly instead.
+  const existing = await prisma.object.findMany({
+    where: { title: { in: demoObjects.map((item) => item.title) } },
+    select: { title: true },
+  });
+  const existingTitles = new Set(existing.map((item) => item.title));
+  const missingObjects = demoObjects.filter((item) => !existingTitles.has(item.title));
+
+  if (missingObjects.length > 0) {
+    await prisma.object.createMany({ data: missingObjects });
+  }
+
+  console.log(`Seed completed; added ${missingObjects.length} demo objects`);
 }
 
 main()

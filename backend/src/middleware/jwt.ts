@@ -1,88 +1,39 @@
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
-import { verifyAccessToken, verifyStoredRefreshToken, signAccessToken, signRefreshToken, revokeRefreshToken, storeRefreshToken, ACCESS_TOKEN_EXPIRY_SECONDS, REFRESH_TOKEN_EXPIRY_SECONDS, TokenScope } from '../lib/tokens.js';
-import { createLogger } from '../utils/logger.js';
-
-const logger = createLogger('auth');
+import { verifyAccessToken } from '../lib/tokens.js';
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 
+/**
+ * Access-token middleware.
+ * Refresh-token rotation is handled only by /api/auth/refresh on the client
+ * side (single-flight Axios interceptor), never implicitly by every API call.
+ * This avoids concurrent requests revoking one another's refresh tokens.
+ */
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const accessToken = req.cookies?.access_token;
   const authHeader = req.headers.authorization;
   const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
-
   const token = accessToken || bearerToken;
-  if (token) {
-    const payload = verifyAccessToken(token, 'user');
-    if (payload) {
-      req.userId = payload.userId;
-      return next();
-    }
-  }
 
-  const refreshToken = req.cookies?.refresh_token;
-  if (!refreshToken) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
-  try {
-    const refreshed = await tryRefresh(refreshToken, req, res);
-    if (refreshed) {
-      req.userId = refreshed.userId;
-      return next();
-    }
-  } catch (error) {
-    logger.warn('Token refresh failed during auth', { error: error instanceof Error ? error.message : 'unknown' });
-  }
+  const payload = verifyAccessToken(token, 'user');
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
 
-  return res.status(401).json({ error: 'Unauthorized' });
-}
-
-async function tryRefresh(refreshToken: string, req: Request, res: Response): Promise<{ userId: string } | null> {
-  const verified = await verifyStoredRefreshToken(refreshToken, 'user');
-  if (!verified) return null;
-
-  await revokeRefreshToken(refreshToken);
-
-  const newAccessToken = signAccessToken(verified.userId, 'user', verified.telegramId, verified.role);
-  const newRefreshToken = signRefreshToken(verified.userId, 'user');
-  await storeRefreshToken(verified.userId, newRefreshToken, req);
-
-  const isProd = process.env.NODE_ENV === 'production';
-
-  res.cookie('access_token', newAccessToken, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: ACCESS_TOKEN_EXPIRY_SECONDS * 1000,
-  });
-
-  res.cookie('refresh_token', newRefreshToken, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: REFRESH_TOKEN_EXPIRY_SECONDS * 1000,
-  });
-
-  return { userId: verified.userId };
+  req.userId = payload.userId;
+  return next();
 }
 
 export async function optionalAuth(req: Request, _res: Response, next: NextFunction) {
   const accessToken = req.cookies?.access_token;
   const authHeader = req.headers.authorization;
   const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
-
   const token = accessToken || bearerToken;
-  if (!token) {
-    return next();
-  }
 
-  const payload = verifyAccessToken(token, 'user');
-  if (payload) {
-    req.userId = payload.userId;
+  if (token) {
+    const payload = verifyAccessToken(token, 'user');
+    if (payload) req.userId = payload.userId;
   }
 
   next();
@@ -92,8 +43,8 @@ export async function adminAuthMiddleware(req: Request, res: Response, next: Nex
   const accessToken = req.cookies?.access_token;
   const authHeader = req.headers.authorization;
   const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
-
   const token = accessToken || bearerToken;
+
   if (token) {
     const payload = verifyAccessToken(token, 'admin');
     if (payload) {
@@ -103,54 +54,16 @@ export async function adminAuthMiddleware(req: Request, res: Response, next: Nex
     }
   }
 
-  const refreshToken = req.cookies?.refresh_token;
-  if (!refreshToken) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  try {
-    const verified = await verifyStoredRefreshToken(refreshToken, 'admin');
-    if (!verified) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    await revokeRefreshToken(refreshToken);
-
-    const newAccessToken = signAccessToken(verified.userId, 'admin');
-    const newRefreshToken = signRefreshToken(verified.userId, 'admin');
-    await storeRefreshToken(verified.userId, newRefreshToken, req);
-
-    const isProd = process.env.NODE_ENV === 'production';
-
-    res.cookie('access_token', newAccessToken, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: ACCESS_TOKEN_EXPIRY_SECONDS * 1000,
-    });
-
-    res.cookie('refresh_token', newRefreshToken, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: REFRESH_TOKEN_EXPIRY_SECONDS * 1000,
-    });
-
-    req.userId = verified.userId;
-    req.adminActor = verified.userId;
-    return next();
-  } catch {
-    // fall through to static admin token check below
-  }
-
+  // Keep the existing static admin-token integration as a separate fallback.
   const adminTokenHeader = req.headers['x-admin-token'];
-  if (typeof adminTokenHeader === 'string' && ADMIN_TOKEN && adminTokenHeader.length === ADMIN_TOKEN.length) {
-    if (crypto.timingSafeEqual(Buffer.from(adminTokenHeader), Buffer.from(ADMIN_TOKEN))) {
-      req.adminActor = 'static-admin-token';
-      return next();
-    }
+  if (
+    typeof adminTokenHeader === 'string' &&
+    ADMIN_TOKEN &&
+    adminTokenHeader.length === ADMIN_TOKEN.length &&
+    crypto.timingSafeEqual(Buffer.from(adminTokenHeader), Buffer.from(ADMIN_TOKEN))
+  ) {
+    req.adminActor = 'static-admin-token';
+    return next();
   }
 
   return res.status(401).json({ error: 'Unauthorized' });

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { type InternalAxiosRequestConfig } from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -9,47 +9,53 @@ export const api = axios.create({
   withCredentials: true,
 });
 
-let isRefreshing = false;
-let pendingRequests: Array<() => void> = [];
+type RetryConfig = InternalAxiosRequestConfig & { _authRetry?: boolean };
 
-api.interceptors.request.use((config) => {
-  return config;
-});
+let refreshPromise: Promise<void> | null = null;
+
+function isAuthEndpoint(url?: string): boolean {
+  if (!url) return false;
+  return [
+    '/api/auth/login',
+    '/api/auth/register',
+    '/api/auth/telegram',
+    '/api/auth/refresh',
+    '/api/auth/logout',
+  ].some((endpoint) => url.includes(endpoint));
+}
 
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const { config, response } = error;
-    const isAuthEndpoint = Boolean(
-      config?.url &&
-      (config.url.includes('/api/auth/login') ||
-        config.url.includes('/api/auth/register') ||
-        config.url.includes('/api/auth/refresh'))
-    );
-    if (!response || isAuthEndpoint || (response.status !== 401 && response.status !== 403)) {
+    const config = error.config as RetryConfig | undefined;
+    const status = error.response?.status;
+
+    // Only 401 means that the access token may have expired. A 403 is an
+    // authorization/permission error and must not trigger token rotation.
+    if (!config || status !== 401 || config._authRetry || isAuthEndpoint(config.url)) {
       return Promise.reject(error);
     }
 
-    if (isRefreshing) {
-      return new Promise((resolve, reject) => {
-        pendingRequests.push(() => {
-          api(config).then(resolve).catch((err) => reject(err));
-        });
-      });
-    }
+    config._authRetry = true;
 
-    isRefreshing = true;
     try {
-      await api.post('/api/auth/refresh', {});
-      pendingRequests.forEach((cb) => cb());
-      pendingRequests = [];
+      // All simultaneous 401 responses share one refresh request. This is
+      // important because refresh tokens are rotated and the old one is revoked.
+      if (!refreshPromise) {
+        refreshPromise = api
+          .post('/api/auth/refresh', {})
+          .then(() => undefined)
+          .finally(() => {
+            refreshPromise = null;
+          });
+      }
+
+      await refreshPromise;
       return api(config);
-    } catch {
-      pendingRequests = [];
-      window.location.href = '/login';
-      return Promise.reject(error);
-    } finally {
-      isRefreshing = false;
+    } catch (refreshError) {
+      // Do not hard-redirect from an interceptor. The auth context / route
+      // decides what to show, and unauthenticated pages remain usable.
+      return Promise.reject(refreshError);
     }
   },
 );

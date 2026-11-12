@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { type InternalAxiosRequestConfig } from 'axios';
 import { API_URL, getErrorMessage } from './api';
 
 export { getErrorMessage };
@@ -8,46 +8,42 @@ export const adminApi = axios.create({
   withCredentials: true,
 });
 
-let adminIsRefreshing = false;
-let adminPendingRequests: Array<() => void> = [];
+type RetryConfig = InternalAxiosRequestConfig & { _authRetry?: boolean };
+
+let refreshPromise: Promise<void> | null = null;
 
 adminApi.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const { config, response } = error;
-    const isAuthEndpoint = Boolean(
-      config?.url &&
-      (config.url.includes('/api/admin/auth/login') ||
-        config.url.includes('/api/admin/auth/refresh'))
-    );
-    if (!response || isAuthEndpoint || (response.status !== 401 && response.status !== 403)) {
+    const config = error.config as RetryConfig | undefined;
+    const url = config?.url || '';
+    const status = error.response?.status;
+    const isAuthEndpoint = [
+      '/api/admin/auth/login',
+      '/api/admin/auth/refresh',
+      '/api/admin/auth/logout',
+    ].some((endpoint) => url.includes(endpoint));
+
+    if (!config || status !== 401 || config._authRetry || isAuthEndpoint) {
       return Promise.reject(error);
     }
 
-    if (adminIsRefreshing) {
-      return new Promise((resolve, reject) => {
-        adminPendingRequests.push(() => {
-          adminApi(config).then(resolve).catch((err) => reject(err));
-        });
-      });
-    }
+    config._authRetry = true;
 
-    adminIsRefreshing = true;
     try {
-      const res = await adminApi.post('/api/admin/auth/refresh', {});
-      if (res.status === 200) {
-        adminPendingRequests.forEach((cb) => cb());
-        adminPendingRequests = [];
-        return adminApi(config);
+      if (!refreshPromise) {
+        refreshPromise = adminApi
+          .post('/api/admin/auth/refresh', {})
+          .then(() => undefined)
+          .finally(() => {
+            refreshPromise = null;
+          });
       }
-      throw new Error('refresh failed');
-    } catch {
-      adminPendingRequests = [];
+      await refreshPromise;
+      return adminApi(config);
+    } catch (refreshError) {
       localStorage.removeItem('adminUser');
-      window.location.href = '/admin-login';
-      return Promise.reject(error);
-    } finally {
-      adminIsRefreshing = false;
+      return Promise.reject(refreshError);
     }
   },
 );
